@@ -1,4 +1,16 @@
+import { createRequire } from 'node:module';
 import pino from 'pino';
+
+/** pino-pretty is a dev dependency: only use it when installed and writing to a terminal. */
+function prettyAvailable(): boolean {
+  if (!process.stdout.isTTY) return false;
+  try {
+    createRequire(import.meta.url).resolve('pino-pretty');
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Structured JSON logger. Sensitive fields are redacted at the serializer level so
@@ -28,7 +40,7 @@ export function createLogger(level: string, pretty = false) {
     redact: { paths: REDACT_PATHS, censor: '[REDACTED]' },
     base: { service: 'journzey-api' },
     timestamp: pino.stdTimeFunctions.isoTime,
-    ...(pretty ? { transport: { target: 'pino-pretty', options: { colorize: true } } } : {}),
+    ...(pretty && prettyAvailable() ? { transport: { target: 'pino-pretty', options: { colorize: true } } } : {}),
   });
 }
 

@@ -1,0 +1,66 @@
+# Local full stack:  cp .env.example .env  (fill SESSION_SECRET + ENCRYPTION_KEY)  →  docker compose up --build
+# Web: http://localhost:3000   API (direct): http://localhost:4000/api/v1/health
+name: journzey
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: journzey
+      POSTGRES_PASSWORD: journzey
+      POSTGRES_DB: journzey
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U journzey -d journzey"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      DATABASE_URL: postgres://journzey:journzey@postgres:5432/journzey
+      RUN_MIGRATIONS_ON_START: "true"
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      API_URL: ${API_URL:-http://localhost:3000/api}
+      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-http://localhost:3000/api/v1/auth/google/callback}
+      UPLOAD_DIR: /app/uploads
+      WEB_DIST_DIR: ""
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "4000:4000"
+    volumes:
+      - uploads:/app/uploads
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/web.Dockerfile
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "3000:80"
+
+  # Optional. Not required by the current build (sessions live in PostgreSQL, rate limits in memory).
+  # Enable with: docker compose --profile redis up
+  redis:
+    image: redis:7-alpine
+    profiles: ["redis"]
+    ports:
+      - "6379:6379"
+
+volumes:
+  pgdata:
+  uploads:
