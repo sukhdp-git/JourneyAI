@@ -647,8 +647,8 @@ function DataTab() {
   const deleteAccount = useMutation({
     mutationFn: () => del('/account', { confirmation: me!.user.email }),
     onSuccess: () => {
-      qc.clear();
       qc.setQueryData(qk.me, null);
+      qc.removeQueries({ predicate: (q) => q.queryKey[0] !== qk.me[0] });
       navigate('/', { replace: true });
     },
     onError: (e) => toast('error', e.message),
@@ -666,7 +666,7 @@ function DataTab() {
           </Button>
         </div>
       </Panel>
-      <Panel title="Demo mode">
+      {me?.features.demoMode !== false && <Panel title="Demo mode">
         <p className="text-sm text-muted">DEMO DATA lives in a separate “Demo Account” and demo journal, excluded from real analytics unless you select Demo or All in Account mode.</p>
         <div className="mt-3 flex flex-wrap gap-2">
           <Button onClick={() => setConfirmReset(true)}>{hasDemo ? 'Reset Demo Data' : 'Load Demo Data'}</Button>
@@ -674,7 +674,7 @@ function DataTab() {
             Start With Empty Account
           </Button>
         </div>
-      </Panel>
+      </Panel>}
       <Panel title="Delete account">
         <p className="text-sm text-muted">Permanently deletes your profile, trades, journals, strategies, settings, screenshots, broker connections and AI history. Security audit entries are retained without any link to you. This cannot be undone.</p>
         <Button className="mt-3" variant="danger" icon={<Trash2 className="h-4 w-4" />} onClick={() => setConfirmDelete(true)}>
@@ -699,6 +699,8 @@ function DataTab() {
 
 export default function Settings() {
   const [tab, setTab] = useState<Tab>('profile');
+  const { data: me } = useMe();
+  const brokerSync = me?.features.brokerSync !== false;
   return (
     <>
       <PageHeader title="Account Settings" />
@@ -711,7 +713,7 @@ export default function Settings() {
             { value: 'profile', label: 'Profile' },
             { value: 'preferences', label: 'Preferences' },
             { value: 'accounts', label: 'Accounts & capital' },
-            { value: 'brokers', label: 'Broker sync' },
+            ...(brokerSync ? [{ value: 'brokers' as Tab, label: 'Broker sync' }] : []),
             { value: 'data', label: 'Data & privacy' },
           ]}
         />
@@ -719,7 +721,7 @@ export default function Settings() {
       {tab === 'profile' && <ProfileTab />}
       {tab === 'preferences' && <PreferencesTab />}
       {tab === 'accounts' && <AccountsTab />}
-      {tab === 'brokers' && <BrokersTab />}
+      {tab === 'brokers' && brokerSync && <BrokersTab />}
       {tab === 'data' && <DataTab />}
     </>
   );

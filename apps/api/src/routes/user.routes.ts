@@ -84,7 +84,7 @@ export function onboardingRouter(ctx: AppContext) {
     '/',
     ah(async (req, res) => {
       const userId = currentUserId(req);
-      const result = await ctx.users.completeOnboarding(userId, parse(onboardingSchema, req.body));
+      const result = await ctx.users.completeOnboarding(userId, parse(onboardingSchema, req.body), { demoAllowed: ctx.runtime.features().demoMode });
       await audit(ctx.db, req, 'user.onboarded', userId);
       res.status(201).json({ ...result, me: await ctx.users.me(userId, ctx.features()) });
     }),

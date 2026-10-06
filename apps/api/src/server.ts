@@ -4,10 +4,7 @@ import { createLogger } from './lib/logger.js';
 import { createDb, createPool } from './db/client.js';
 import { runMigrations } from './db/migrations.js';
 import { seedReferenceData } from './db/referenceData.js';
-import { GoogleIdentityProvider } from './auth/google.js';
 import { createStorage } from './services/storage.js';
-import { AnthropicAiClient } from './services/ai.js';
-import { TwelveDataProvider } from './services/marketData.js';
 import { createApp } from './app.js';
 import { AppError } from './lib/errors.js';
 
@@ -27,15 +24,12 @@ if (process.env.RUN_MIGRATIONS_ON_START === 'true') {
   log.info('migrations and reference data applied');
 }
 
-const { app } = createApp({
+const { app, ctx } = createApp({
   env,
   db,
   pool,
   log,
-  identityProvider: new GoogleIdentityProvider(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET, env.GOOGLE_CALLBACK_URL),
   storage: createStorage(env),
-  aiClient: env.AI_API_KEY ? new AnthropicAiClient(env.AI_API_KEY, env.AI_MODEL) : null,
-  marketDataProvider: env.MARKET_DATA_API_KEY ? new TwelveDataProvider(env.MARKET_DATA_API_KEY, log) : null,
   reportError: env.SENTRY_DSN
     ? (err) => {
         if (!(err instanceof AppError) || err.status >= 500) Sentry.captureException(err);
@@ -43,14 +37,23 @@ const { app } = createApp({
     : undefined,
 });
 
+await ctx.runtime.ready();
+
+// First-run bootstrap: create an owner for the control panel if none exists yet.
+if (env.ADMIN_BOOTSTRAP_EMAIL && env.ADMIN_BOOTSTRAP_PASSWORD && (await ctx.admin.count()) === 0) {
+  const owner = await ctx.admin.create({ email: env.ADMIN_BOOTSTRAP_EMAIL, name: 'Owner', password: env.ADMIN_BOOTSTRAP_PASSWORD, role: 'owner' });
+  await ctx.admin.audit(null, null, 'admin.bootstrapped', owner.email);
+  log.warn({ email: owner.email }, 'control-panel owner bootstrapped — remove ADMIN_BOOTSTRAP_PASSWORD from the environment now');
+} else if ((await ctx.admin.count()) === 0) {
+  log.warn('no control-panel administrator exists — run `npm run admin:create` or set ADMIN_BOOTSTRAP_EMAIL/ADMIN_BOOTSTRAP_PASSWORD');
+}
+
 const server = app.listen(env.PORT, () => {
   log.info(
     {
       port: env.PORT,
       env: env.NODE_ENV,
-      googleAuth: Boolean(env.GOOGLE_CLIENT_ID),
-      ai: Boolean(env.AI_API_KEY),
-      marketData: Boolean(env.MARKET_DATA_API_KEY),
+      ...(({ googleAuth, ai, marketData }) => ({ googleAuth, ai, marketData }))(ctx.features()),
       storage: env.STORAGE_PROVIDER,
       devAuthBypass: env.DEV_AUTH_BYPASS,
     },
@@ -60,6 +63,7 @@ const server = app.listen(env.PORT, () => {
 
 const shutdown = (signal: string) => {
   log.info({ signal }, 'shutting down');
+  ctx.runtime.stop();
   server.close(() => {
     pool.end().finally(() => process.exit(0));
   });

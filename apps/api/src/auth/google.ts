@@ -34,27 +34,36 @@ const GOOGLE_ISSUERS = ['https://accounts.google.com', 'accounts.google.com'];
  * state (CSRF) and nonce (replay) protection. The ID token signature is verified
  * against Google's published JWKS; issuer, audience, expiry and nonce are enforced.
  */
+export interface GoogleConfig {
+  enabled: boolean;
+  clientId?: string;
+  clientSecret?: string;
+  callbackUrl?: string;
+}
+
 export class GoogleIdentityProvider implements IdentityProvider {
   private readonly jwks = createRemoteJWKSet(new URL(GOOGLE_JWKS));
-  constructor(
-    private readonly clientId: string | undefined,
-    private readonly clientSecret: string | undefined,
-    private readonly callbackUrl: string | undefined,
-  ) {}
+  /**
+   * @param config read on every request, so credentials saved in the control panel apply
+   *               immediately without a restart.
+   */
+  constructor(private readonly config: () => GoogleConfig) {}
 
   get configured(): boolean {
-    return Boolean(this.clientId && this.clientSecret && this.callbackUrl);
+    const c = this.config();
+    return Boolean(c.enabled && c.clientId && c.clientSecret && c.callbackUrl);
   }
 
   createAuthorizationRequest(): AuthorizationRequest {
     if (!this.configured) throw new Error('Google OAuth is not configured');
+    const c = this.config();
     const state = randomToken(32);
     const nonce = randomToken(32);
     const codeVerifier = randomToken(48);
     const codeChallenge = createHash('sha256').update(codeVerifier).digest('base64url');
     const params = new URLSearchParams({
-      client_id: this.clientId!,
-      redirect_uri: this.callbackUrl!,
+      client_id: c.clientId!,
+      redirect_uri: c.callbackUrl!,
       response_type: 'code',
       scope: 'openid email profile',
       state,
@@ -68,14 +77,15 @@ export class GoogleIdentityProvider implements IdentityProvider {
   }
 
   async exchangeCode(code: string, codeVerifier: string, expectedNonce: string): Promise<VerifiedIdentity> {
+    const c = this.config();
     const res = await fetch(GOOGLE_TOKEN_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
       body: new URLSearchParams({
         code,
-        client_id: this.clientId!,
-        client_secret: this.clientSecret!,
-        redirect_uri: this.callbackUrl!,
+        client_id: c.clientId!,
+        client_secret: c.clientSecret!,
+        redirect_uri: c.callbackUrl!,
         grant_type: 'authorization_code',
         code_verifier: codeVerifier,
       }),
@@ -89,7 +99,7 @@ export class GoogleIdentityProvider implements IdentityProvider {
     if (!tokens.id_token) throw new Error('Google token response did not include an id_token');
     const { payload } = await jwtVerify(tokens.id_token, this.jwks, {
       issuer: GOOGLE_ISSUERS,
-      audience: this.clientId!,
+      audience: c.clientId!,
       clockTolerance: 30,
     });
     if (payload.nonce !== expectedNonce) throw new Error('ID token nonce mismatch');
@@ -103,5 +113,37 @@ export class GoogleIdentityProvider implements IdentityProvider {
       name: typeof payload.name === 'string' ? payload.name : null,
       picture: typeof payload.picture === 'string' ? payload.picture : null,
     };
+  }
+}
+
+/**
+ * Checks Google OAuth client credentials without a user: exchanging a deliberately invalid
+ * authorization code returns `invalid_grant` when the client id/secret are valid and
+ * `invalid_client` when they are not. No account or token is created.
+ */
+export async function testGoogleCredentials(c: GoogleConfig): Promise<{ ok: boolean; message: string }> {
+  if (!c.clientId || !c.clientSecret || !c.callbackUrl) return { ok: false, message: 'Client ID, client secret and redirect URI are all required.' };
+  try {
+    const res = await fetch(GOOGLE_TOKEN_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
+      body: new URLSearchParams({
+        code: 'journzey-credential-check',
+        client_id: c.clientId,
+        client_secret: c.clientSecret,
+        redirect_uri: c.callbackUrl,
+        grant_type: 'authorization_code',
+      }),
+      signal: AbortSignal.timeout(10_000),
+    });
+    const body = (await res.json().catch(() => ({}))) as { error?: string };
+    if (body.error === 'invalid_grant') {
+      return { ok: true, message: 'Google accepted the client ID and secret. Make sure the redirect URI is registered on the OAuth client, then try “Continue with Google”.' };
+    }
+    if (body.error === 'invalid_client' || body.error === 'unauthorized_client') return { ok: false, message: 'Google rejected the client ID or secret (invalid_client).' };
+    if (body.error === 'redirect_uri_mismatch') return { ok: false, message: 'The redirect URI is not registered on this OAuth client.' };
+    return { ok: false, message: `Unexpected response from Google (${body.error ?? `HTTP ${res.status}`}).` };
+  } catch (err) {
+    return { ok: false, message: `Could not reach Google: ${(err as Error).message}` };
   }
 }

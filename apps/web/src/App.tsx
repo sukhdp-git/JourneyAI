@@ -5,6 +5,8 @@ import { useMe, qk } from './lib/queries';
 import { I18nProvider } from './lib/i18n';
 import { Spinner, ToastProvider } from './components/ui';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { MaintenanceScreen } from './components/SiteChrome';
+import { useSite } from './lib/site';
 
 const Landing = lazy(() => import('./pages/Landing'));
 const Login = lazy(() => import('./pages/Login'));
@@ -48,14 +50,32 @@ function ThemeSync() {
   return null;
 }
 
+/** While maintenance mode is on, everything except the legal pages shows the maintenance notice. */
+function MaintenanceGate({ children }: { children: ReactNode }) {
+  const site = useSite();
+  const location = useLocation();
+  const legal = ['/terms', '/privacy', '/security', '/disclaimer'].includes(location.pathname);
+  if (site.data?.maintenance.enabled && !legal) return <MaintenanceScreen message={site.data.maintenance.message} />;
+  return <>{children}</>;
+}
+
 export function App() {
   const { data } = useMe();
+  const site = useSite();
+  useEffect(() => {
+    if (site.data?.name) document.title = `${site.data.name} — ${site.data.tagline || 'Trading Journal'}`;
+  }, [site.data?.name, site.data?.tagline]);
   const qc = useQueryClient();
   useEffect(() => {
     // Any 401 from the API means the server-side session ended: drop cached user data.
     const onUnauth = () => qc.setQueryData(qk.me, null);
+    const onMaintenance = () => void qc.invalidateQueries({ queryKey: ['site'] });
+    window.addEventListener('journzey:maintenance', onMaintenance);
     window.addEventListener('journzey:unauthenticated', onUnauth);
-    return () => window.removeEventListener('journzey:unauthenticated', onUnauth);
+    return () => {
+      window.removeEventListener('journzey:unauthenticated', onUnauth);
+      window.removeEventListener('journzey:maintenance', onMaintenance);
+    };
   }, [qc]);
 
   return (
@@ -66,6 +86,7 @@ export function App() {
           Skip to content
         </a>
         <ErrorBoundary>
+        <MaintenanceGate>
         <Suspense fallback={<Spinner />}>
           <Routes>
             <Route path="/" element={<Landing />} />
@@ -105,6 +126,7 @@ export function App() {
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
+        </MaintenanceGate>
         </ErrorBoundary>
       </ToastProvider>
     </I18nProvider>

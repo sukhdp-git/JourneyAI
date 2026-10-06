@@ -133,19 +133,25 @@ const DEMO_LEVELS: Record<string, [string, string]> = {
 };
 
 export class MarketDataService {
-  private cache: { at: number; value: MarketQuotesResponse } | null = null;
+  private cache: { at: number; value: MarketQuotesResponse; provider: MarketDataProvider } | null = null;
   constructor(
-    readonly provider: MarketDataProvider | null,
+    /** Resolved per request so a key saved in the control panel applies without a restart. */
+    private readonly providerSource: () => MarketDataProvider | null,
     private readonly log: Logger,
     private readonly ttlMs = 60_000,
   ) {}
+
+  get provider(): MarketDataProvider | null {
+    return this.providerSource();
+  }
 
   get configured() {
     return this.provider !== null;
   }
 
   async quotes(): Promise<MarketQuotesResponse> {
-    if (!this.provider) {
+    const provider = this.provider;
+    if (!provider) {
       return {
         source: 'demo',
         provider: null,
@@ -155,19 +161,32 @@ export class MarketDataService {
         }),
       };
     }
-    if (this.cache && Date.now() - this.cache.at < this.ttlMs) return this.cache.value;
+    if (this.cache && this.cache.provider === provider && Date.now() - this.cache.at < this.ttlMs) return this.cache.value;
     try {
-      const quotes = await this.provider.quotes(TICKER_SYMBOLS);
-      const value: MarketQuotesResponse = { source: 'live', provider: this.provider.name, quotes };
-      this.cache = { at: Date.now(), value };
+      const quotes = await provider.quotes(TICKER_SYMBOLS);
+      const value: MarketQuotesResponse = { source: 'live', provider: provider.name, quotes };
+      this.cache = { at: Date.now(), value, provider };
       return value;
     } catch (err) {
       this.log.warn({ err: (err as Error).message }, 'market data fetch failed');
       return {
         source: 'live',
-        provider: this.provider.name,
+        provider: provider.name,
         quotes: TICKER_SYMBOLS.map((s) => ({ symbol: s, displayName: getInstrument(s)?.displayName ?? s, price: null, change: null, changePercent: null, asOf: null, error: 'Market data temporarily unavailable' })),
       };
     }
+  }
+}
+
+/** Live check used by the control panel's "Test connection" button. */
+export async function testTwelveDataKey(apiKey: string, log: Logger): Promise<{ ok: boolean; message: string }> {
+  try {
+    const res = await fetch(`https://api.twelvedata.com/quote?symbol=EUR/USD&apikey=${encodeURIComponent(apiKey)}`, { signal: AbortSignal.timeout(8000) });
+    const body = (await res.json().catch(() => ({}))) as { status?: string; code?: number; message?: string; close?: string };
+    if (body.close) return { ok: true, message: `Connected to Twelve Data (EUR/USD ${body.close}).` };
+    log.debug({ code: body.code }, 'twelve data test failed');
+    return { ok: false, message: body.code === 401 ? 'Twelve Data rejected the API key.' : `Twelve Data error: ${body.message ?? `HTTP ${res.status}`}` };
+  } catch (err) {
+    return { ok: false, message: `Could not reach Twelve Data: ${(err as Error).message}` };
   }
 }

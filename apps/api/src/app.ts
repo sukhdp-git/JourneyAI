@@ -20,6 +20,8 @@ import { accountsRouter, checklistRouter, journalRouter, strategiesRouter } from
 import { accountRouter, demoRouter, onboardingRouter, settingsRouter } from './routes/user.routes.js';
 import { aiRouter, brokersRouter, marketRouter, webhooksRouter } from './routes/integrations.routes.js';
 import { healthRouter } from './routes/health.routes.js';
+import { adminIpAllowlist, controlPanelRouter, ADMIN_API_PREFIX } from './routes/controlPanel.routes.js';
+import type { SiteConfig } from '@journzey/shared';
 
 export interface CreateAppOptions extends AppDeps {
   reportError?: (err: unknown) => void;
@@ -97,6 +99,14 @@ export function createApp(opts: CreateAppOptions) {
   );
   app.use(express.urlencoded({ extended: false, limit: '64kb' }));
 
+  // Runtime settings (control panel) must be loaded before any request is served.
+  app.use((_req, _res, next) => {
+    ctx.runtime.ready().then(() => next(), next);
+  });
+
+  // Control-panel API: own cookie + session + CSRF, mounted before (and isolated from) trader sessions.
+  app.use(ADMIN_API_PREFIX, controlPanelRouter(ctx, opts.pool, allowedOrigins));
+
   const PgStore = connectPgSimple(session);
   app.use(
     session({
@@ -123,8 +133,35 @@ export function createApp(opts: CreateAppOptions) {
 
   const v1 = express.Router();
   v1.use(healthRouter(ctx));
+
+  /** Public, non-secret site configuration (branding, maintenance, announcement, feature switches). */
+  v1.get('/site', (_req, res) => {
+    const site = ctx.runtime.site();
+    const f = ctx.features();
+    const body: SiteConfig = {
+      ...site,
+      features: { aiCoach: f.aiCoach, brokerSync: f.brokerSync, demoMode: f.demoMode, marketTicker: f.marketTicker, googleAuth: f.googleAuth },
+    };
+    res.setHeader('Cache-Control', 'no-cache');
+    res.json(body);
+  });
+
+  // Maintenance mode (control panel): the trader API returns 503; health, site config and logout keep working.
+  const MAINTENANCE_ALLOW = ['/health', '/ready', '/site', '/auth/csrf', '/auth/providers', '/auth/logout'];
+  v1.use((req, res, next) => {
+    const m = ctx.runtime.site().maintenance;
+    if (!m.enabled || MAINTENANCE_ALLOW.includes(req.path)) return next();
+    res.setHeader('Retry-After', '300');
+    res.status(503).json({ error: { code: 'MAINTENANCE', message: m.message } });
+  });
   v1.use('/auth', authRouter(ctx, limiters));
-  v1.use('/webhooks', limiters.webhook, webhooksRouter(ctx));
+  const requireFeature =
+    (flag: 'aiCoach' | 'brokerSync' | 'demoMode' | 'marketTicker', label: string): express.RequestHandler =>
+    (_req, res, next) => {
+      if (ctx.runtime.features()[flag]) return next();
+      res.status(403).json({ error: { code: 'FEATURE_DISABLED', message: `${label} is currently disabled by the site administrator.` } });
+    };
+  v1.use('/webhooks', limiters.webhook, requireFeature('brokerSync', 'Broker sync'), webhooksRouter(ctx));
 
   const authed = express.Router();
   authed.use(requireAuth(ctx.db));
@@ -139,14 +176,36 @@ export function createApp(opts: CreateAppOptions) {
   authed.use('/settings', settingsRouter(ctx));
   authed.use('/account', accountRouter(ctx));
   authed.use('/onboarding', onboardingRouter(ctx));
-  authed.use('/demo', demoRouter(ctx));
-  authed.use('/ai', aiRouter(ctx, limiters));
+  authed.use('/demo', requireFeature('demoMode', 'Demo data'), demoRouter(ctx));
+  authed.use('/ai', requireFeature('aiCoach', 'The AI Coach'), aiRouter(ctx, limiters));
   authed.use('/market', marketRouter(ctx));
-  authed.use('/broker-connections', brokersRouter(ctx, limiters));
+  authed.use('/broker-connections', requireFeature('brokerSync', 'Broker sync'), brokersRouter(ctx, limiters));
   v1.use(authed);
 
   app.use('/api/v1', v1);
   app.use('/api', notFoundHandler);
+
+  // Control panel UI at /control-panel/ (separate app bundle; never served from public routes).
+  if (env.ADMIN_DIST_DIR) {
+    const adminDist = path.resolve(env.ADMIN_DIST_DIR);
+    if (existsSync(path.join(adminDist, 'index.html'))) {
+      const cp = express.Router();
+      cp.use(adminIpAllowlist(env.ADMIN_IP_ALLOWLIST));
+      cp.use((_req, res, next) => {
+        res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+        next();
+      });
+      cp.use(express.static(adminDist, { index: false, maxAge: '1h', redirect: false }));
+      cp.get('*', (_req, res) => {
+        res.setHeader('Cache-Control', 'no-store');
+        res.sendFile(path.join(adminDist, 'index.html'));
+      });
+      app.get('/control-panel', (_req, res) => res.redirect(301, '/control-panel/'));
+      app.use('/control-panel', cp);
+    } else {
+      ctx.log.warn({ adminDist }, 'ADMIN_DIST_DIR set but index.html not found; control panel UI not served');
+    }
+  }
 
   // Optional: serve the built web app from the same origin (single-container deployments).
   if (env.WEB_DIST_DIR) {
@@ -156,7 +215,7 @@ export function createApp(opts: CreateAppOptions) {
         if (p.includes(`${path.sep}assets${path.sep}`)) res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
       } }));
       app.get('*', (req, res, next) => {
-        if (req.path.startsWith('/api/')) return next();
+        if (req.path.startsWith('/api/') || req.path.startsWith('/control-panel')) return next();
         res.setHeader('Cache-Control', 'no-cache');
         res.sendFile(path.join(dist, 'index.html'));
       });

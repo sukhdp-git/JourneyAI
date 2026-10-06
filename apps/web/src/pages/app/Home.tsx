@@ -168,7 +168,7 @@ export default function Home() {
       <PageHeader title="Home Hub" subtitle="Terminal desk · market feeds · discipline" demo={dash.data?.scope.demo} />
       {dash.data && <TiltPanel tilt={dash.data.tilt} remainingBudget={dash.data.today.remainingDailyBudget} currency={dash.data.scope.currency} />}
       <div className="space-y-4">
-        <MarketTicker />
+        {me?.features.marketTicker !== false && <MarketTicker />}
         <Panel title="Execution desk">
           <QuickTradeBar autoFocus={isDesktop} />
         </Panel>

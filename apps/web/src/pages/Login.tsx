@@ -17,6 +17,8 @@ const ERRORS: Record<string, string> = {
   email_unverified: 'Your Google account email is not verified.',
   account_conflict: 'An account with this email already exists under a different sign-in identity.',
   session: 'Your session could not be verified. Please sign in again.',
+  registration_closed: 'New sign-ups are currently closed. Existing members can still sign in.',
+  account_suspended: 'This account has been suspended. Please contact support.',
 };
 
 export default function Login() {

@@ -77,7 +77,10 @@ export async function api<T>(method: Method, path: string, opts: RequestOptions 
       await fetchCsrf();
       return api<T>(method, path, opts, true);
     }
-    if (res.status === 401 && typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('journzey:unauthenticated'));
+    if (typeof window !== 'undefined') {
+      if (res.status === 401 || err?.code === 'ACCOUNT_SUSPENDED') window.dispatchEvent(new CustomEvent('journzey:unauthenticated'));
+      if (err?.code === 'MAINTENANCE') window.dispatchEvent(new CustomEvent('journzey:maintenance'));
+    }
     throw new ApiError(res.status, err?.code ?? 'HTTP_ERROR', err?.message ?? `Request failed (${res.status})`, err?.fields, err?.requestId);
   }
   return payload as T;

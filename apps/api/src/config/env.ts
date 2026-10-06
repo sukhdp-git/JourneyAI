@@ -42,6 +42,15 @@ const envSchema = z.object({
   UPLOAD_DIR: z.string().default('./uploads'),
   WEB_DIST_DIR: optionalString,
   SENTRY_DSN: optionalString,
+  /** Built control-panel app (apps/admin/dist) served at /control-panel/. */
+  ADMIN_DIST_DIR: optionalString,
+  /** Optional comma-separated client IPs allowed to reach /control-panel and its API. */
+  ADMIN_IP_ALLOWLIST: optionalString,
+  ADMIN_SESSION_IDLE_MINUTES: z.coerce.number().int().min(5).max(24 * 60).default(30),
+  ADMIN_SESSION_MAX_HOURS: z.coerce.number().int().min(1).max(72).default(12),
+  /** First-run bootstrap: creates this owner account if no administrator exists yet. */
+  ADMIN_BOOTSTRAP_EMAIL: optionalString,
+  ADMIN_BOOTSTRAP_PASSWORD: optionalString,
   BINANCE_API_BASE: z.string().url().default('https://api.binance.com'),
 });
 

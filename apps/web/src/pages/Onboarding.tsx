@@ -38,7 +38,7 @@ export default function Onboarding() {
     maxWeeklyLoss: '900',
     defaultTargetRr: '2',
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
-    loadDemoData: true,
+    loadDemoData: me?.features.demoMode !== false,
   });
   const set = <K extends keyof OnboardingInput>(k: K, v: OnboardingInput[K]) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -209,10 +209,10 @@ export default function Onboarding() {
             <fieldset>
               <legend className="label">Start with</legend>
               <div className="mt-2 grid gap-2">
-                <button type="button" aria-pressed={form.loadDemoData} onClick={() => set('loadDemoData', true)} className={clsx('rounded-md border p-3 text-left text-sm', form.loadDemoData ? 'border-accent bg-accent/10' : 'border-line')}>
+                {me?.features.demoMode !== false && <button type="button" aria-pressed={form.loadDemoData} onClick={() => set('loadDemoData', true)} className={clsx('rounded-md border p-3 text-left text-sm', form.loadDemoData ? 'border-accent bg-accent/10' : 'border-line')}>
                   <span className="font-semibold">Demo Mode</span>
                   <span className="block text-2xs text-muted">Adds a separate “Demo Account” with 42 sample trades (Aug–Oct 2026) and 13 journal entries, clearly labelled DEMO DATA and kept out of your real analytics.</span>
-                </button>
+                </button>}
                 <button type="button" aria-pressed={!form.loadDemoData} onClick={() => set('loadDemoData', false)} className={clsx('rounded-md border p-3 text-left text-sm', !form.loadDemoData ? 'border-accent bg-accent/10' : 'border-line')}>
                   <span className="font-semibold">Start With Empty Account</span>
                   <span className="block text-2xs text-muted">Only your own data. You can load demo data later from Settings.</span>

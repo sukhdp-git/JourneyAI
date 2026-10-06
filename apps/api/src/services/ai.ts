@@ -27,6 +27,22 @@ export interface AiClient {
   complete(req: CompletionRequest): Promise<CompletionResult>;
 }
 
+/** Minimal live request used by the control panel's "Test connection" button. */
+export async function testAnthropicKey(apiKey: string, model: string): Promise<{ ok: boolean; message: string }> {
+  try {
+    const client = new Anthropic({ apiKey, maxRetries: 0, timeout: 30_000 });
+    const res = await client.messages.create({ model, max_tokens: 16, output_config: { effort: 'low' }, messages: [{ role: 'user', content: 'Reply with OK.' }] });
+    return { ok: true, message: `Connected to Anthropic (${res.model}).` };
+  } catch (err) {
+    if (err instanceof Anthropic.AuthenticationError) return { ok: false, message: 'Anthropic rejected the API key (401).' };
+    if (err instanceof Anthropic.PermissionDeniedError) return { ok: false, message: 'The API key does not have access to this model (403).' };
+    if (err instanceof Anthropic.NotFoundError) return { ok: false, message: `Model "${model}" was not found (404).` };
+    if (err instanceof Anthropic.RateLimitError) return { ok: true, message: 'Key accepted but rate-limited right now (429).' };
+    if (err instanceof Anthropic.APIError) return { ok: false, message: `Anthropic API error ${err.status ?? ''}: ${err.message}`.trim() };
+    return { ok: false, message: `Could not reach Anthropic: ${(err as Error).message}` };
+  }
+}
+
 /** Claude (Anthropic API) implementation. The API key never leaves the server. */
 export class AnthropicAiClient implements AiClient {
   private readonly client: Anthropic;
@@ -88,17 +104,19 @@ export class AiCoachService {
   constructor(
     private readonly db: Database,
     private readonly analytics: AnalyticsService,
-    private readonly client: AiClient | null,
+    /** Resolved per request so keys saved in the control panel apply without a restart. */
+    private readonly clientSource: () => AiClient | null,
     private readonly log: Logger,
   ) {}
 
   get configured() {
-    return this.client !== null;
+    return this.clientSource() !== null;
   }
 
   private requireClient(): AiClient {
-    if (!this.client) throw notConfigured('AI_NOT_CONFIGURED', 'AI Coach requires server configuration.');
-    return this.client;
+    const client = this.clientSource();
+    if (!client) throw notConfigured('AI_NOT_CONFIGURED', 'AI Coach requires server configuration.');
+    return client;
   }
 
   async conversations(userId: string): Promise<AiConversationDto[]> {

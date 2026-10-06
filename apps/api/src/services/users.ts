@@ -14,7 +14,7 @@ import {
   userSettings,
   users,
 } from '../db/schema.js';
-import { conflict, notFound } from '../lib/errors.js';
+import { AppError, conflict, notFound } from '../lib/errors.js';
 import type { VerifiedIdentity } from '../auth/google.js';
 import { DemoService } from './demo.js';
 
@@ -71,7 +71,7 @@ export class UserService {
    * Google subject id. An existing account with the same email but a different subject is
    * refused rather than silently merged (prevents account takeover via email reuse).
    */
-  async upsertFromGoogle(raw: VerifiedIdentity): Promise<{ user: UserRow; created: boolean }> {
+  async upsertFromGoogle(raw: VerifiedIdentity, opts: { allowCreate: boolean } = { allowCreate: true }): Promise<{ user: UserRow; created: boolean }> {
     const identity = { ...raw, email: raw.email.trim().toLowerCase() };
     return this.db.transaction(async (tx) => {
       const [bySubject] = await tx.select().from(users).where(eq(users.googleSubjectId, identity.subject)).limit(1);
@@ -96,6 +96,7 @@ export class UserService {
         .where(sql`lower(${users.email}) = ${identity.email.toLowerCase()}`)
         .limit(1);
       if (byEmail) throw conflict('An account with this email already exists under a different sign-in identity');
+      if (!opts.allowCreate) throw new AppError(403, 'REGISTRATION_CLOSED', 'New sign-ups are currently closed');
       const [user] = await tx
         .insert(users)
         .values({
@@ -114,7 +115,7 @@ export class UserService {
   }
 
   /** Local development-only identity (DEV_AUTH_BYPASS). Never available in production. */
-  async upsertDevUser(email: string, name: string): Promise<{ user: UserRow; created: boolean }> {
+  async upsertDevUser(email: string, name: string, opts: { allowCreate: boolean } = { allowCreate: true }): Promise<{ user: UserRow; created: boolean }> {
     return this.db.transaction(async (tx) => {
       const [existing] = await tx.select().from(users).where(sql`lower(${users.email}) = ${email.toLowerCase()}`).limit(1);
       if (existing) {
@@ -122,6 +123,7 @@ export class UserService {
         const [u] = await tx.update(users).set({ lastLoginAt: new Date() }).where(eq(users.id, existing.id)).returning();
         return { user: u!, created: false };
       }
+      if (!opts.allowCreate) throw new AppError(403, 'REGISTRATION_CLOSED', 'New sign-ups are currently closed');
       const [user] = await tx
         .insert(users)
         .values({ email: email.toLowerCase(), name, authProvider: 'dev', emailVerified: false, lastLoginAt: new Date() })
@@ -180,7 +182,7 @@ export class UserService {
   }
 
   /** Onboarding is atomic: settings, first account, playbooks and optional demo data. */
-  async completeOnboarding(userId: string, raw: OnboardingInput) {
+  async completeOnboarding(userId: string, raw: OnboardingInput, opts: { demoAllowed: boolean } = { demoAllowed: true }) {
     const input = onboardingSchema.parse(raw);
     return this.db.transaction(async (tx) => {
       await tx.insert(userSettings).values({ userId }).onConflictDoNothing();
@@ -210,7 +212,7 @@ export class UserService {
         })
         .returning();
       await copyStrategyTemplates(tx, userId);
-      if (input.loadDemoData) {
+      if (input.loadDemoData && opts.demoAllowed) {
         await new DemoService(this.db).createDemoData(tx, userId);
         await tx.update(userSettings).set({ activeAccountScope: 'demo' }).where(eq(userSettings.userId, userId));
       }

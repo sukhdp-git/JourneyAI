@@ -67,9 +67,27 @@ export interface MeResponse {
 export interface FeatureFlags {
   googleAuth: boolean;
   devLogin: boolean;
+  /** AI Coach is enabled and has a key. */
   ai: boolean;
+  /** Live market data is enabled and has a key. */
   marketData: boolean;
   storage: 'local' | 's3';
+  /** Product switches controlled from the control panel. */
+  aiCoach: boolean;
+  brokerSync: boolean;
+  demoMode: boolean;
+  marketTicker: boolean;
+}
+
+/** Public, non-secret site configuration controlled from the control panel. */
+export interface SiteConfig {
+  name: string;
+  tagline: string;
+  supportEmail: string | null;
+  registrationOpen: boolean;
+  maintenance: { enabled: boolean; message: string };
+  announcement: { enabled: boolean; text: string; tone: 'info' | 'success' | 'warning' };
+  features: { aiCoach: boolean; brokerSync: boolean; demoMode: boolean; marketTicker: boolean; googleAuth: boolean };
 }
 
 export interface TradingAccountDto {

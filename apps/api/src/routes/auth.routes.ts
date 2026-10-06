@@ -77,10 +77,15 @@ export function authRouter(ctx: AppContext, limiters: { auth: import('express').
       }
       let result;
       try {
-        result = await ctx.users.upsertFromGoogle(identity);
+        result = await ctx.users.upsertFromGoogle(identity, { allowCreate: ctx.runtime.site().registrationOpen });
       } catch (err) {
         if (err instanceof AppError && err.status === 409) return res.redirect(303, loginError('account_conflict'));
+        if (err instanceof AppError && err.code === 'REGISTRATION_CLOSED') return res.redirect(303, loginError('registration_closed'));
         throw err;
+      }
+      if (result.user.suspendedAt) {
+        await audit(ctx.db, req, 'auth.login_failed', result.user.id, { reason: 'suspended' });
+        return res.redirect(303, loginError('account_suspended'));
       }
       await establishSession(req, result.user.id);
       if (result.created) await audit(ctx.db, req, 'user.created', result.user.id, { provider: 'google' });
@@ -96,7 +101,8 @@ export function authRouter(ctx: AppContext, limiters: { auth: import('express').
     ah(async (req, res) => {
       if (!ctx.features().devLogin) throw notFound();
       const input = parse(devLoginSchema, req.body);
-      const { user, created } = await ctx.users.upsertDevUser(input.email, input.name);
+      const { user, created } = await ctx.users.upsertDevUser(input.email, input.name, { allowCreate: ctx.runtime.site().registrationOpen });
+      if (user.suspendedAt) throw new AppError(403, 'ACCOUNT_SUSPENDED', 'This account has been suspended. Contact support.');
       await establishSession(req, user.id);
       if (created) await audit(ctx.db, req, 'user.created', user.id, { provider: 'dev' });
       await audit(ctx.db, req, 'auth.dev_login', user.id);

@@ -98,7 +98,15 @@ In Google Cloud Console → Credentials → your Web client:
 
 The SPA and API share one origin, so CORS is effectively closed: only `APP_URL` (plus any `CORS_ORIGINS`) may make credentialed requests, and CSRF checks enforce the same allow-list. Add origins to `CORS_ORIGINS` only if you serve the SPA from another origin.
 
-### 8. Verify the deployment
+### 8. Control panel
+
+1. Create the first owner, either as a one-off command (`npm run admin:create -- --email you@example.com --name "You"` with `DATABASE_URL` and `ENCRYPTION_KEY` set), or by setting `ADMIN_BOOTSTRAP_EMAIL`/`ADMIN_BOOTSTRAP_PASSWORD` for the first boot and removing the password afterwards.
+2. Sign in at `https://journzey.ai/control-panel/login` and enable two-factor authentication under *Account & security*.
+3. Enter the Google, Anthropic and Twelve Data keys under *Integrations & API keys* and use **Test connection**. Environment variables remain as a fallback.
+4. Recommended: restrict the panel with `ADMIN_IP_ALLOWLIST` (your office/VPN egress IPs), or with your platform's IP rules or Cloudflare Access on `/control-panel*` and `/api/v1/admin*`.
+5. **Back up `ENCRYPTION_KEY`.** Keys saved in the panel are encrypted with it.
+
+### 9. Verify the deployment
 
 ```bash
 curl -s https://journzey.ai/api/v1/health      # {"status":"ok",...}

@@ -41,6 +41,8 @@ export const users = pgTable(
     authProvider: varchar('auth_provider', { length: 20 }).notNull().default('google'),
     emailVerified: boolean('email_verified').notNull().default(false),
     onboardedAt: ts('onboarded_at'),
+    /** Set by a control-panel admin; suspended users cannot sign in or use the API. */
+    suspendedAt: ts('suspended_at'),
     createdAt: ts('created_at').notNull().defaultNow(),
     updatedAt: ts('updated_at').notNull().defaultNow(),
     lastLoginAt: ts('last_login_at'),
@@ -388,3 +390,58 @@ export const userSessions = pgTable(
   (t) => [index('IDX_user_sessions_expire').on(t.expire)],
 );
 
+
+/* ------------------------------------------------------------------ */
+/* Control panel (admin portal)                                         */
+/* ------------------------------------------------------------------ */
+
+/** Control-panel operators. Completely separate from trader accounts (users). */
+export const adminUsers = pgTable(
+  'admin_users',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    email: varchar('email', { length: 320 }).notNull(),
+    name: varchar('name', { length: 120 }).notNull(),
+    /** Argon2id hash. Plaintext passwords are never stored or logged. */
+    passwordHash: text('password_hash').notNull(),
+    role: varchar('role', { length: 12 }).notNull().default('admin'),
+    /** AES-256-GCM encrypted TOTP secret when two-factor authentication is enabled. */
+    totpSecretEncrypted: text('totp_secret_encrypted'),
+    totpEnabled: boolean('totp_enabled').notNull().default(false),
+    failedLogins: integer('failed_logins').notNull().default(0),
+    lockedUntil: ts('locked_until'),
+    disabled: boolean('disabled').notNull().default(false),
+    lastLoginAt: ts('last_login_at'),
+    passwordChangedAt: ts('password_changed_at').notNull().defaultNow(),
+    createdAt: ts('created_at').notNull().defaultNow(),
+    updatedAt: ts('updated_at').notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex('admin_users_email_lower_uq').on(sql`lower(${t.email})`), check('admin_users_role_chk', sql`${t.role} IN ('owner','admin','viewer')`)],
+);
+
+/** Runtime configuration edited from the control panel. Secret values are AES-256-GCM encrypted. */
+export const appSettings = pgTable('app_settings', {
+  key: varchar('key', { length: 80 }).primaryKey(),
+  value: jsonb('value').$type<unknown>(),
+  encryptedValue: text('encrypted_value'),
+  updatedBy: uuid('updated_by').references(() => adminUsers.id, { onDelete: 'set null' }),
+  updatedAt: ts('updated_at').notNull().defaultNow(),
+});
+
+export const adminAuditLogs = pgTable(
+  'admin_audit_logs',
+  {
+    id: bigserial('id', { mode: 'number' }).primaryKey(),
+    adminId: uuid('admin_id').references(() => adminUsers.id, { onDelete: 'set null' }),
+    adminEmail: varchar('admin_email', { length: 320 }),
+    action: varchar('action', { length: 64 }).notNull(),
+    target: varchar('target', { length: 200 }),
+    ip: varchar('ip', { length: 64 }),
+    userAgent: varchar('user_agent', { length: 400 }),
+    metadata: jsonb('metadata').$type<Record<string, unknown>>().notNull().default(sql`'{}'::jsonb`),
+    createdAt: ts('created_at').notNull().defaultNow(),
+  },
+  (t) => [index('admin_audit_created_idx').on(t.createdAt.desc()), index('admin_audit_admin_idx').on(t.adminId, t.createdAt.desc())],
+);
+
+export type AdminUserRow = typeof adminUsers.$inferSelect;

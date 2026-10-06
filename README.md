@@ -28,6 +28,7 @@ All authoritative data lives in PostgreSQL behind an authenticated, per-user-iso
 14. [Production build](#14-production-build)
 15. [Deployment](#15-deployment)
 16. [Integrations: AI, market data, storage, brokers](#16-integrations)
+17. [Control panel (admin portal)](#control-panel-admin-portal)
 17. [Security model](#17-security-model)
 18. [API reference](#18-api-reference)
 19. [Project layout](#19-project-layout)
@@ -62,6 +63,7 @@ All authoritative data lives in PostgreSQL behind an authenticated, per-user-iso
 journzey-ai/
 ├── apps/
 │   ├── web/                 React 18 + TypeScript + Vite + Tailwind + TanStack Query + React Router
+│   ├── admin/               Control panel — separate React app served at /control-panel/
 │   └── api/                 Node.js + TypeScript + Express REST API (/api/v1) + Drizzle ORM
 │       └── src/
 │           ├── routes/      HTTP layer (controllers) per domain
@@ -133,7 +135,10 @@ All variables are documented inline in [`.env.example`](.env.example). The API v
 | `ENCRYPTION_KEY` | ✅ | 32 random bytes, base64; AES-256-GCM key for broker credentials and webhook secrets |
 | `APP_URL` | ✅ | Browser origin of the web app; the only allowed CORS/CSRF origin (plus `CORS_ORIGINS`) |
 | `API_URL` | ✅ | Public API base incl. `/api` (used to build webhook URLs) |
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_CALLBACK_URL` | for sign-in | Google OAuth (§9) |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_CALLBACK_URL` | for sign-in | Google OAuth (§9). Can instead be entered in the control panel |
+| `ADMIN_BOOTSTRAP_EMAIL` / `ADMIN_BOOTSTRAP_PASSWORD` | first run | Creates the first control-panel owner if none exists |
+| `ADMIN_IP_ALLOWLIST`, `ADMIN_SESSION_IDLE_MINUTES`, `ADMIN_SESSION_MAX_HOURS` | optional | Control-panel hardening |
+| `ADMIN_DIST_DIR` | optional | Serve the built control panel from the API at `/control-panel/` |
 | `DEV_AUTH_BYPASS` | dev only | Enables labelled developer sign-in. Forbidden in production |
 | `AI_API_KEY`, `AI_MODEL` | optional | Anthropic API key; model defaults to `claude-opus-5-5` |
 | `MARKET_DATA_API_KEY` | optional | Twelve Data key for live quotes and runner audits |
@@ -202,7 +207,7 @@ journzey.ai uses the **authorization-code flow with PKCE**, plus `state` and `no
 5. **Authorised redirect URIs.** These must exactly match `GOOGLE_CALLBACK_URL`. The callback is an **API** route, reached through the same origin as the web app:
    - Development: `http://localhost:3000/api/v1/auth/google/callback`
    - Production: `https://journzey.ai/api/v1/auth/google/callback`
-6. Copy the client ID and secret into `.env`:
+6. Paste the client ID and secret into **Control panel → Integrations & API keys → Google sign-in**, save, then click **Test connection**. This takes effect immediately with no restart. Alternatively, put them in `.env`:
 
    ```dotenv
    GOOGLE_CLIENT_ID=1234567890-abc.apps.googleusercontent.com
@@ -322,6 +327,42 @@ TS=$(date +%s); SIG=$(printf '%s.%s' "$TS" "$BODY" | openssl dgst -sha256 -hmac 
 curl -X POST "$URL" -H 'content-type: application/json' -H "x-journzey-timestamp: $TS" -H "x-journzey-signature: sha256=$SIG" -d "$BODY"
 ```
 
+## Control panel (admin portal)
+
+A separate, private administration app lives at **`/control-panel/`**. It is its own bundle (`apps/admin`), uses a light SaaS-style design that is distinct from the trading terminal, and is never reachable through the public routes. URLs are clean: `/control-panel/login`, `/control-panel/` (dashboard), `/control-panel/users`, `/control-panel/integrations`, `/control-panel/website`, `/control-panel/admins`, `/control-panel/audit`, `/control-panel/system`, `/control-panel/account`.
+
+| Section | What it controls |
+| --- | --- |
+| **Dashboard** | Traders, active users, live sessions, trades (excluding demo data), AI usage, 30-day sign-up and trade charts, integration status, recent admin activity |
+| **Integrations & API keys** | Google OAuth client ID, client secret and redirect URI; Anthropic API key and model; Twelve Data key. Each has an enable switch and a **Test connection** button. Saved values take effect on the live site immediately |
+| **Website controls** | Maintenance mode (trader API returns 503 and the site shows a maintenance page), new sign-ups open/closed, announcement banner (text and style), branding (name, tagline, support email), feature switches (AI Coach, Broker Sync, Demo data, Market ticker), all enforced server-side |
+| **Users** | Search and filter traders, view usage and security events, force sign-out, suspend/restore (revokes sessions; blocks sign-in), delete with typed confirmation (owner only) |
+| **Administrators** | Owner-only: add admins, set roles (`owner`, `admin`, `viewer`), disable, reset passwords, remove. At least one active owner is always kept |
+| **Audit log** | Every control-panel action, plus trader security events. Secret values are never recorded |
+| **System health** | Environment, uptime, memory, DB latency, migrations applied, storage, Sentry, IP allow-list, dev-bypass warning |
+| **Account & security** | Change password; set up TOTP two-factor authentication (QR code) |
+
+**Creating the first administrator** (choose one):
+
+```bash
+npm run admin:create -- --email you@example.com --name "Your Name"     # prompts for a password (hidden)
+ADMIN_PASSWORD='…' npm run admin:create -- --email you@example.com --name "Your Name" --role owner
+npm run admin:reset-password -- --email you@example.com
+```
+
+Or set `ADMIN_BOOTSTRAP_EMAIL` and `ADMIN_BOOTSTRAP_PASSWORD` once. If no administrator exists at boot, an owner is created; remove the password variable afterwards.
+
+**How settings are stored:** in the `app_settings` table. Secrets (Google client secret, API keys) are encrypted with AES-256-GCM using `ENCRYPTION_KEY` and are write-only: the panel shows only "configured · …last4". Precedence is **control panel → environment variable → default**, and every API instance re-reads settings within 30 seconds (immediately on the instance that saved them). Reverting a field removes the panel value so the environment variable applies again.
+
+**Control-panel security:**
+- Completely separate from trader accounts: own `admin_users` table, own session cookie `jz.cp` (`HttpOnly`, `Secure` in production, `SameSite=Strict`, `Path=/api/v1/admin`), 30-minute idle timeout and 12-hour absolute limit (configurable). A trader session never grants admin access.
+- Argon2id password hashing; policy of at least 12 characters with mixed case and digits, not containing the email name. 5 failed attempts lock the account for 15 minutes, plus 10 attempts per 15 minutes per IP. Timing is equalised for unknown emails.
+- Optional TOTP two-factor authentication (RFC 6238; any authenticator app). Changing or resetting a password signs out the admin's other sessions.
+- Own CSRF token, `Cache-Control: no-store`, `X-Robots-Tag: noindex`, and optional `ADMIN_IP_ALLOWLIST` (other IPs get a 404, so the panel's existence is not revealed).
+- Roles: `viewer` (read-only), `admin` (settings, keys, users), `owner` (also administrators and permanent user deletion).
+
+In development, `npm run dev` starts the panel on :3001 and the website proxies `/control-panel` to it, so use `http://localhost:3000/control-panel/`. In Docker and single-container deployments it is served from the same origin (`ADMIN_DIST_DIR` is preset in the image, and nginx serves it in the compose stack).
+
 ## 17. Security model
 
 - **Sessions:** server-side in PostgreSQL; cookie `jz.sid` is `HttpOnly`, `SameSite=Lax`, `Secure` in production, and rolling. The session id is regenerated at login. Logout and account deletion destroy the session.
@@ -373,6 +414,6 @@ POST   /webhooks/broker/:connectionId   (HMAC-signed, no session)
 
 ## 19. Project layout
 
-See §2. Root scripts: `dev`, `dev:api`, `dev:web`, `build`, `typecheck`, `lint`, `test`, `test:e2e`, `db:migrate`, `db:seed`, `db:generate`, `db:schema-sql`, `db:seed-sql`, `package:zip`.
+See §2. Root scripts: `dev`, `dev:api`, `dev:web`, `dev:admin`, `admin:create`, `admin:reset-password`, `build`, `typecheck`, `lint`, `test`, `test:e2e`, `db:migrate`, `db:seed`, `db:generate`, `db:schema-sql`, `db:seed-sql`, `package:zip`.
 
 Internationalisation: UI strings live in `apps/web/src/locales/{en,ru,zh,pt}.ts`. English is complete. Russian, Chinese and Portuguese cover navigation and core labels and fall back to English per key. The AI Coach and voice dictation support all four languages.

@@ -52,11 +52,15 @@ export function createTestApp(overrides: { ai?: AiClient | null; market?: Market
     APP_URL: 'http://localhost:3000',
     API_URL: 'http://localhost:3000/api',
     LOG_LEVEL: 'silent',
+    ...(overrides.ai ? { AI_API_KEY: 'test-ai-key' } : {}),
+    ...(overrides.market ? { MARKET_DATA_API_KEY: 'test-md-key' } : {}),
     ...overrides.env,
   });
   const pool = createPool(env.DATABASE_URL);
   const db = createDb(pool);
   const idp = new FakeIdentityProvider();
+  const ai = overrides.ai ?? null;
+  const market = overrides.market ?? null;
   const { app, ctx } = createApp({
     env,
     db,
@@ -64,15 +68,15 @@ export function createTestApp(overrides: { ai?: AiClient | null; market?: Market
     log: createLogger('silent'),
     identityProvider: idp,
     storage: new LocalStorage(path.join(os.tmpdir(), `journzey-test-uploads-${process.pid}`)),
-    aiClient: overrides.ai === undefined ? null : overrides.ai,
-    marketDataProvider: overrides.market ?? null,
+    aiClientFactory: ai ? () => ai : undefined,
+    marketDataFactory: market ? () => market : undefined,
   });
   return { app, ctx, idp, pool, db };
 }
 
 export async function resetData(pool: import('pg').Pool) {
   await pool.query(
-    'TRUNCATE users, user_sessions, audit_logs, webhook_events RESTART IDENTITY CASCADE',
+    'TRUNCATE users, user_sessions, audit_logs, webhook_events, admin_users, admin_audit_logs, app_settings RESTART IDENTITY CASCADE',
   );
 }
 

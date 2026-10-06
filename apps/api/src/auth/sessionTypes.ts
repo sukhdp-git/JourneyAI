@@ -6,6 +6,10 @@ declare module 'express-session' {
     csrfToken?: string;
     authenticatedAt?: number;
     oauth?: { state: string; nonce: string; codeVerifier: string; createdAt: number };
+    /** Control-panel session fields (separate cookie, separate session id). */
+    adminId?: string;
+    adminAuthenticatedAt?: number;
+    adminTotpSetupSecret?: string;
   }
 }
 
@@ -14,6 +18,7 @@ declare global {
   namespace Express {
     interface Request {
       user?: { id: string; email: string };
+      admin?: import('../db/schema.js').AdminUserRow;
       rawBody?: Buffer;
     }
   }

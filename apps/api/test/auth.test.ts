@@ -99,6 +99,6 @@ describe('authentication', () => {
 
   it('redirects to a configuration error when Google is not configured', async () => {
     const { GoogleIdentityProvider } = await import('../src/auth/google.js');
-    expect(new GoogleIdentityProvider(undefined, undefined, undefined).configured).toBe(false);
+    expect(new GoogleIdentityProvider(() => ({ enabled: true })).configured).toBe(false);
   });
 });

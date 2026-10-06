@@ -2,7 +2,7 @@ import type { RequestHandler } from 'express';
 import { eq } from 'drizzle-orm';
 import type { Database } from '../db/client.js';
 import { users } from '../db/schema.js';
-import { unauthorized } from '../lib/errors.js';
+import { AppError, unauthorized } from '../lib/errors.js';
 
 /**
  * Resolves the authenticated user from the server-side session on EVERY request.
@@ -12,7 +12,7 @@ export function requireAuth(db: Database): RequestHandler {
   return (req, _res, next) => {
     const userId = req.session?.userId;
     if (!userId) return next(unauthorized());
-    db.select({ id: users.id, email: users.email })
+    db.select({ id: users.id, email: users.email, suspendedAt: users.suspendedAt })
       .from(users)
       .where(eq(users.id, userId))
       .limit(1)
@@ -21,7 +21,11 @@ export function requireAuth(db: Database): RequestHandler {
           req.session.destroy(() => next(unauthorized('Session expired')));
           return;
         }
-        req.user = row;
+        if (row.suspendedAt) {
+          req.session.destroy(() => next(new AppError(403, 'ACCOUNT_SUSPENDED', 'This account has been suspended. Contact support.')));
+          return;
+        }
+        req.user = { id: row.id, email: row.email };
         next();
       })
       .catch(next);

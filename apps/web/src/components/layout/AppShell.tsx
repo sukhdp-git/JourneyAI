@@ -31,6 +31,7 @@ import type { MessageKey } from '../../locales/en';
 import { DateRangeProvider } from '../../lib/dateRange';
 import { TradeActionsProvider, useTradeActions } from '../trade/TradeActions';
 import { ErrorBoundary } from '../ErrorBoundary';
+import { AnnouncementBanner } from '../SiteChrome';
 
 const NAV: Array<{ to: string; key: MessageKey; icon: typeof Home; end?: boolean }> = [
   { to: '/app', key: 'nav.home', icon: Home, end: true },
@@ -51,8 +52,9 @@ function useSignOut() {
       await post('/auth/logout');
     } finally {
       resetCsrf();
-      qc.clear();
+      // Mark signed-out first (live observers keep this query), then drop all other cached user data.
       qc.setQueryData(qk.me, null);
+      qc.removeQueries({ predicate: (q) => q.queryKey[0] !== qk.me[0] });
       navigate('/login', { replace: true });
     }
   };
@@ -60,7 +62,9 @@ function useSignOut() {
 
 function BrokerFeedIndicator() {
   const { t } = useI18n();
-  const q = useQuery({ queryKey: qk.market, queryFn: () => get<MarketQuotesResponse>('/market/quotes'), refetchInterval: 60_000 });
+  const { data: me } = useMe();
+  const q = useQuery({ queryKey: qk.market, queryFn: () => get<MarketQuotesResponse>('/market/quotes'), refetchInterval: 60_000, enabled: me?.features.marketTicker !== false });
+  if (me?.features.marketTicker === false) return null;
   const state = q.isError ? 'down' : q.data?.source === 'live' ? (q.data.quotes.some((x) => x.price) ? 'live' : 'down') : q.data ? 'demo' : 'loading';
   return (
     <div className="flex items-center gap-2 text-2xs" role="status">
@@ -163,6 +167,7 @@ function UserMenu() {
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const { t } = useI18n();
+  const { data: me } = useMe();
   const actions = useTradeActions();
   return (
     <div className="flex h-full flex-col gap-3 p-3">
@@ -172,7 +177,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       <BrokerFeedIndicator />
       <NavEquityHud />
       <nav aria-label="Main" className="flex flex-col gap-0.5">
-        {NAV.map((n) => (
+        {NAV.filter((n) => n.to !== '/app/coach' || me?.features.aiCoach !== false).map((n) => (
           <NavLink
             key={n.to}
             to={n.to}
@@ -219,7 +224,8 @@ function MobileChrome() {
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [open]);
-  const tabs = [NAV[0]!, NAV[1]!, null, NAV[3]!, NAV[7]!];
+  const { data: me } = useMe();
+  const tabs = [NAV[0]!, NAV[1]!, null, NAV[3]!, me?.features.aiCoach === false ? NAV[2]! : NAV[7]!];
   return (
     <>
       <header className="no-print sticky top-0 z-30 flex h-14 items-center justify-between border-b border-line bg-bg/95 px-3 backdrop-blur lg:hidden">
@@ -274,6 +280,7 @@ export default function AppShell() {
             </div>
           </aside>
           <div className="flex min-w-0 flex-1 flex-col">
+            <AnnouncementBanner />
             <MobileChrome />
             <main id="main" className="mx-auto w-full max-w-[1600px] flex-1 px-3 pb-24 pt-4 sm:px-5 lg:pb-8">
               <ErrorBoundary resetKey={location.pathname}>
