@@ -20,9 +20,10 @@ final class Session
         ini_set('session.use_strict_mode', '1');
         ini_set('session.use_only_cookies', '1');
         ini_set('session.cookie_httponly', '1');
-        ini_set('session.gc_maxlifetime', (string) (60 * 60 * 12));
+        // Members stay signed in for 30 days; admin sessions use a shorter idle timeout enforced by Auth.
+        ini_set('session.gc_maxlifetime', (string) ($admin ? 60 * 60 * 12 : 60 * 60 * 24 * 30));
         session_set_cookie_params([
-            'lifetime' => 0,
+            'lifetime' => $admin ? 0 : 60 * 60 * 24 * 30,
             'path' => $basePath . ($admin ? '/' . ADMIN_PREFIX : '/'),
             'secure' => $secure,
             'httponly' => true,

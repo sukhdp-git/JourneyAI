@@ -4,7 +4,7 @@ use App\Core\Database;
 
 $path = (new App\Core\Request())->path;
 $rel = trim(substr($path, strlen('/' . ADMIN_PREFIX)), '/');
-$newLeads = can('leads') ? (int) Database::value("SELECT COUNT(*) FROM leads WHERE status = 'new'") : 0;
+$newMembers = can('members') || can('members.view') ? (int) Database::value('SELECT COUNT(*) FROM users WHERE created_at >= UTC_DATE()') : 0;
 $newMsgs = can('messages') ? (int) Database::value("SELECT COUNT(*) FROM contact_messages WHERE status = 'new'") : 0;
 $nav = [
     '' => [['dashboard', 'Dashboard', 'dashboard', null]],
@@ -19,7 +19,11 @@ $nav = [
         ['testimonials', 'Testimonials', 'quote', 'testimonials'], ['faqs', 'FAQs', 'help', 'faqs'], ['process-steps', 'Process steps', 'activity', 'process'],
         ['sections', 'Custom sections', 'section', 'sections'],
     ],
-    'Leads' => [['leads', 'Consultation leads', 'inbox', 'leads', $newLeads], ['messages', 'Contact messages', 'message', 'messages', $newMsgs]],
+    'Members' => [
+        ['members', 'All members', 'users', can('members') ? 'members' : 'members.view', $newMembers], ['member-logins', 'Sign-in log', 'activity', can('members') ? 'members' : 'members.view'],
+        ['payments', 'Payments', 'zap', 'billing'], ['plans', 'Plans & pricing', 'star', 'billing'], ['integrations', 'Integrations', 'key', 'integrations'],
+        ['messages', 'Contact messages', 'message', 'messages', $newMsgs],
+    ],
     'Media' => [['media', 'Media library', 'image', 'media']],
     'Email' => [['email/smtp', 'SMTP settings', 'server', 'email.smtp'], ['email/templates', 'Email templates', 'mail', 'email.templates'], ['email/test', 'Send test email', 'send', 'email.smtp'], ['email/logs', 'Delivery log', 'list', 'email.templates']],
     'Appearance' => [['appearance/colors', 'Colours', 'palette', 'appearance'], ['appearance/typography', 'Typography', 'type', 'appearance'], ['appearance/buttons', 'Buttons', 'zap', 'appearance'], ['appearance/layout', 'Layout options', 'grid', 'appearance'], ['appearance/custom-css', 'Custom CSS', 'code', 'custom_css']],
@@ -83,7 +87,7 @@ $initials = mb_strtoupper(implode('', array_map(fn ($w) => mb_substr($w, 0, 1), 
       </nav>
       <div class="cp-top-actions">
         <a class="icon-btn hide-sm" href="<?= e(url('/')) ?>" target="_blank" rel="noopener" title="View website" aria-label="View website"><?= icon('globe', 'icon') ?></a>
-        <?php if (can('leads')): ?><a class="icon-btn has-dot<?= $newLeads ? ' dot-on' : '' ?>" href="<?= e(admin_url('leads?status=new')) ?>" title="New leads" aria-label="<?= $newLeads ?> new leads"><?= icon('bell', 'icon') ?></a><?php endif; ?>
+        <?php if (can('members') || can('members.view')): ?><a class="icon-btn has-dot<?= $newMembers ? ' dot-on' : '' ?>" href="<?= e(admin_url('members')) ?>" title="New members today" aria-label="<?= $newMembers ?> new members today"><?= icon('bell', 'icon') ?></a><?php endif; ?>
         <div class="cp-user" data-dropdown>
           <button type="button" class="cp-user-btn" aria-expanded="false" aria-haspopup="true" data-dropdown-toggle>
             <span class="avatar"><?= e($initials) ?></span>

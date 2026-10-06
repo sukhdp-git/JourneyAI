@@ -20,7 +20,7 @@ $copyright = str_replace('{year}', gmdate('Y'), setting('copyright_text', '© {y
         <h2><?= e(setting('footer_cta_heading')) ?></h2>
         <?php if (setting('footer_cta_text')): ?><p><?= e(setting('footer_cta_text')) ?></p><?php endif; ?>
       </div>
-      <?php if (setting('footer_cta_label')): ?><a class="btn btn-primary btn-lg" href="<?= e(url(setting('footer_cta_url', '/book-consultation'))) ?>"><?= e(setting('footer_cta_label')) ?> <?= icon('arrow-right', 'icon icon-sm') ?></a><?php endif; ?>
+      <?php if (setting('footer_cta_label')): ?><a class="btn btn-primary btn-lg" href="<?= e(url(setting('footer_cta_url', '/signup'))) ?>"><?= e(setting('footer_cta_label')) ?> <?= icon('arrow-right', 'icon icon-sm') ?></a><?php endif; ?>
     </div>
   </div>
   <?php endif; ?>

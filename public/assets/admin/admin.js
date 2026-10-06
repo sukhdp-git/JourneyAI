@@ -65,15 +65,23 @@
   });
 
   // ---------- Confirm dialogs (delete actions post a real form with the CSRF token)
-  var cm = $('#confirm-modal'), pendingAction = null;
+  var cm = $('#confirm-modal'), pendingAction = null, pendingForm = null;
+  // Forms marked data-confirm ask before submitting (their own fields and CSRF token are posted).
+  d.addEventListener('submit', function (e) {
+    var f = e.target; if (!cm || !f.matches('form[data-confirm]') || f.dataset.confirmed) return;
+    e.preventDefault(); pendingForm = f; pendingAction = null;
+    $('[data-confirm-text]', cm).textContent = f.getAttribute('data-confirm');
+    openModal(cm);
+  });
   d.addEventListener('click', function (e) {
-    var b = e.target.closest('[data-confirm]'); if (!b || !cm) return;
+    var b = e.target.closest('[data-confirm]'); if (!b || !cm || b.tagName === 'FORM') return;
     e.preventDefault();
-    pendingAction = b.getAttribute('data-confirm-action');
+    pendingAction = b.getAttribute('data-confirm-action'); pendingForm = null;
     $('[data-confirm-text]', cm).textContent = b.getAttribute('data-confirm');
     openModal(cm);
   });
   if (cm) $('[data-confirm-ok]', cm).addEventListener('click', function () {
+    if (pendingForm) { pendingForm.dataset.confirmed = '1'; dirty = false; this.classList.add('is-loading'); pendingForm.submit(); return; }
     if (!pendingAction) return;
     var f = d.createElement('form'); f.method = 'post'; f.action = pendingAction;
     f.innerHTML = '<input type="hidden" name="_csrf" value="' + esc(csrf) + '">';

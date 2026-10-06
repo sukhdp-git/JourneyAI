@@ -33,11 +33,19 @@ if ($request->isAdmin()) {
     Session::start(true);
     header('Cache-Control: no-store, private');
     header('X-Robots-Tag: noindex, nofollow');
-} elseif ($request->method === 'POST' || isset($_COOKIE['JZSESS']) || in_array($request->path, ['/contact', '/book-consultation', '/setup'], true)) {
+} elseif (str_starts_with($request->path, '/webhooks/') || str_starts_with($request->path, '/api/webhooks/')) {
+    // Server-to-server webhooks: no session, authenticated by signatures instead.
+    header('Cache-Control: no-store');
+} elseif ($request->method === 'POST' || isset($_COOKIE['JZSESS']) || preg_match('#^/(contact|setup|login|signup|auth|onboarding|forgot-password|reset-password|terminal|checkout|pricing)(/|$)#', $request->path)) {
     Session::start(false);
+    if (preg_match('#^/(terminal|checkout|onboarding|login|signup)(/|$)#', $request->path)) {
+        header('Cache-Control: no-store, private');
+        header('X-Robots-Tag: noindex');
+    }
 }
 
 $router = new Router();
 require ROOT_PATH . '/routes/admin.php';
+require ROOT_PATH . '/routes/app.php';
 require ROOT_PATH . '/routes/web.php';
 $router->dispatch($request);

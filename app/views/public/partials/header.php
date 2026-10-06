@@ -2,7 +2,10 @@
 /** @var array $nav @var string $current @var bool $isHome */
 $sticky = setting_on('header_sticky', true);
 $transparent = $isHome && setting_on('header_transparent_home', true);
-$cta = setting_on('header_cta_enabled', true) && setting('header_cta_label') !== '';
+$member = member();
+$cta = $member || (setting_on('header_cta_enabled', true) && setting('header_cta_label') !== '');
+$ctaLabel = $member ? 'Open terminal' : setting('header_cta_label');
+$ctaUrl = $member ? '/terminal' : setting('header_cta_url', '/signup');
 ?>
 <?php if (setting_on('announcement_enabled') && setting('announcement_text') !== ''): ?>
 <div class="announcement">
@@ -32,11 +35,11 @@ $cta = setting_on('header_cta_enabled', true) && setting('header_cta_label') !==
       </ul>
     </nav>
     <div class="header-actions">
-      <?php if (setting('header_secondary_label') !== '' && setting('header_secondary_url') !== ''): ?>
+      <?php if (!$member && setting('header_secondary_label') !== '' && setting('header_secondary_url') !== ''): ?>
       <a class="btn btn-ghost btn-sm hide-mobile" href="<?= e(url(setting('header_secondary_url'))) ?>"><?= e(setting('header_secondary_label')) ?></a>
       <?php endif; ?>
       <?php if ($cta): ?>
-      <a class="btn btn-primary btn-sm hide-mobile" href="<?= e(url(setting('header_cta_url', '/book-consultation'))) ?>"><?= e(setting('header_cta_label')) ?></a>
+      <a class="btn btn-primary btn-sm hide-mobile" href="<?= e(url($ctaUrl)) ?>"><?= e($ctaLabel) ?></a>
       <?php endif; ?>
       <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="mobile-menu" data-menu-toggle>
         <span class="sr-only">Open menu</span><span class="burger" aria-hidden="true"><span></span><span></span><span></span></span>
@@ -65,6 +68,7 @@ $cta = setting_on('header_cta_enabled', true) && setting('header_cta_label') !==
       </li>
       <?php endforeach; ?>
     </ul>
-    <?php if ($cta): ?><a class="btn btn-primary btn-block" href="<?= e(url(setting('header_cta_url', '/book-consultation'))) ?>"><?= e(setting('header_cta_label')) ?></a><?php endif; ?>
+    <?php if (!$member && setting('header_secondary_label') !== '' && setting('header_secondary_url') !== ''): ?><a class="btn btn-ghost btn-block" href="<?= e(url(setting('header_secondary_url'))) ?>"><?= e(setting('header_secondary_label')) ?></a><?php endif; ?>
+    <?php if ($cta): ?><a class="btn btn-primary btn-block" href="<?= e(url($ctaUrl)) ?>"><?= e($ctaLabel) ?></a><?php endif; ?>
   </nav>
 </div>

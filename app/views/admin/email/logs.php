@@ -6,7 +6,7 @@
     <?php foreach ($rows as $r): ?><tr>
       <td data-label="When" class="nowrap"><?= e(fmt_date($r['created_at'], 'M j, Y g:i A')) ?></td>
       <td data-label="Recipient"><?= e($r['recipient']) ?></td>
-      <td data-label="Subject"><?= e($r['subject']) ?><?php if ($r['related_type'] === 'lead'): ?> <a class="link small" href="<?= e(admin_url('leads/' . $r['related_id'])) ?>">lead #<?= (int) $r['related_id'] ?></a><?php elseif ($r['related_type'] === 'contact'): ?> <a class="link small" href="<?= e(admin_url('messages/' . $r['related_id'])) ?>">message #<?= (int) $r['related_id'] ?></a><?php endif; ?></td>
+      <td data-label="Subject"><?= e($r['subject']) ?><?php if ($r['related_type'] === 'member'): ?> <a class="link small" href="<?= e(admin_url('users/' . $r['related_id'])) ?>">member #<?= (int) $r['related_id'] ?></a><?php elseif ($r['related_type'] === 'contact'): ?> <a class="link small" href="<?= e(admin_url('messages/' . $r['related_id'])) ?>">message #<?= (int) $r['related_id'] ?></a><?php endif; ?></td>
       <td data-label="Template"><code><?= e($r['template_key'] ?? '—') ?></code></td>
       <td data-label="Result"><span class="badge st-<?= $r['status'] === 'sent' ? 'published' : ($r['status'] === 'failed' ? 'warn' : 'draft') ?>"><?= e($r['status'] === 'disabled' ? 'Skipped' : ucfirst($r['status'])) ?></span><?php if ($r['error']): ?><small class="block err-text"><?= e($r['error']) ?></small><?php endif; ?></td>
     </tr><?php endforeach; ?>

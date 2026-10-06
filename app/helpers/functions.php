@@ -125,7 +125,8 @@ function fmt_date(?string $utc, string $format = 'M j, Y'): string
         return '';
     }
     try {
-        $tz = new DateTimeZone(setting('timezone', 'UTC') ?: 'UTC');
+        // Inside the terminal the member's own timezone wins over the site timezone.
+        $tz = new DateTimeZone($GLOBALS['__tz'] ?? (setting('timezone', 'UTC') ?: 'UTC'));
     } catch (Throwable) {
         $tz = new DateTimeZone('UTC');
     }
@@ -143,7 +144,7 @@ function local_to_utc(string $local): ?string
         return null;
     }
     try {
-        $tz = new DateTimeZone(setting('timezone', 'UTC') ?: 'UTC');
+        $tz = new DateTimeZone($GLOBALS['__tz'] ?? (setting('timezone', 'UTC') ?: 'UTC'));
         return (new DateTimeImmutable($local, $tz))->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s');
     } catch (Throwable) {
         return null;
@@ -300,4 +301,60 @@ function admin_is_last_super(int $adminId): bool
     $supers = App\Core\Database::all("SELECT a.id FROM admins a JOIN roles r ON r.id = a.role_id WHERE a.status = 'active' AND r.permissions LIKE '%\"*\"%'");
     $ids = array_map('intval', array_column($supers, 'id'));
     return $ids === [$adminId];
+}
+
+/** Decrypted secret setting (API keys saved in the Control Panel are stored encrypted). Config constants win. */
+function secret_setting(string $key): string
+{
+    $const = strtoupper($key);
+    if (defined($const) && constant($const) !== '') {
+        return (string) constant($const);
+    }
+    $v = App\Core\Settings::get($key);
+    if ($v === '') {
+        return '';
+    }
+    return str_starts_with($v, 'v1:') ? (App\Core\Crypto::decrypt($v) ?? '') : $v;
+}
+
+/** Formats money with the account currency. */
+function money(mixed $v, string $currency = 'USD', bool $sign = false): string
+{
+    if ($v === null || $v === '') {
+        return '—';
+    }
+    $f = (float) $v;
+    $sym = ['USD' => '$', 'EUR' => '€', 'GBP' => '£', 'JPY' => '¥', 'INR' => '₹', 'AUD' => 'A$', 'CAD' => 'C$', 'SGD' => 'S$', 'CNY' => '¥', 'BRL' => 'R$', 'RUB' => '₽', 'CHF' => 'CHF ', 'AED' => 'AED '][$currency] ?? $currency . ' ';
+    $dec = $currency === 'JPY' ? 0 : 2;
+    return ($f < 0 ? '−' : ($sign && $f > 0 ? '+' : '')) . $sym . number_format(abs($f), $dec);
+}
+
+function pct(?float $v, int $dec = 1): string
+{
+    return $v === null ? '—' : number_format($v * 100, $dec) . '%';
+}
+
+/** Member currently signed in to the website (not the Control Panel). */
+function member(): ?array
+{
+    return App\Trading\Members::current();
+}
+
+/** Translation lookup for the terminal UI (lang/{code}.php, falls back to English). */
+function t(string $key, array $vars = []): string
+{
+    static $cache = [];
+    $lang = $GLOBALS['__lang'] ?? 'en';
+    if (!isset($cache[$lang])) {
+        $f = APP_PATH . '/lang/' . $lang . '.php';
+        $cache[$lang] = is_file($f) ? require $f : [];
+        if ($lang !== 'en' && !isset($cache['en'])) {
+            $cache['en'] = require APP_PATH . '/lang/en.php';
+        }
+    }
+    $s = $cache[$lang][$key] ?? ($cache['en'][$key] ?? $key);
+    foreach ($vars as $k => $v) {
+        $s = str_replace('{' . $k . '}', (string) $v, $s);
+    }
+    return $s;
 }

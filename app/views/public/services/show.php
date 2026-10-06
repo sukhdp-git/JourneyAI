@@ -3,8 +3,8 @@ use App\Core\View;
 /** @var array $service @var array $faqs @var array $others */
 $benefits = array_values(array_filter(json_list($service['benefits']), fn ($b) => trim($b['title'] ?? '') !== ''));
 $steps = array_values(array_filter(json_list($service['process']), fn ($b) => trim($b['title'] ?? '') !== ''));
-$ctaLabel = $service['cta_label'] ?: 'Book a demo';
-$ctaUrl = $service['cta_url'] ?: '/book-consultation';
+$ctaLabel = $service['cta_label'] ?: 'Start free';
+$ctaUrl = $service['cta_url'] ?: '/signup';
 $extra = '<div class="hero-actions">' . cms_button($ctaLabel, $ctaUrl, 'btn btn-primary btn-lg', true) . cms_button('All capabilities', '/services', 'btn btn-ghost btn-lg') . '</div>';
 ?>
 <?= View::partial('public/partials/page-hero', ['eyebrow' => 'Platform', 'title' => $service['title'], 'subtitle' => $service['short_description'], 'image' => $service['hero_image'], 'crumbs' => [['Home', '/'], ['Services', '/services'], [$service['title'], '/services/' . $service['slug']]], 'extra' => $extra]) ?>
@@ -15,7 +15,7 @@ $extra = '<div class="hero-actions">' . cms_button($ctaLabel, $ctaUrl, 'btn btn-
       <div class="aside-card reveal">
         <span class="card-icon"><?= icon($service['icon'] ?: 'sparkles', 'icon') ?></span>
         <h2 class="h4"><?= e($ctaLabel) ?></h2>
-        <p>See <?= e($service['title']) ?> in action on a walkthrough tailored to how you trade.</p>
+        <p>Try <?= e($service['title']) ?> free in demo mode — no card needed.</p>
         <?= cms_button($ctaLabel, $ctaUrl, 'btn btn-primary btn-block', true) ?>
       </div>
       <?php if ($service['thumbnail']): ?><div class="media-frame reveal"><?= cms_image($service['thumbnail'], $service['title'], '', false, '360px') ?></div><?php endif; ?>

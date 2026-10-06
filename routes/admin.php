@@ -10,7 +10,8 @@
 use App\Controllers\Admin\AuthController;
 use App\Controllers\Admin\DashboardController;
 use App\Controllers\Admin\EmailController;
-use App\Controllers\Admin\LeadController;
+use App\Controllers\Admin\IntegrationsController;
+use App\Controllers\Admin\MemberController;
 use App\Controllers\Admin\MediaController;
 use App\Controllers\Admin\MessageController;
 use App\Controllers\Admin\ResourceController;
@@ -51,15 +52,19 @@ foreach (array_keys(SettingsController::screens()) as $slug) {
 }
 $router->get("$P/appearance", fn () => Response::redirect("/" . ADMIN_PREFIX . "/appearance/colors"), $mw);
 
-// Leads & messages
-$router->get("$P/leads", [LeadController::class, 'index'], $mw);
-$router->get("$P/leads/export", [LeadController::class, 'export'], $mw);
-$router->get("$P/leads/{id}", [LeadController::class, 'show'], $mw);
-$router->post("$P/leads/{id}", [LeadController::class, 'update'], $mw);
-$router->post("$P/leads/{id}/status", [LeadController::class, 'status'], $mw);
-$router->post("$P/leads/{id}/assign", [LeadController::class, 'assign'], $mw);
-$router->post("$P/leads/{id}/notes", [LeadController::class, 'addNote'], $mw);
-$router->post("$P/leads/{id}/delete", [LeadController::class, 'delete'], $mw);
+// Members, sign-ins, payments & integrations
+$router->get("$P/members", [MemberController::class, 'index'], $mw);
+$router->get("$P/members/{id}", [MemberController::class, 'show'], $mw);
+foreach (['status', 'note', 'grant', 'revoke', 'delete'] as $action) {
+    $router->post("$P/members/{id}/$action", [MemberController::class, $action], $mw);
+}
+$router->get("$P/member-logins", [MemberController::class, 'logins'], $mw);
+$router->get("$P/payments", [MemberController::class, 'payments'], $mw);
+$router->get("$P/integrations", [IntegrationsController::class, 'show'], $mw);
+$router->post("$P/integrations", [IntegrationsController::class, 'save'], $mw);
+$router->post("$P/integrations/test", [IntegrationsController::class, 'test'], $mw);
+
+// Contact messages
 $router->get("$P/messages", [MessageController::class, 'index'], $mw);
 $router->get("$P/messages/{id}", [MessageController::class, 'show'], $mw);
 $router->post("$P/messages/{id}/status", [MessageController::class, 'status'], $mw);

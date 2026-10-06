@@ -30,8 +30,11 @@ final class Auth
             'navigation' => 'Navigation menus',
             'media' => 'Media library',
         ],
-        'Leads' => [
-            'leads' => 'Consultation leads',
+        'Members & billing' => [
+            'members.view' => 'View members, sign-ins and activity',
+            'members' => 'Manage members (suspend, grant plans, delete)',
+            'billing' => 'Plans & payments',
+            'integrations' => 'Integrations & API keys (Google, payments, AI, market data)',
             'messages' => 'Contact messages',
         ],
         'Website settings' => [

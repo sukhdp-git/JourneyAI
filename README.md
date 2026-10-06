@@ -1,10 +1,11 @@
 # journzey.ai — Website & Control Panel
 
-The production marketing website and CMS for **journzey.ai**, an institutional multi-broker trading journal and AI discipline terminal.
+**journzey.ai** is an AI trading-journal SaaS: traders sign up with **Google or email**, journal trades in a full trading terminal, analyse their performance and get AI coaching. Demo accounts are free; **live accounts require a paid plan**. A separate Control Panel manages the website, members, plans, payments and integrations.
 
 - **Stack:** plain PHP 8.1+ (8.2+ recommended), MySQL/MariaDB with PDO, vanilla JavaScript and Apache `.htaccess`.
 - **Hosting:** built for cPanel shared hosting (e.g. Namecheap). No Node, npm, Composer, Docker or SSH is needed.
-- **Admin:** a separate Control Panel at **`/control-panel/`** manages every part of the public site.
+- **Members:** sign-up/sign-in at **`/signup`** and **`/login`** (email + password or Google OAuth), then the terminal at **`/terminal`**.
+- **Admin:** a separate Control Panel at **`/control-panel/`** manages the website, members, sign-ins, plans, payments and API keys.
 
 ---
 
@@ -17,7 +18,8 @@ The production marketing website and CMS for **journzey.ai**, an institutional m
 5. [Admin setup & Admin URL](#5-admin-setup--admin-url)
 6. [SMTP setup & test email](#6-smtp-setup--test-email)
 7. [Managing the website](#7-managing-the-website)
-   - logo, homepage, navigation, services, blog, pages, leads, media, SEO, analytics, WhatsApp
+   - logo, homepage, navigation, services, blog, pages, members, plans & payments, media, SEO, analytics, WhatsApp
+   - [Google sign-in](#google-sign-in-setup), [payments](#payments-setup-razorpay-or-stripe), [AI Coach & market data](#ai-coach--market-data-setup)
 8. [Admin users & roles](#8-admin-users--roles)
 9. [Backups](#9-backups)
 10. [Security](#10-security)
@@ -41,18 +43,39 @@ All URLs are clean and never end in `.php`.
 | `/blog`, `/blog/{slug}` | Blog with featured post, search, pagination, related posts and sharing. |
 | `/blog/category/{slug}`, `/blog/tag/{slug}`, `/blog/page/2` | Blog archives and pagination. |
 | `/contact` | Contact details, map and contact form (saved to MySQL). |
-| `/book-consultation` | Demo/consultation booking form (saved to MySQL as a lead). |
-| `/privacy-policy`, `/terms-and-conditions` | Legal pages (CMS pages). |
+| `/pricing` | Plans (free demo + paid plans managed in the Control Panel) with links to checkout. |
+| `/signup`, `/login`, `/forgot-password` | Member accounts: email + password or **Continue with Google**. |
+| `/onboarding` | First-run setup: markets, timezone, risk rules, first account, optional demo journal. |
+| `/checkout/{plan}` | Plan checkout through Razorpay or Stripe (signed-in members). |
+| `/terminal/…` | The trading terminal (members only, see below). |
+| `/privacy-policy`, `/terms-and-conditions`, `/disclaimer`, `/security` | Legal pages (CMS pages). |
 | `/{any-page-slug}` | Any page created in the Control Panel, e.g. `/refund-policy`. |
 | `/sitemap.xml`, `/robots.txt` | Generated automatically. |
+
+### Trading terminal (`/terminal`, members only)
+
+| Page | What it does |
+|---|---|
+| **Home Hub** | Market ticker (live with a Twelve Data key, otherwise clearly labelled **DEMO DATA**), world clocks (India, New York, London, Tokyo, Singapore, Dubai), 9-step pre-trade checklist, quick trade command (`/` hotkey), lot-size calculator. |
+| **Dashboard** | Date presets, KPIs (net P&L, win rate, profit factor, payoff, expectancy…), equity, cumulative P&L and drawdown charts, breakdowns by weekday, session, instrument and strategy. |
+| **Calendar** | Monthly P&L calendar with weekly summaries and day drill-down. |
+| **Trade Log** | Filters, add/edit/delete, CSV export, private screenshots, share cards in 4 themes, runner audit. |
+| **Strategy Analysis** | Strategy playbooks (9 templates) and per-strategy statistics. |
+| **Edge Matrix** | Best trading windows, discipline leak, emotional vs disciplined results, Monte Carlo drawdown simulation (1,000 paths), tilt circuit breaker. |
+| **Daily Notepad** | Daily reflection with compliance, emotion and discipline ratings; voice dictation in English, Russian, Chinese and Portuguese. |
+| **AI Coach** | Chat and weekly/monthly reviews grounded in the member's own aggregated statistics (Anthropic Claude or Google Gemini). |
+| **Accounts & Sync** | Demo and live accounts, deposits/withdrawals, **CSV statement import** (MT4/MT5, cTrader, NinjaTrader) and **signed webhooks**, with an honest broker-connector status list. |
+| **Settings / Plan & Billing** | Profile, timezone, language, theme (4 themes), risk and tilt rules, password, **Export my data** (JSON/CSV), **Delete account**, plan status and payment history. |
+
+**Free vs paid.** Every member can create unlimited **demo** accounts and load the 42-trade demo journal (marked DEMO DATA, kept in its own account). **Live** accounts can be created and written to only while a paid plan is active; when a plan ends, live data stays visible but read-only.
 
 ### Control Panel (`/control-panel/`)
 The Control Panel has its own visual identity: a SaaS dashboard with sidebar, breadcrumbs, toasts, modals and responsive tables.
 
-- **Dashboard:** real metrics, a 30-day leads chart, the lead pipeline, recent leads and messages, quick actions and a setup checklist.
+- **Dashboard:** total members, Google vs email sign-ups, who signed in today, paid subscribers, revenue, trades journaled, a 30-day sign-up chart, newest members, latest sign-ins, integration status and a setup checklist.
 - **Website:** General settings, Homepage sections, Header, Footer, Navigation, SEO, Social links, Contact details, WhatsApp, Analytics.
 - **Content:** Pages (with content blocks), Services, Blog (posts, categories, tags), Testimonials, FAQs, Process steps, Custom sections.
-- **Leads:** Consultation leads (status, notes, assignment, history, email log, CSV export) and Contact messages.
+- **Members:** All members (search, filter by Google/email, plan, activity, status; CSV export), member detail (profile, sign-in history with IP and device, accounts, payments, activity; grant/extend/end plans, suspend, delete), Sign-in log, Payments, Plans & pricing, Integrations (Google, Razorpay/Stripe, AI, market data), Contact messages.
 - **Media:** Library with secure uploads, WebP optimisation, alt text, copy URL and a picker inside every image field.
 - **Email:** SMTP settings, Email templates, Send test email, Delivery log.
 - **Appearance:** Colours, Typography, Buttons, Layout options, Custom CSS.
@@ -83,14 +106,16 @@ The Control Panel has its own visual identity: a SaaS dashboard with sidebar, br
 ├── app/               ← application code (web access denied)
 │   ├── bootstrap.php
 │   ├── core/          ← Router, Request, Database (PDO), Auth, Csrf, Session, Mailer, Media, Seo, sanitizers…
-│   ├── controllers/   ← public controllers; controllers/admin/ = Control Panel (+ resources.php, settings.php)
+│   ├── controllers/   ← public controllers; admin/ = Control Panel; terminal/ = member trading terminal
+│   ├── trading/       ← trading domain: analytics, trade maths, instruments, demo data, members, payments, AI coach, imports
+│   ├── lang/          ← terminal translations (en, ru, zh, pt)
 │   ├── models/        ← read-side queries (Content, Blog, Navigation)
 │   ├── helpers/       ← helper functions + icon set
-│   └── views/         ← templates: public/, admin/, setup/
+│   └── views/         ← templates: public/, admin/, terminal/, setup/
 ├── config/            ← config.example.php (and config.php after install) — web access denied
-├── routes/            ← web.php (public) and admin.php (Control Panel) — web access denied
+├── routes/            ← web.php (public), app.php (members, terminal, billing, webhooks), admin.php — web access denied
 ├── public/assets/     ← css/site.css, js/site.js, admin/admin.css, admin/admin.js, images/
-├── storage/           ← logs/, sessions/, installed.lock — web access denied
+├── storage/           ← logs/, sessions/, private/ (trade screenshots), installed.lock — web access denied
 ├── uploads/           ← media uploads (script execution disabled by uploads/.htaccess)
 └── vendor/phpmailer/  ← PHPMailer 6 (bundled; no Composer needed)
 ```
@@ -158,7 +183,8 @@ On cPanel the defaults are usually right: folders `755`, files `644`.
 |---|---|
 | `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASS` | Database connection. |
 | `BASE_URL` | Full site URL with **no trailing slash**. Include a sub-folder if installed in one, e.g. `https://example.com/site`. |
-| `APP_KEY` | 32+ random characters. Encrypts the SMTP password. **Back it up.** If you change it, re-enter the SMTP password. |
+| `APP_KEY` | 32+ random characters. Encrypts the SMTP password, API keys and webhook secrets. **Back it up.** If you change it, re-enter the SMTP password and every key under **Integrations**. |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Optional. If defined (non-empty) they override the values saved under **Integrations**. |
 | `APP_ENV` | `production` (default) or `development`. |
 | `APP_DEBUG` | `false` on live sites. Errors are then logged to `storage/logs/`, never shown to visitors. |
 
@@ -179,12 +205,14 @@ On cPanel the defaults are usually right: folders `755`, files `644`.
 **Admin URL:** `https://YOUR-DOMAIN/control-panel/`. It redirects to `/control-panel/login`.
 
 After the first sign-in, follow the **Finish setting up** checklist on the dashboard:
-1. **Website → General settings:** site name, tagline, logos, favicon, timezone, copyright.
-2. **Website → Contact details:** email, phone, WhatsApp, address, hours, map, form texts, and where notifications go.
-3. **Email → SMTP settings:** configure and **Send test email** (section 6).
-4. **Content → Testimonials:** replace the **demo** testimonials with genuine ones, or unpublish them.
-5. **Pages → Privacy Policy / Terms:** replace the template text with legally reviewed policies.
-6. **Website → SEO & Analytics:** set the default meta data and enable tracking if needed.
+1. **Members → Integrations:** Google sign-in, a payment gateway, an AI key and (optionally) a market-data key — see section 7.
+2. **Members → Plans & pricing:** check plan names, prices, currency and limits.
+3. **Website → General settings:** site name, tagline, logos, favicon, timezone, copyright.
+4. **Website → Contact details:** email, phone, WhatsApp, address, hours, map, form texts, and where notifications go.
+5. **Email → SMTP settings:** configure and **Send test email** (section 6). Welcome, password-reset and payment-receipt emails need SMTP.
+6. **Content → Testimonials:** replace the **demo** testimonials with genuine ones, or unpublish them.
+7. **Pages → Privacy Policy / Terms / Disclaimer / Security:** replace the template text with legally reviewed policies.
+8. **Website → SEO & Analytics:** set the default meta data and enable tracking if needed.
 
 The session times out after **30 minutes** of inactivity, and after 12 hours in total.
 
@@ -214,8 +242,8 @@ The Control Panel route is `/control-panel/email/smtp`.
 How email and form submissions work:
 - **Password storage.** The SMTP password is encrypted in the database with `APP_KEY` (libsodium). The field always shows empty with a "saved" placeholder; leave it empty to keep the saved password.
 - **Notifications.** Form notifications go to **Contact details → Send form notifications to**, falling back to the contact email.
-- **Templates.** Edit the email templates under **Email → Email templates**. Available variables: `{name} {email} {phone} {service} {message} {date} {subject} {preferred_date} {preferred_time} {site_name} {site_url}`.
-- **Failure handling.** Every lead or contact message is **saved to MySQL first**, so an SMTP failure never loses it. The lead shows "Email failed" with a safe diagnostic. All attempts appear in **Email → Delivery log**.
+- **Templates.** Edit the email templates under **Email → Email templates**. Available variables include `{name} {email} {message} {subject} {date} {site_name} {site_url}`; member emails also use `{reset_url}` (password reset) and `{plan} {amount} {access_until} {reference}` (payment receipt and admin payment notification).
+- **Failure handling.** Contact messages, sign-ups and payments are **saved to MySQL first**, so an SMTP failure never loses them. All attempts appear in **Email → Delivery log**.
 
 ---
 
@@ -281,22 +309,54 @@ Go to **Content → Pages**. Pages are served at `/{slug}`. System slugs such as
 
 System pages (About, Privacy, Terms) cannot be deleted; unpublish them instead.
 
-### Lead management
-Go to **Leads → Consultation leads**.
+### Members
+Go to **Members → All members**. Every account created on the website appears here, whether the person signed up with Google or email.
 
-- **Statuses:** New, Contacted, Follow-up, Converted, Closed.
-- **List:** filter by status, assignee, service and date range; search; sort.
-- **Status changes:** change the status straight from the list.
-- **Export:** export to CSV. Values are protected against spreadsheet formula injection.
+- **Filters:** sign-up method (Google / email), plan (paid, free, expired), activity (signed in today, last 7 days, never), status; search by name or email; sort by newest, last sign-in, most sign-ins or most trades. **Export CSV** (formula-injection safe).
+- **Member detail:** profile, sign-in methods, preferences, last sign-in and IP, total sign-ins, sign-up IP, plan, usage, trading accounts with P&L, sign-in history (IP and device), payments and the member's activity log.
+- **Actions:** grant or extend a plan (recorded as a *manual* payment — useful for bank transfers or trials), end a plan now, suspend / re-activate (suspended members are signed out immediately), internal note, delete permanently.
+- **Members → Sign-in log:** every sign-in, sign-up and password reset, successful or failed, with method, IP and device. Passwords and tokens are never logged.
 
-The **lead detail** page has:
-- the full submission;
-- internal notes;
-- a history timeline (status changes, assignment, edits, email results);
-- the email delivery log;
-- assignment to an admin, editing and deleting.
+### Plans & payments
+- **Members → Plans & pricing:** name, checkout key (`/checkout/{key}`), price, currency, access period in days, period label, features (one per line), whether it unlocks live accounts, max live accounts, AI messages per day, “Most popular” highlight, availability. Plans can be reordered and switched off; a plan with members on it cannot be deleted.
+- The free plan's name, features and AI limit are under **Members → Integrations → Member sign-up & free plan**.
+- **Members → Payments:** every checkout with status (started, paid, failed, refunded), gateway reference and access period, plus revenue per currency (manual grants excluded).
+- Payments are **one-time** for the plan period (no auto-renewal). Buying the same plan again stacks on the remaining time.
 
-**Leads → Contact messages** works the same way with the statuses New, Read, Replied and Archived.
+### Google sign-in setup
+1. Open [Google Cloud Console](https://console.cloud.google.com/) → *APIs & Services* → **OAuth consent screen**: choose *External*, add your app name, support email, your domain and the scopes `openid`, `email`, `profile`. Publish the app.
+2. *Credentials* → **Create credentials → OAuth client ID** → *Web application*.
+3. **Authorized redirect URI:** copy it from **Members → Integrations** — it is `https://YOUR-DOMAIN/auth/google/callback`.
+4. Paste the **Client ID** and **Client secret** into **Members → Integrations → Google sign-in** and save. “Continue with Google” on `/login` and `/signup` becomes active.
+
+The flow uses the authorization-code flow with PKCE, `state` and `nonce`, and checks the ID token's audience, issuer and expiry. Only Google-verified email addresses are accepted. If a Google sign-in matches an existing email account, the accounts are linked.
+
+### Payments setup (Razorpay or Stripe)
+Choose one gateway under **Members → Integrations → Payments**.
+
+**Razorpay** (India — INR, cards, UPI):
+1. Razorpay Dashboard → *Account & Settings* → **API Keys** → generate. Paste the **Key ID** and **Key secret**.
+2. Razorpay Dashboard → **Webhooks** → add `https://YOUR-DOMAIN/webhooks/razorpay` with events `payment.captured`, `order.paid` and `payment.failed`. Type a secret and paste the same value as **Webhook secret**.
+3. Set your plan currency to **INR** unless your Razorpay account is enabled for international currencies.
+
+**Stripe** (international):
+1. Stripe Dashboard → *Developers* → **API keys** → copy the **Secret key** (`sk_live_…`, or `sk_test_…` for testing).
+2. *Developers* → **Webhooks** → add endpoint `https://YOUR-DOMAIN/webhooks/stripe` with `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed` and `charge.refunded`. Paste the **Signing secret** (`whsec_…`).
+
+Use **Test connection** after saving. Plans are activated only after a verified signature (Razorpay checkout signature / webhook HMAC, Stripe `Stripe-Signature` with a 5-minute tolerance) or a server-side Stripe lookup — never because the browser says a payment succeeded. Use test keys first and make a test purchase.
+
+### AI Coach & market data setup
+- **AI Coach:** **Members → Integrations → AI Coach**. Choose **Anthropic Claude** (key from console.anthropic.com; default model `claude-opus-5-5`) or **Google Gemini** (key from aistudio.google.com; default `gemini-2.5-flash`). Leave *Model* empty to use the default. Claude requests use adaptive thinking and server-side fallbacks, so a request the main model declines is retried on a fallback model automatically. The coach only receives aggregated statistics for the signed-in member plus their own short journal notes. Without a key, members see “AI Coach requires server configuration.”
+- **Daily limits:** per plan (and the free limit). Counted per member per UTC day.
+- **Market data:** **Members → Integrations → Market data** with a [Twelve Data](https://twelvedata.com) API key enables live ticker quotes (cached 60 s) and the Runner Auditor. Without it, the ticker shows static levels labelled **DEMO DATA** and the Runner Auditor is disabled.
+
+### Broker import & signed webhooks (members)
+- **CSV import:** *Accounts & Sync → Import statement*. MT4/MT5, cTrader and NinjaTrader exports are auto-detected; balance rows are skipped; duplicates are skipped by ticket number; broker server time offsets are supported.
+- **Signed webhook:** *Accounts & Sync → Create webhook* shows an endpoint URL and a signing secret **once**. Requests must send `X-Journzey-Timestamp` (unix seconds) and `X-Journzey-Signature: sha256=<hex HMAC-SHA256 of "{timestamp}.{raw body}">`. Stale requests (over 5 minutes) are rejected, each `event_id` is processed once and each trade `id` is imported once per account. The full payload format is shown on the page.
+- No direct broker API sync is claimed: the connector list shows each broker's real status.
+
+### Contact messages
+**Members → Contact messages** lists messages from `/contact` with the statuses New, Read, Replied and Archived.
 
 ### Media management
 Go to **Media → Media library**.
@@ -318,7 +378,7 @@ Upload rules:
 Go to **Website → SEO**.
 - **Defaults:** default title and description, title separator, robots, a global **Allow indexing** switch (untick it on staging) and the canonical base URL.
 - **Social sharing:** default OG title, description and image, Twitter card and handle.
-- **Page titles:** title and description for the homepage, services list, blog, contact and booking pages.
+- **Page titles:** title and description for the homepage, services list, blog, contact and pricing pages.
 - **Structured data:** `Organization` and `WebSite` are always output. `LocalBusiness` only appears when you enable it **and** a real address is configured. `BreadcrumbList`, `Article` and `FAQPage` are generated automatically.
 - **robots.txt:** add extra rules. `/robots.txt` and `/sitemap.xml` are generated from published content and contain clean URLs only.
 - **Per-item SEO:** each page, service and post has meta title, description and OG image fields, plus canonical override and noindex for pages.
@@ -364,14 +424,14 @@ Animations always respect the visitor's *reduce motion* setting.
 | Role | Access |
 |---|---|
 | **Super Admin** | Everything. Cannot be edited. |
-| **Editor** | Pages, Services, Blog, Testimonials, FAQs, Process steps, Custom sections, Homepage, Navigation, Media, Leads and Contact messages. **No** access to SMTP credentials, email templates, admin users, roles, website and SEO settings, analytics, appearance, custom CSS, activity logs or system information. |
+| **Editor** | Pages, Services, Blog, Testimonials, FAQs, Process steps, Custom sections, Homepage, Navigation, Media, Contact messages and **viewing** members and sign-ins. **No** access to member management, plans, payments, Integrations/API keys, SMTP credentials, email templates, admin users, roles, website and SEO settings, analytics, appearance, custom CSS, activity logs or system information. |
 
 You can create more roles by ticking permissions per module. Every permission is checked **on the server** for each request; hidden menu items are only a convenience. Denied attempts are written to the activity log.
 
 **System → Activity logs** records:
 - sign-ins, sign-outs and recent sign-in attempts;
 - every create, update, delete, publish and reorder;
-- settings and SMTP changes, uploads, lead actions and user management.
+- settings, SMTP and integration changes (which keys changed, never their values), uploads, member actions (plan grants, suspensions, deletions, exports) and admin-user management.
 
 Passwords and secrets are never logged.
 
@@ -398,7 +458,11 @@ Passwords and secrets are never logged.
 | **Authorization** | Role permissions are checked server-side in every controller. |
 | **Forms** | CSRF, a honeypot field, an HMAC-signed minimum fill time and a per-IP rate limit (5 per 10 minutes). Validation runs on the server; browser validation is only a convenience. |
 | **Uploads** | See [Media management](#media-management). Files are re-encoded, given random names and stored in a non-executable folder. Path-traversal-safe deletion. |
-| **Secrets** | The SMTP password is encrypted at rest and never sent to the browser or shown in errors. No credentials ship in the ZIP. |
+| **Secrets** | The SMTP password, Google client secret, payment keys, AI and market-data keys and webhook signing secrets are encrypted at rest (libsodium + `APP_KEY`), never sent back to the browser and never logged. No credentials ship in the ZIP. |
+| **Members** | Separate `users` table and session from admins. Every terminal query is scoped to the signed-in member's id from the session — never an id from the browser. Passwords use `password_hash()`; sign-in is rate-limited; password reset tokens are single-use, hashed and expire after 60 minutes. Changing a password signs out other sessions. |
+| **Google OAuth** | Authorization code + PKCE, `state` and `nonce`; ID token audience/issuer/expiry checked; only verified Google emails; tokens are never stored in the browser. |
+| **Payments & webhooks** | HMAC signature verification (Razorpay, Stripe, member trade webhooks), timestamp windows, idempotent processing; plan access is only granted server-side. |
+| **Member files** | Trade screenshots (PNG/JPEG/WebP ≤ 5 MB) are re-encoded and stored in `storage/private/`, served only to their owner. |
 | **Files** | `.htaccess` denies `app/`, `config/`, `routes/`, `storage/`, `vendor/`, dot-files and `*.sql/.md/.log/.ini/.lock/.bak`. Directory listing is disabled. Direct `*.php` URLs return 404 (`/index.php` redirects to `/`). |
 | **Errors** | `display_errors` is off in production. Branded 404 and 403 pages, and a 500 page. Errors are logged to `storage/logs/`. |
 | **Headers** | HSTS (on HTTPS), `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`. The Control Panel sends `noindex` and `no-store`. |
@@ -419,7 +483,10 @@ Recommended extras:
 - **Images do not upload.**
   - Check that `uploads/` is writable (755).
   - Check PHP `upload_max_filesize` and `post_max_size` in cPanel → *Select PHP Version → Options*. System → System information shows the current limits.
-- **Dates or times look wrong.** Set **General settings → Timezone**. All data is stored in UTC.
+- **Dates or times look wrong.** Set **General settings → Timezone** (website) or the member's own timezone in *Terminal → Settings*. All data is stored in UTC.
+- **Google says `redirect_uri_mismatch`.** The redirect URI in Google Cloud must match exactly the one shown under **Members → Integrations** (including `https` and `www`). `BASE_URL` must match the address members use.
+- **A payment succeeded but the plan is not active.** Check the webhook URL and secret in the gateway dashboard and **Members → Payments**. You can grant the plan manually from the member's page.
+- **AI Coach says it requires server configuration.** Add a provider and API key under **Members → Integrations → AI Coach** and click **Test connection**.
 
 ### 404 troubleshooting
 - **Every page except the homepage returns 404.** `mod_rewrite` or `.htaccess` is not active:
@@ -470,7 +537,9 @@ The starter content describes the journzey.ai product honestly and **contains no
 ## 13. Development notes
 
 - **Local development:** any Apache + PHP 8.2 + MySQL stack (XAMPP, MAMP, Laragon) with the project as the document root and `AllowOverride All`. Visit `/setup`.
-- **Routing:** `routes/web.php` and `routes/admin.php`. All browser URLs are clean; `index.php` is the only PHP entry point.
+- **Routing:** `routes/web.php`, `routes/app.php` and `routes/admin.php`. All browser URLs are clean; `index.php` is the only PHP entry point.
+- **AI client:** `app/trading/AiCoach.php` calls the Anthropic Messages API (and Gemini) over HTTPS with cURL, because the official PHP SDK needs Composer, which cPanel shared hosting usually cannot run.
+- **Terminal translations:** `app/lang/{en,ru,zh,pt}.php`.
 - **Adding a Control Panel module:** add an entry to `app/controllers/admin/resources.php` (table, columns, fields, filters). The generic CRUD engine supplies list, search, filter, sort, create, edit, delete, toggle and reorder. Add the menu item in `app/views/admin/layouts/app.php` and a permission key in `App\Core\Auth::PERMISSIONS`.
 - **Adding a setting:** add the field to `app/controllers/admin/settings.php` and read it anywhere with `setting('key')`.
-- **Third-party code:** PHPMailer 6.12 (LGPL-2.1) is in `vendor/phpmailer/`. There are no other dependencies.
+- **Third-party code:** PHPMailer 6.12 (LGPL-2.1) is in `vendor/phpmailer/`. Razorpay Checkout (`checkout.razorpay.com`) is loaded on the checkout page only when Razorpay is the active gateway. There are no other dependencies.

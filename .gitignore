@@ -13,3 +13,6 @@
 *.zip
 .DS_Store
 Thumbs.db
+/storage/private/*
+!/storage/private/.htaccess
+!/storage/private/.gitkeep

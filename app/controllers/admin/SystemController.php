@@ -71,7 +71,7 @@ final class SystemController extends AdminController
             $ext[$e] = extension_loaded($e);
         }
         $counts = [];
-        foreach (['pages', 'services', 'blog_posts', 'leads', 'contact_messages', 'media', 'admins', 'activity_logs', 'email_logs'] as $t) {
+        foreach (['pages', 'services', 'blog_posts', 'users', 'trades', 'payments', 'contact_messages', 'media', 'admins', 'activity_logs', 'email_logs'] as $t) {
             $counts[$t] = (int) Database::value("SELECT COUNT(*) FROM `$t`");
         }
         $this->render('system/info', compact('info', 'checks', 'ext', 'counts'), 'System information', [['System', null], ['System information', null]]);

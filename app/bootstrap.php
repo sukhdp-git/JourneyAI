@@ -15,7 +15,7 @@ define('INSTALL_LOCK', STORAGE_PATH . '/installed.lock');
 define('ADMIN_PREFIX', 'control-panel');
 
 spl_autoload_register(static function (string $class): void {
-    $map = ['App\\Core\\' => APP_PATH . '/core/', 'App\\Controllers\\' => APP_PATH . '/controllers/', 'App\\Models\\' => APP_PATH . '/models/', 'PHPMailer\\PHPMailer\\' => ROOT_PATH . '/vendor/phpmailer/phpmailer/src/'];
+    $map = ['App\\Core\\' => APP_PATH . '/core/', 'App\\Controllers\\' => APP_PATH . '/controllers/', 'App\\Models\\' => APP_PATH . '/models/', 'App\\Trading\\' => APP_PATH . '/trading/', 'PHPMailer\\PHPMailer\\' => ROOT_PATH . '/vendor/phpmailer/phpmailer/src/'];
     foreach ($map as $prefix => $dir) {
         if (str_starts_with($class, $prefix)) {
             $rel = substr($class, strlen($prefix));

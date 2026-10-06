@@ -409,4 +409,28 @@ return [
         },
         'protect' => fn ($r) => (int) $r['is_system'] ? 'Built-in roles cannot be deleted.' : ((int) Database::value('SELECT COUNT(*) FROM admins WHERE role_id = :id', ['id' => $r['id']]) ? 'Move the users in this role to another role first.' : null),
     ],
+
+    'plans' => [
+        'table' => 'plans', 'label' => 'Plans', 'singular' => 'Plan', 'perm' => 'billing', 'icon' => 'star',
+        'order' => 'sort_order ASC, id ASC', 'reorder' => true, 'toggle' => ['field' => 'is_active', 'on' => '1', 'off' => '0'],
+        'search' => ['name', 'slug'],
+        'columns' => [['name', 'Plan', 'title'], ['price', 'Price', 'text'], ['currency', 'Currency', 'tag'], ['interval_days', 'Days', 'count'], ['allow_live', 'Live accounts', 'bool'], ['is_featured', 'Featured', 'bool']],
+        'view' => fn ($r) => (int) $r['is_active'] ? '/pricing' : null,
+        'protect' => fn ($r) => (int) Database::value('SELECT COUNT(*) FROM users WHERE plan_id = :id', ['id' => $r['id']]) ? 'Members are on this plan. Deactivate it instead (switch off) — existing access continues until it expires.' : null,
+        'fields' => [
+            ['name' => 'name', 'label' => 'Plan name', 'type' => 'text', 'rules' => 'required|max:80', 'width' => 'half'],
+            ['name' => 'slug', 'label' => 'Checkout key', 'type' => 'slug', 'source' => 'name', 'prefix' => '/checkout/', 'rules' => 'required|slug|max:80', 'unique' => true, 'width' => 'half'],
+            ['name' => 'tagline', 'label' => 'Short description', 'type' => 'text', 'rules' => 'max:200'],
+            ['name' => 'price', 'label' => 'Price', 'type' => 'number', 'rules' => 'required|numeric|between:0,1000000', 'width' => 'half', 'help' => 'One-time payment for the access period. Use 0 decimals for JPY.'],
+            ['name' => 'currency', 'label' => 'Currency', 'type' => 'select', 'options' => ['USD' => 'USD', 'INR' => 'INR', 'EUR' => 'EUR', 'GBP' => 'GBP', 'AUD' => 'AUD', 'CAD' => 'CAD', 'SGD' => 'SGD', 'AED' => 'AED', 'JPY' => 'JPY'], 'rules' => 'required', 'width' => 'half', 'help' => 'Razorpay accounts usually charge INR; Stripe supports all listed currencies.'],
+            ['name' => 'interval_days', 'label' => 'Access period (days)', 'type' => 'number', 'rules' => 'required|int|between:1,3660', 'default' => 30, 'width' => 'half'],
+            ['name' => 'interval_label', 'label' => 'Period label', 'type' => 'text', 'rules' => 'required|max:30', 'default' => 'month', 'width' => 'half', 'help' => 'Shown as “/ month”, “/ year”.'],
+            ['name' => 'features', 'label' => 'Features (one per line)', 'type' => 'textarea', 'rules' => 'max:3000', 'rows' => 6],
+            ['name' => 'allow_live', 'label' => 'Unlock live trading accounts', 'type' => 'checkbox', 'default' => 1],
+            ['name' => 'max_live_accounts', 'label' => 'Max live accounts', 'type' => 'number', 'rules' => 'required|int|between:0,100', 'default' => 3, 'width' => 'half'],
+            ['name' => 'ai_daily_limit', 'label' => 'AI Coach messages per day', 'type' => 'number', 'rules' => 'required|int|between:0,1000', 'default' => 50, 'width' => 'half'],
+            ['name' => 'is_featured', 'label' => 'Highlight as “Most popular”', 'type' => 'checkbox'],
+            ['name' => 'is_active', 'label' => 'Available for purchase', 'type' => 'checkbox', 'default' => 1],
+        ],
+    ],
 ];

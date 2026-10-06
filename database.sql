@@ -308,51 +308,6 @@ CREATE TABLE custom_sections (
   KEY idx_custom_sections (placement, status, sort_order)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE leads (
-  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  name VARCHAR(120) NOT NULL,
-  email VARCHAR(190) NOT NULL,
-  phone VARCHAR(40) NULL,
-  whatsapp VARCHAR(40) NULL,
-  company VARCHAR(150) NULL,
-  service_id INT UNSIGNED NULL,
-  service_name VARCHAR(200) NULL,
-  preferred_date DATE NULL,
-  preferred_time VARCHAR(20) NULL,
-  message TEXT NULL,
-  consent TINYINT(1) NOT NULL DEFAULT 0,
-  status ENUM('new','contacted','follow_up','converted','closed') NOT NULL DEFAULT 'new',
-  assigned_to INT UNSIGNED NULL,
-  source VARCHAR(60) NOT NULL DEFAULT 'book-consultation',
-  email_status ENUM('pending','sent','failed','disabled') NOT NULL DEFAULT 'pending',
-  email_error VARCHAR(400) NULL,
-  ip VARCHAR(45) NULL,
-  user_agent VARCHAR(255) NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (id),
-  KEY idx_leads_status (status, created_at),
-  KEY idx_leads_created (created_at),
-  KEY idx_leads_email (email),
-  KEY idx_leads_assigned (assigned_to),
-  KEY idx_leads_service (service_id),
-  CONSTRAINT fk_leads_service FOREIGN KEY (service_id) REFERENCES services (id) ON DELETE SET NULL,
-  CONSTRAINT fk_leads_admin FOREIGN KEY (assigned_to) REFERENCES admins (id) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE lead_notes (
-  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  lead_id INT UNSIGNED NOT NULL,
-  admin_id INT UNSIGNED NULL,
-  type ENUM('note','status','assignment','email','edit') NOT NULL DEFAULT 'note',
-  body TEXT NOT NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (id),
-  KEY idx_lead_notes_lead (lead_id, created_at),
-  CONSTRAINT fk_lead_notes_lead FOREIGN KEY (lead_id) REFERENCES leads (id) ON DELETE CASCADE,
-  CONSTRAINT fk_lead_notes_admin FOREIGN KEY (admin_id) REFERENCES admins (id) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 CREATE TABLE contact_messages (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT,
   name VARCHAR(120) NOT NULL,
@@ -432,6 +387,333 @@ CREATE TABLE activity_logs (
   CONSTRAINT fk_activity_admin FOREIGN KEY (admin_id) REFERENCES admins (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ---------------------------------------------------------------------------------------------
+-- Trading platform: members (website users), trading data, subscriptions and payments.
+-- Money values use DECIMAL, never floating point. All timestamps are stored in UTC.
+-- ---------------------------------------------------------------------------------------------
+
+CREATE TABLE plans (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  name VARCHAR(80) NOT NULL,
+  slug VARCHAR(80) NOT NULL,
+  tagline VARCHAR(200) NULL,
+  price DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  currency CHAR(3) NOT NULL DEFAULT 'USD',
+  interval_days SMALLINT UNSIGNED NOT NULL DEFAULT 30,
+  interval_label VARCHAR(30) NOT NULL DEFAULT 'month',
+  features TEXT NULL,
+  allow_live TINYINT(1) NOT NULL DEFAULT 1,
+  max_live_accounts SMALLINT UNSIGNED NOT NULL DEFAULT 3,
+  ai_daily_limit SMALLINT UNSIGNED NOT NULL DEFAULT 50,
+  is_featured TINYINT(1) NOT NULL DEFAULT 0,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  sort_order INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_plans_slug (slug),
+  KEY idx_plans_active (is_active, sort_order)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE users (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  email VARCHAR(190) NOT NULL,
+  name VARCHAR(120) NOT NULL,
+  avatar_url VARCHAR(500) NULL,
+  google_sub VARCHAR(64) NULL,
+  password_hash VARCHAR(255) NULL,
+  email_verified TINYINT(1) NOT NULL DEFAULT 0,
+  signup_method ENUM('google','email') NOT NULL,
+  status ENUM('active','suspended') NOT NULL DEFAULT 'active',
+  plan_id INT UNSIGNED NULL,
+  plan_expires_at DATETIME NULL,
+  onboarded TINYINT(1) NOT NULL DEFAULT 0,
+  primary_markets VARCHAR(120) NULL,
+  signup_ip VARCHAR(45) NULL,
+  last_login_at DATETIME NULL,
+  last_login_ip VARCHAR(45) NULL,
+  login_count INT UNSIGNED NOT NULL DEFAULT 0,
+  admin_note TEXT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_users_email (email),
+  UNIQUE KEY uq_users_google (google_sub),
+  KEY idx_users_created (created_at),
+  KEY idx_users_plan (plan_id, plan_expires_at),
+  KEY idx_users_last_login (last_login_at),
+  CONSTRAINT fk_users_plan FOREIGN KEY (plan_id) REFERENCES plans (id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE user_settings (
+  user_id INT UNSIGNED NOT NULL,
+  theme VARCHAR(30) NOT NULL DEFAULT 'dark-terminal',
+  language VARCHAR(5) NOT NULL DEFAULT 'en',
+  timezone VARCHAR(64) NOT NULL DEFAULT 'UTC',
+  base_currency CHAR(3) NOT NULL DEFAULT 'USD',
+  default_risk_pct DECIMAL(5,2) NOT NULL DEFAULT 1.00,
+  max_daily_loss DECIMAL(14,2) NULL,
+  max_weekly_loss DECIMAL(14,2) NULL,
+  default_target_rr DECIMAL(6,2) NOT NULL DEFAULT 2.00,
+  tilt_loss_count TINYINT UNSIGNED NOT NULL DEFAULT 3,
+  tilt_window_minutes SMALLINT UNSIGNED NOT NULL DEFAULT 20,
+  tilt_cooldown_minutes SMALLINT UNSIGNED NOT NULL DEFAULT 30,
+  active_account_id INT UNSIGNED NULL,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (user_id),
+  CONSTRAINT fk_user_settings_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE user_logins (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id INT UNSIGNED NULL,
+  email VARCHAR(190) NULL,
+  method ENUM('google','email','signup_google','signup_email','reset') NOT NULL,
+  success TINYINT(1) NOT NULL DEFAULT 1,
+  reason VARCHAR(40) NULL,
+  ip VARCHAR(45) NULL,
+  user_agent VARCHAR(255) NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_user_logins_user (user_id, created_at),
+  KEY idx_user_logins_created (created_at),
+  CONSTRAINT fk_user_logins_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE password_resets (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id INT UNSIGNED NOT NULL,
+  token_hash CHAR(64) NOT NULL,
+  expires_at DATETIME NOT NULL,
+  used_at DATETIME NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_password_resets_token (token_hash),
+  KEY idx_password_resets_user (user_id),
+  CONSTRAINT fk_password_resets_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE user_audit_logs (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id INT UNSIGNED NULL,
+  action VARCHAR(50) NOT NULL,
+  details VARCHAR(500) NULL,
+  ip VARCHAR(45) NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_user_audit_user (user_id, created_at),
+  CONSTRAINT fk_user_audit_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE trading_accounts (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id INT UNSIGNED NOT NULL,
+  name VARCHAR(80) NOT NULL,
+  broker_name VARCHAR(80) NULL,
+  account_type ENUM('PERSONAL','PROP_CHALLENGE','PROP_FUNDED','OTHER') NOT NULL DEFAULT 'PERSONAL',
+  currency CHAR(3) NOT NULL DEFAULT 'USD',
+  starting_capital DECIMAL(16,2) NOT NULL DEFAULT 0.00,
+  is_demo TINYINT(1) NOT NULL DEFAULT 1,
+  has_demo_data TINYINT(1) NOT NULL DEFAULT 0,
+  is_archived TINYINT(1) NOT NULL DEFAULT 0,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_accounts_user (user_id, is_archived),
+  CONSTRAINT fk_accounts_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE capital_transactions (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id INT UNSIGNED NOT NULL,
+  account_id INT UNSIGNED NOT NULL,
+  type ENUM('DEPOSIT','WITHDRAWAL','ADJUSTMENT') NOT NULL,
+  amount DECIMAL(16,2) NOT NULL,
+  note VARCHAR(255) NULL,
+  occurred_at DATETIME NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_capital_account (account_id, occurred_at),
+  KEY idx_capital_user (user_id),
+  CONSTRAINT fk_capital_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+  CONSTRAINT fk_capital_account FOREIGN KEY (account_id) REFERENCES trading_accounts (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE strategies (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id INT UNSIGNED NOT NULL,
+  name VARCHAR(80) NOT NULL,
+  description VARCHAR(500) NULL,
+  target_rr DECIMAL(6,2) NULL,
+  checklist TEXT NULL,
+  active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_strategies_user_name (user_id, name),
+  CONSTRAINT fk_strategies_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE trades (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id INT UNSIGNED NOT NULL,
+  account_id INT UNSIGNED NOT NULL,
+  strategy_id INT UNSIGNED NULL,
+  executed_at DATETIME NOT NULL,
+  closed_at DATETIME NULL,
+  symbol VARCHAR(20) NOT NULL,
+  asset_class VARCHAR(20) NOT NULL,
+  side ENUM('LONG','SHORT') NOT NULL,
+  status ENUM('OPEN','CLOSED') NOT NULL DEFAULT 'CLOSED',
+  entry_price DECIMAL(20,8) NOT NULL,
+  exit_price DECIMAL(20,8) NULL,
+  stop_loss DECIMAL(20,8) NULL,
+  take_profit DECIMAL(20,8) NULL,
+  lot_size DECIMAL(16,4) NOT NULL,
+  fees DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+  pnl DECIMAL(16,2) NULL,
+  pnl_override TINYINT(1) NOT NULL DEFAULT 0,
+  rr DECIMAL(10,4) NULL,
+  risk_amount DECIMAL(16,2) NULL,
+  setup_tag VARCHAR(120) NULL,
+  session VARCHAR(20) NULL,
+  emotion VARCHAR(20) NULL,
+  mistake_tag VARCHAR(20) NOT NULL DEFAULT 'NONE',
+  rules_followed TINYINT(1) NOT NULL DEFAULT 1,
+  notes TEXT NULL,
+  screenshot_path VARCHAR(255) NULL,
+  source VARCHAR(20) NOT NULL DEFAULT 'MANUAL',
+  broker_trade_id VARCHAR(80) NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_trades_user_time (user_id, executed_at),
+  KEY idx_trades_account_time (account_id, executed_at),
+  KEY idx_trades_symbol (user_id, symbol),
+  KEY idx_trades_strategy (strategy_id),
+  UNIQUE KEY uq_trades_broker (account_id, broker_trade_id),
+  CONSTRAINT fk_trades_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+  CONSTRAINT fk_trades_account FOREIGN KEY (account_id) REFERENCES trading_accounts (id) ON DELETE CASCADE,
+  CONSTRAINT fk_trades_strategy FOREIGN KEY (strategy_id) REFERENCES strategies (id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE journal_entries (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id INT UNSIGNED NOT NULL,
+  account_id INT UNSIGNED NULL,
+  journal_date DATE NOT NULL,
+  is_demo TINYINT(1) NOT NULL DEFAULT 0,
+  compliance TINYINT UNSIGNED NULL,
+  emotional_state VARCHAR(20) NULL,
+  discipline_rating TINYINT UNSIGNED NULL,
+  reflection TEXT NULL,
+  key_lesson VARCHAR(500) NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_journal_user_date (user_id, journal_date, is_demo),
+  CONSTRAINT fk_journal_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE checklist_entries (
+  user_id INT UNSIGNED NOT NULL,
+  entry_date DATE NOT NULL,
+  item_key VARCHAR(40) NOT NULL,
+  completed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (user_id, entry_date, item_key),
+  CONSTRAINT fk_checklist_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE ai_conversations (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id INT UNSIGNED NOT NULL,
+  title VARCHAR(160) NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_ai_conv_user (user_id, updated_at),
+  CONSTRAINT fk_ai_conv_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE ai_messages (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  conversation_id INT UNSIGNED NOT NULL,
+  user_id INT UNSIGNED NOT NULL,
+  role ENUM('user','assistant') NOT NULL,
+  content MEDIUMTEXT NOT NULL,
+  model VARCHAR(80) NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_ai_msg_conv (conversation_id, id),
+  KEY idx_ai_msg_user_time (user_id, role, created_at),
+  CONSTRAINT fk_ai_msg_conv FOREIGN KEY (conversation_id) REFERENCES ai_conversations (id) ON DELETE CASCADE,
+  CONSTRAINT fk_ai_msg_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE broker_connections (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id INT UNSIGNED NOT NULL,
+  account_id INT UNSIGNED NOT NULL,
+  provider VARCHAR(30) NOT NULL,
+  label VARCHAR(80) NOT NULL,
+  public_id CHAR(24) NOT NULL,
+  secret_enc TEXT NULL,
+  status ENUM('active','disabled') NOT NULL DEFAULT 'active',
+  last_event_at DATETIME NULL,
+  events_count INT UNSIGNED NOT NULL DEFAULT 0,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_broker_public (public_id),
+  KEY idx_broker_user (user_id),
+  CONSTRAINT fk_broker_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+  CONSTRAINT fk_broker_account FOREIGN KEY (account_id) REFERENCES trading_accounts (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE webhook_events (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  connection_id INT UNSIGNED NOT NULL,
+  event_id VARCHAR(100) NOT NULL,
+  status VARCHAR(20) NOT NULL,
+  message VARCHAR(255) NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_webhook_event (connection_id, event_id),
+  CONSTRAINT fk_webhook_conn FOREIGN KEY (connection_id) REFERENCES broker_connections (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE payments (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id INT UNSIGNED NULL,
+  plan_id INT UNSIGNED NULL,
+  gateway ENUM('razorpay','stripe','manual') NOT NULL,
+  gateway_order_id VARCHAR(120) NULL,
+  gateway_payment_id VARCHAR(120) NULL,
+  amount DECIMAL(12,2) NOT NULL,
+  currency CHAR(3) NOT NULL,
+  status ENUM('created','paid','failed','refunded') NOT NULL DEFAULT 'created',
+  period_days SMALLINT UNSIGNED NOT NULL DEFAULT 30,
+  access_until DATETIME NULL,
+  customer_email VARCHAR(190) NULL,
+  note VARCHAR(255) NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  paid_at DATETIME NULL,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_payments_order (gateway, gateway_order_id),
+  KEY idx_payments_user (user_id, created_at),
+  KEY idx_payments_status (status, created_at),
+  CONSTRAINT fk_payments_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL,
+  CONSTRAINT fk_payments_plan FOREIGN KEY (plan_id) REFERENCES plans (id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE market_cache (
+  cache_key VARCHAR(100) NOT NULL,
+  payload MEDIUMTEXT NOT NULL,
+  expires_at DATETIME NOT NULL,
+  PRIMARY KEY (cache_key)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;
 -- ---------------------------------------------------------------------------------------------
 -- Starter content. Everything below is editable in the Control Panel.
@@ -440,7 +722,7 @@ SET FOREIGN_KEY_CHECKS = 1;
 
 INSERT INTO `roles` (`id`, `name`, `slug`, `description`, `permissions`, `is_system`) VALUES
 (1, 'Super Admin', 'super-admin', 'Full access to every module, including SMTP, users, roles and system settings.', '["*"]', 1),
-(2, 'Editor', 'editor', 'Manages website content, media and leads. No access to SMTP credentials, users, roles or system settings.', '["pages","services","blog","testimonials","faqs","process","sections","homepage","navigation","media","leads","messages"]', 1);
+(2, 'Editor', 'editor', 'Manages website content and media, and can view members. No access to SMTP credentials, API keys, payments, admin users, roles or system settings.', '["pages","services","blog","testimonials","faqs","process","sections","homepage","navigation","media","messages","members.view"]', 1);
 
 INSERT INTO `settings` (`key`, `value`, `group_name`) VALUES
 ('site_name', 'journzey.ai', 'general'),
@@ -461,10 +743,10 @@ INSERT INTO `settings` (`key`, `value`, `group_name`) VALUES
 ('maintenance_mode', '0', 'general'),
 ('maintenance_message', 'We are making improvements and will be back shortly.', 'general'),
 ('header_cta_enabled', '1', 'header'),
-('header_cta_label', 'Book a demo', 'header'),
-('header_cta_url', '/book-consultation', 'header'),
-('header_secondary_label', '', 'header'),
-('header_secondary_url', '', 'header'),
+('header_cta_label', 'Start free', 'header'),
+('header_cta_url', '/signup', 'header'),
+('header_secondary_label', 'Sign in', 'header'),
+('header_secondary_url', '/login', 'header'),
 ('header_sticky', '1', 'header'),
 ('header_transparent_home', '1', 'header'),
 ('announcement_enabled', '0', 'header'),
@@ -479,9 +761,9 @@ INSERT INTO `settings` (`key`, `value`, `group_name`) VALUES
 ('footer_show_social', '1', 'footer'),
 ('footer_cta_enabled', '1', 'footer'),
 ('footer_cta_heading', 'See your trading clearly.', 'footer'),
-('footer_cta_text', 'Book a walkthrough of the journal, analytics and discipline tools.', 'footer'),
-('footer_cta_label', 'Book a demo', 'footer'),
-('footer_cta_url', '/book-consultation', 'footer'),
+('footer_cta_text', 'Create a free account, load the demo journal and explore every tool. Upgrade when you are ready to track live accounts.', 'footer'),
+('footer_cta_label', 'Start free', 'footer'),
+('footer_cta_url', '/signup', 'footer'),
 ('footer_disclaimer', 'Trading financial instruments involves substantial risk and is not suitable for every investor. journzey.ai is a journaling and analytics tool; it does not provide investment advice, signals or brokerage services. Past performance does not guarantee future results.', 'footer'),
 ('social_x', '', 'social'),
 ('social_linkedin', '', 'social'),
@@ -520,8 +802,21 @@ INSERT INTO `settings` (`key`, `value`, `group_name`) VALUES
 ('seo_blog_description', 'Practical articles on trading journals, risk management, review routines and trading psychology.', 'seo'),
 ('seo_contact_title', 'Contact', 'seo'),
 ('seo_contact_description', 'Get in touch with the journzey.ai team.', 'seo'),
-('seo_booking_title', 'Book a demo', 'seo'),
-('seo_booking_description', 'Book a walkthrough of the journzey.ai trading journal and discipline terminal.', 'seo'),
+('seo_pricing_title', 'Pricing', 'seo'),
+('seo_pricing_description', 'Start free with a demo trading journal. Upgrade to track live accounts with the full journzey.ai terminal.', 'seo'),
+('google_client_id', '', 'integrations'),
+('google_client_secret', '', 'integrations'),
+('payment_gateway', 'none', 'integrations'),
+('payment_currency_note', '', 'integrations'),
+('razorpay_key_id', '', 'integrations'),
+('razorpay_key_secret', '', 'integrations'),
+('razorpay_webhook_secret', '', 'integrations'),
+('stripe_secret_key', '', 'integrations'),
+('stripe_webhook_secret', '', 'integrations'),
+('ai_provider', 'none', 'integrations'),
+('ai_api_key', '', 'integrations'),
+('ai_model', '', 'integrations'),
+('market_data_api_key', '', 'integrations'),
 ('ga_enabled', '0', 'analytics'),
 ('ga_id', '', 'analytics'),
 ('gtm_enabled', '0', 'analytics'),
@@ -562,22 +857,23 @@ INSERT INTO `settings` (`key`, `value`, `group_name`) VALUES
 ('contact_heading', 'Talk to the journzey.ai team', 'pages'),
 ('contact_intro', 'Questions about the platform, onboarding or your account? Send us a message and we will reply by email.', 'pages'),
 ('contact_success', 'Thank you — your message has been received. We will reply by email as soon as we can.', 'pages'),
-('booking_eyebrow', 'Book a demo', 'pages'),
-('booking_heading', 'See journzey.ai on your own workflow', 'pages'),
-('booking_intro', 'Tell us a little about how you trade and pick a time that suits you. We will confirm the session by email.', 'pages'),
-('booking_points', 'A guided tour of the journal, analytics and discipline tools\nHow to bring multiple broker accounts into one place\nSetting up rules and risk limits that match your plan\nTime for your questions', 'pages'),
-('booking_success', 'Thank you — your request has been received. We will confirm your session by email.', 'pages'),
-('booking_consent_text', 'I agree to be contacted about my request and accept the Privacy Policy.', 'pages'),
+('pricing_eyebrow', 'Pricing', 'pages'),
+('pricing_heading', 'Start free. Upgrade when you go live.', 'pages'),
+('pricing_intro', 'Every account starts free with demo mode: log test trades, load the demo journal and try every analytics tool. Paid plans unlock live trading accounts.', 'pages'),
+('free_plan_name', 'Free (Demo)', 'pages'),
+('free_plan_features', 'Unlimited demo accounts and test trades\nLoad the 40-trade demo journal\nDashboard, calendar and Edge Matrix on demo data\nAI Coach: 3 messages per day', 'pages'),
+('free_ai_daily_limit', '3', 'pages'),
+('signup_enabled', '1', 'pages'),
+('email_signup_enabled', '1', 'pages'),
 ('notify_email', '', 'pages'),
-('booking_send_confirmation', '1', 'pages'),
 ('contact_send_confirmation', '1', 'pages');
 
 INSERT INTO `services` (`title`, `slug`, `icon`, `thumbnail`, `hero_image`, `short_description`, `full_description`, `benefits`, `process`, `faqs`, `cta_label`, `cta_url`, `meta_title`, `meta_description`, `og_image`, `status`, `is_featured`, `sort_order`) VALUES
-('Multi-Broker Trade Journal', 'multi-broker-trade-journal', 'journal', '', '', 'Bring trades from every broker account into a single, structured journal — with setups, tags, notes and screenshots attached to each trade.', '<p>Most traders keep their history scattered across broker statements, spreadsheets and memory. The journzey.ai journal gives every account a single home, so you can review your trading as one coherent record instead of disconnected fragments.</p><h2>What you can capture</h2><ul><li>Entries, exits, size, fees and outcome for every trade</li><li>The setup, timeframe and market conditions you traded</li><li>Your pre-trade plan and post-trade reflection</li><li>Chart screenshots and free-form notes</li></ul><p>Accounts stay separate where it matters and combined where it helps, so you can compare a funded account with a personal one without mixing up the numbers.</p>', '[{"title":"One record for all accounts","text":"Review every broker account side by side or combined."},{"title":"Structured, searchable history","text":"Filter by setup, tag, session, symbol or account."},{"title":"Context that survives","text":"Plans, notes and screenshots stay attached to the trade."}]', '[{"title":"Connect or import","text":"Add your accounts and bring in your trade history."},{"title":"Tag and annotate","text":"Label setups and add notes and screenshots."},{"title":"Review","text":"Use filters and analytics to study your record."}]', '[{"question":"Can I keep accounts separate?","answer":"Yes. Each account keeps its own history and you can choose to view them individually or combined."},{"question":"Which brokers are supported?","answer":"[Replace] List the broker connections and import formats your deployment supports."}]', 'Book a demo', '/book-consultation', '', 'Bring trades from every broker account into a single, structured journal — with setups, tags, notes and screenshots attached to each trade.', '', 'published', 1, 10),
-('Performance Analytics', 'performance-analytics', 'chart', '', '', 'Measure what actually drives your results: expectancy, R-multiples, drawdown and performance by setup, session and instrument.', '<p>P&amp;L alone hides more than it reveals. journzey.ai breaks your results down into the measurements that explain them, so you can see which setups carry your performance and which quietly drain it.</p><h2>Key views</h2><ul><li>Expectancy and average R per trade</li><li>Win rate alongside average win and loss size</li><li>Equity curve and drawdown</li><li>Breakdowns by setup, tag, weekday, session and symbol</li></ul>', '[{"title":"Expectancy, not just P&L","text":"Understand the edge behind each strategy."},{"title":"Drill into any slice","text":"Compare setups, sessions and instruments."},{"title":"Spot leaks early","text":"See where losses concentrate before they compound."}]', '[{"title":"Collect","text":"Your journal feeds analytics automatically."},{"title":"Slice","text":"Filter by any dimension you track."},{"title":"Act","text":"Turn findings into rules for the next session."}]', '[{"question":"Do I need to calculate R-multiples myself?","answer":"No. When a trade includes its planned stop, the R-multiple is derived from it."}]', 'Book a demo', '/book-consultation', '', 'Measure what actually drives your results: expectancy, R-multiples, drawdown and performance by setup, session and instrument.', '', 'published', 1, 20),
-('Risk & Rules Engine', 'risk-and-rules-engine', 'shield', '', '', 'Write down the rules you trade by — daily loss limits, maximum trades, position sizing — and see every time a trade breaks them.', '<p>Every trader has rules. Few have a record of how often they follow them. The rules engine lets you define your own limits and highlights the trades and days that breached them, so discipline becomes something you can measure.</p><h2>Typical rules</h2><ul><li>Maximum daily or weekly loss</li><li>Maximum number of trades per session</li><li>Risk per trade as a percentage of the account</li><li>Allowed sessions, instruments or setups</li></ul>', '[{"title":"Your rules, written down","text":"Turn your trading plan into explicit, checkable limits."},{"title":"Breaches made visible","text":"See exactly which trades or days broke a rule."},{"title":"Discipline over time","text":"Track how consistently you follow your plan."}]', '[{"title":"Define","text":"Set limits that match your plan."},{"title":"Trade","text":"Each trade is checked against your rules."},{"title":"Review","text":"Study breaches and adjust your process."}]', '[]', 'Book a demo', '/book-consultation', '', 'Write down the rules you trade by — daily loss limits, maximum trades, position sizing — and see every time a trade breaks them.', '', 'published', 1, 30),
-('AI Discipline Coach', 'ai-discipline-coach', 'brain', '', '', 'Objective, unemotional feedback on your execution — patterns in your behaviour surfaced from your own journal data.', '<p>It is hard to judge your own trading objectively. The AI discipline coach reviews your journal and highlights behavioural patterns — for example trading more after a loss, cutting winners early or drifting from your planned setups.</p><p>The coach works only from your own records and rules. It does not generate trade signals or financial advice; its job is to help you see your process clearly.</p>', '[{"title":"Pattern detection","text":"Surfaces recurring behaviours across many trades."},{"title":"Grounded in your data","text":"Feedback is based on your journal and your rules."},{"title":"No signals, no hype","text":"A review tool, not a prediction engine."}]', '[{"title":"Journal","text":"Log trades with plans and reflections."},{"title":"Analyse","text":"The coach reviews patterns in your history."},{"title":"Adjust","text":"Apply the feedback to your next sessions."}]', '[{"question":"Does the AI tell me what to trade?","answer":"No. It reviews your behaviour and process. It does not provide trade signals or investment advice."}]', 'Book a demo', '/book-consultation', '', 'Objective, unemotional feedback on your execution — patterns in your behaviour surfaced from your own journal data.', '', 'published', 1, 40),
-('Trade Review & Playbooks', 'trade-review-and-playbooks', 'camera', '', '', 'Build a playbook of your best setups with annotated examples, and run structured daily and weekly reviews.', '<p>A playbook turns experience into a repeatable process. Capture your setups with clear criteria and real examples from your journal, then use structured reviews to compare new trades against the standard you set.</p><ul><li>Setup definitions with entry and invalidation criteria</li><li>Annotated screenshots of A-grade examples</li><li>Daily and weekly review checklists</li></ul>', '[{"title":"Repeatable setups","text":"Define what a valid trade looks like before you take it."},{"title":"Visual examples","text":"Keep your best examples one click away."},{"title":"Review routine","text":"Make reflection a habit, not an afterthought."}]', '[]', '[]', 'Book a demo', '/book-consultation', '', 'Build a playbook of your best setups with annotated examples, and run structured daily and weekly reviews.', '', 'published', 1, 50);
+('Multi-Broker Trade Journal', 'multi-broker-trade-journal', 'journal', '', '', 'Bring trades from every broker account into a single, structured journal — with setups, tags, notes and screenshots attached to each trade.', '<p>Most traders keep their history scattered across broker statements, spreadsheets and memory. The journzey.ai journal gives every account a single home, so you can review your trading as one coherent record instead of disconnected fragments.</p><h2>What you can capture</h2><ul><li>Entries, exits, size, fees and outcome for every trade</li><li>The setup, timeframe and market conditions you traded</li><li>Your pre-trade plan and post-trade reflection</li><li>Chart screenshots and free-form notes</li></ul><p>Accounts stay separate where it matters and combined where it helps, so you can compare a funded account with a personal one without mixing up the numbers.</p>', '[{"title":"One record for all accounts","text":"Review every broker account side by side or combined."},{"title":"Structured, searchable history","text":"Filter by setup, tag, session, symbol or account."},{"title":"Context that survives","text":"Plans, notes and screenshots stay attached to the trade."}]', '[{"title":"Connect or import","text":"Add your accounts and bring in your trade history."},{"title":"Tag and annotate","text":"Label setups and add notes and screenshots."},{"title":"Review","text":"Use filters and analytics to study your record."}]', '[{"question":"Can I keep accounts separate?","answer":"Yes. Each account keeps its own history and you can choose to view them individually or combined."},{"question":"Which brokers are supported?","answer":"[Replace] List the broker connections and import formats your deployment supports."}]', 'Start free', '/signup', '', 'Bring trades from every broker account into a single, structured journal — with setups, tags, notes and screenshots attached to each trade.', '', 'published', 1, 10),
+('Performance Analytics', 'performance-analytics', 'chart', '', '', 'Measure what actually drives your results: expectancy, R-multiples, drawdown and performance by setup, session and instrument.', '<p>P&amp;L alone hides more than it reveals. journzey.ai breaks your results down into the measurements that explain them, so you can see which setups carry your performance and which quietly drain it.</p><h2>Key views</h2><ul><li>Expectancy and average R per trade</li><li>Win rate alongside average win and loss size</li><li>Equity curve and drawdown</li><li>Breakdowns by setup, tag, weekday, session and symbol</li></ul>', '[{"title":"Expectancy, not just P&L","text":"Understand the edge behind each strategy."},{"title":"Drill into any slice","text":"Compare setups, sessions and instruments."},{"title":"Spot leaks early","text":"See where losses concentrate before they compound."}]', '[{"title":"Collect","text":"Your journal feeds analytics automatically."},{"title":"Slice","text":"Filter by any dimension you track."},{"title":"Act","text":"Turn findings into rules for the next session."}]', '[{"question":"Do I need to calculate R-multiples myself?","answer":"No. When a trade includes its planned stop, the R-multiple is derived from it."}]', 'Start free', '/signup', '', 'Measure what actually drives your results: expectancy, R-multiples, drawdown and performance by setup, session and instrument.', '', 'published', 1, 20),
+('Risk & Rules Engine', 'risk-and-rules-engine', 'shield', '', '', 'Write down the rules you trade by — daily loss limits, maximum trades, position sizing — and see every time a trade breaks them.', '<p>Every trader has rules. Few have a record of how often they follow them. The rules engine lets you define your own limits and highlights the trades and days that breached them, so discipline becomes something you can measure.</p><h2>Typical rules</h2><ul><li>Maximum daily or weekly loss</li><li>Maximum number of trades per session</li><li>Risk per trade as a percentage of the account</li><li>Allowed sessions, instruments or setups</li></ul>', '[{"title":"Your rules, written down","text":"Turn your trading plan into explicit, checkable limits."},{"title":"Breaches made visible","text":"See exactly which trades or days broke a rule."},{"title":"Discipline over time","text":"Track how consistently you follow your plan."}]', '[{"title":"Define","text":"Set limits that match your plan."},{"title":"Trade","text":"Each trade is checked against your rules."},{"title":"Review","text":"Study breaches and adjust your process."}]', '[]', 'Start free', '/signup', '', 'Write down the rules you trade by — daily loss limits, maximum trades, position sizing — and see every time a trade breaks them.', '', 'published', 1, 30),
+('AI Discipline Coach', 'ai-discipline-coach', 'brain', '', '', 'Objective, unemotional feedback on your execution — patterns in your behaviour surfaced from your own journal data.', '<p>It is hard to judge your own trading objectively. The AI discipline coach reviews your journal and highlights behavioural patterns — for example trading more after a loss, cutting winners early or drifting from your planned setups.</p><p>The coach works only from your own records and rules. It does not generate trade signals or financial advice; its job is to help you see your process clearly.</p>', '[{"title":"Pattern detection","text":"Surfaces recurring behaviours across many trades."},{"title":"Grounded in your data","text":"Feedback is based on your journal and your rules."},{"title":"No signals, no hype","text":"A review tool, not a prediction engine."}]', '[{"title":"Journal","text":"Log trades with plans and reflections."},{"title":"Analyse","text":"The coach reviews patterns in your history."},{"title":"Adjust","text":"Apply the feedback to your next sessions."}]', '[{"question":"Does the AI tell me what to trade?","answer":"No. It reviews your behaviour and process. It does not provide trade signals or investment advice."}]', 'Start free', '/signup', '', 'Objective, unemotional feedback on your execution — patterns in your behaviour surfaced from your own journal data.', '', 'published', 1, 40),
+('Trade Review & Playbooks', 'trade-review-and-playbooks', 'camera', '', '', 'Build a playbook of your best setups with annotated examples, and run structured daily and weekly reviews.', '<p>A playbook turns experience into a repeatable process. Capture your setups with clear criteria and real examples from your journal, then use structured reviews to compare new trades against the standard you set.</p><ul><li>Setup definitions with entry and invalidation criteria</li><li>Annotated screenshots of A-grade examples</li><li>Daily and weekly review checklists</li></ul>', '[{"title":"Repeatable setups","text":"Define what a valid trade looks like before you take it."},{"title":"Visual examples","text":"Keep your best examples one click away."},{"title":"Review routine","text":"Make reflection a habit, not an afterthought."}]', '[]', '[]', 'Start free', '/signup', '', 'Build a playbook of your best setups with annotated examples, and run structured daily and weekly reviews.', '', 'published', 1, 50);
 
 INSERT INTO `navigation` (`id`, `location`, `parent_id`, `label`, `url`, `target`, `sort_order`, `is_enabled`) VALUES
 (1, 'header', NULL, 'Platform', '/services', '_self', 10, 1),
@@ -587,33 +883,38 @@ INSERT INTO `navigation` (`id`, `location`, `parent_id`, `label`, `url`, `target
 (5, 'header', 1, 'AI Discipline Coach', '/services/ai-discipline-coach', '_self', 14, 1),
 (6, 'header', 1, 'Trade Review & Playbooks', '/services/trade-review-and-playbooks', '_self', 15, 1),
 (7, 'header', NULL, 'About', '/about', '_self', 20, 1),
+(10, 'header', NULL, 'Pricing', '/pricing', '_self', 25, 1),
 (8, 'header', NULL, 'Blog', '/blog', '_self', 30, 1),
 (9, 'header', NULL, 'Contact', '/contact', '_self', 40, 1),
 (20, 'footer_2', NULL, 'About', '/about', '_self', 10, 1),
 (21, 'footer_2', NULL, 'Blog', '/blog', '_self', 20, 1),
 (22, 'footer_2', NULL, 'Contact', '/contact', '_self', 30, 1),
-(23, 'footer_2', NULL, 'Book a demo', '/book-consultation', '_self', 40, 1),
+(23, 'footer_2', NULL, 'Pricing', '/pricing', '_self', 40, 1),
+(24, 'footer_2', NULL, 'Sign in', '/login', '_self', 50, 1),
 (30, 'footer_3', NULL, 'Privacy Policy', '/privacy-policy', '_self', 10, 1),
-(31, 'footer_3', NULL, 'Terms & Conditions', '/terms-and-conditions', '_self', 20, 1);
+(31, 'footer_3', NULL, 'Terms & Conditions', '/terms-and-conditions', '_self', 20, 1),
+(32, 'footer_3', NULL, 'Risk Disclaimer', '/disclaimer', '_self', 30, 1),
+(33, 'footer_3', NULL, 'Security', '/security', '_self', 40, 1);
 
 INSERT INTO `pages` (`title`, `slug`, `template`, `hero_eyebrow`, `hero_title`, `hero_subtitle`, `featured_image`, `content`, `blocks`, `status`, `in_sitemap`, `meta_title`, `meta_description`, `og_image`, `canonical_url`, `noindex`, `is_system`, `sort_order`) VALUES
-('About', 'about', 'about', 'About journzey.ai', 'We help traders run their trading like a professional desk', 'A trading journal and discipline terminal built on one belief: you cannot improve what you do not measure honestly.', '', '', '[{"type":"split","eyebrow":"Our story","heading":"Built for traders who want evidence, not opinions","body":"<p>journzey.ai started from a simple frustration: traders spend hours studying charts and minutes studying themselves. Broker statements show what happened, but not why — and memory is a biased narrator.</p><p>We are building the tool we wanted: one place for every account, honest measurements of execution, and feedback grounded in a trader''s own rules.</p>","image":"","image_side":"right","items":"","cta_label":"","cta_url":"","background":"default"},{"type":"cards","eyebrow":"Direction","heading":"Mission and vision","body":"","image":"","image_side":"right","items":"Mission | Give every trader an institutional-grade record of their decisions and the tools to review them objectively. | target\\nVision | A trading culture where process is measured as carefully as profit and loss. | compass","cta_label":"","cta_url":"","background":"muted"},{"type":"cards","eyebrow":"Values","heading":"What we stand for","body":"","image":"","image_side":"right","items":"Honesty over hype | We never promise profits. We help you see your process clearly. | shield\\nYour data, your edge | Your journal belongs to you and exists to serve your review. | lock\\nSimplicity under pressure | Tools that stay clear when markets are not. | zap\\nContinuous improvement | Small, measured changes compound over time. | trend-up","cta_label":"","cta_url":"","background":"default"},{"type":"process","eyebrow":"How it works","heading":"A review loop you can repeat every week","body":"","image":"","image_side":"right","items":"","cta_label":"","cta_url":"","background":"muted"},{"type":"stats","eyebrow":"","heading":"[Replace] Add verified company figures","body":"<p>This block is hidden until you add real, verifiable figures. Edit or delete it in Control Panel → Pages → About.</p>","image":"","image_side":"right","items":"[Replace] | Your first verified metric\\n[Replace] | Your second verified metric","cta_label":"","cta_url":"","background":"default","hidden":1},{"type":"cta","eyebrow":"","heading":"See the platform for yourself","body":"<p>Book a walkthrough and bring your questions.</p>","image":"","image_side":"right","items":"","cta_label":"Book a demo","cta_url":"/book-consultation","background":"brand"}]', 'published', 1, 'About', 'Learn why journzey.ai exists and how it helps traders measure and improve their process.', '', '', 0, 1, 10),
+('About', 'about', 'about', 'About journzey.ai', 'We help traders run their trading like a professional desk', 'A trading journal and discipline terminal built on one belief: you cannot improve what you do not measure honestly.', '', '', '[{"type":"split","eyebrow":"Our story","heading":"Built for traders who want evidence, not opinions","body":"<p>journzey.ai started from a simple frustration: traders spend hours studying charts and minutes studying themselves. Broker statements show what happened, but not why — and memory is a biased narrator.</p><p>We are building the tool we wanted: one place for every account, honest measurements of execution, and feedback grounded in a trader''s own rules.</p>","image":"","image_side":"right","items":"","cta_label":"","cta_url":"","background":"default"},{"type":"cards","eyebrow":"Direction","heading":"Mission and vision","body":"","image":"","image_side":"right","items":"Mission | Give every trader an institutional-grade record of their decisions and the tools to review them objectively. | target\\nVision | A trading culture where process is measured as carefully as profit and loss. | compass","cta_label":"","cta_url":"","background":"muted"},{"type":"cards","eyebrow":"Values","heading":"What we stand for","body":"","image":"","image_side":"right","items":"Honesty over hype | We never promise profits. We help you see your process clearly. | shield\\nYour data, your edge | Your journal belongs to you and exists to serve your review. | lock\\nSimplicity under pressure | Tools that stay clear when markets are not. | zap\\nContinuous improvement | Small, measured changes compound over time. | trend-up","cta_label":"","cta_url":"","background":"default"},{"type":"process","eyebrow":"How it works","heading":"A review loop you can repeat every week","body":"","image":"","image_side":"right","items":"","cta_label":"","cta_url":"","background":"muted"},{"type":"stats","eyebrow":"","heading":"[Replace] Add verified company figures","body":"<p>This block is hidden until you add real, verifiable figures. Edit or delete it in Control Panel → Pages → About.</p>","image":"","image_side":"right","items":"[Replace] | Your first verified metric\\n[Replace] | Your second verified metric","cta_label":"","cta_url":"","background":"default","hidden":1},{"type":"cta","eyebrow":"","heading":"See the platform for yourself","body":"<p>Create a free account and explore the full terminal with demo data.</p>","image":"","image_side":"right","items":"","cta_label":"Start free","cta_url":"/signup","background":"brand"}]', 'published', 1, 'About', 'Learn why journzey.ai exists and how it helps traders measure and improve their process.', '', '', 0, 1, 10),
 ('Privacy Policy', 'privacy-policy', 'legal', 'Legal', 'Privacy Policy', 'How we collect, use and protect your information.', '', '<p class="notice"><strong>Template text.</strong> Replace this page with a policy reviewed by a qualified legal professional for your jurisdiction before launch.</p><h2>Who we are</h2><p>This website is operated by journzey.ai ("we", "us"). [Replace with your registered company name and address.]</p><h2>Information we collect</h2><p>When you submit a form on this website we collect the details you provide, such as your name, email address, phone number and message. We also record basic technical information (IP address and browser type) to protect the site against abuse.</p><h2>How we use it</h2><ul><li>To respond to your enquiry or demo request</li><li>To operate, secure and improve this website</li><li>To comply with legal obligations</li></ul><h2>Cookies and analytics</h2><p>This site uses a strictly necessary session cookie for security. If analytics tools are enabled, they may set additional cookies. [Describe the tools you enable.]</p><h2>Retention</h2><p>We keep enquiry records only as long as needed for the purposes above. [State your retention period.]</p><h2>Your rights</h2><p>You may request access to, correction of or deletion of your personal data by contacting us. [Add your privacy contact address.]</p><h2>Changes</h2><p>We may update this policy from time to time. The latest version is always published on this page.</p>', '[]', 'published', 1, 'Privacy Policy', 'How journzey.ai collects, uses and protects personal information.', '', '', 0, 1, 20),
 ('Terms & Conditions', 'terms-and-conditions', 'legal', 'Legal', 'Terms & Conditions', 'The terms that apply when you use this website.', '', '<p class="notice"><strong>Template text.</strong> Replace this page with a policy reviewed by a qualified legal professional for your jurisdiction before launch.</p><h2>Use of this website</h2><p>By using this website you agree to these terms. If you do not agree, please do not use the site.</p><h2>No investment advice</h2><p>Content on this website and within the journzey.ai platform is provided for information and educational purposes only. It is not investment, financial, legal or tax advice, and nothing here is a recommendation to buy or sell any financial instrument.</p><h2>Risk warning</h2><p>Trading involves substantial risk of loss. You are solely responsible for your trading decisions.</p><h2>Intellectual property</h2><p>The website design, text and software are owned by or licensed to journzey.ai. You may not copy or reuse them without permission.</p><h2>Limitation of liability</h2><p>To the extent permitted by law, we are not liable for losses arising from the use of this website. [Have this clause reviewed for your jurisdiction.]</p><h2>Governing law</h2><p>[Replace with your governing law and jurisdiction.]</p>', '[]', 'published', 1, 'Terms & Conditions', 'Terms and conditions for using the journzey.ai website.', '', '', 0, 1, 30);
 
 INSERT INTO `homepage_sections` (`section_key`, `label`, `is_enabled`, `sort_order`, `eyebrow`, `heading`, `subheading`, `body`, `image`, `background`, `background_image`, `cta_label`, `cta_url`, `cta2_label`, `cta2_url`, `items`, `options`) VALUES
-('hero', 'Hero', 1, 10, 'Trading journal · AI discipline terminal', 'Trade your plan. Prove it with data.', 'journzey.ai brings every broker account into one institutional-grade journal, measures your execution against your own rules and turns your history into clear, unemotional feedback.', '', '', 'default', '', 'Book a demo', '/book-consultation', 'Explore the platform', '/services', '[{"title":"Multi-broker journal","text":"","icon":"layers"},{"title":"Rules & risk tracking","text":"","icon":"shield"},{"title":"AI discipline feedback","text":"","icon":"brain"}]', '{"media_type":"visual","video_url":"","mobile_image":"","overlay_color":"#070a12","overlay_opacity":"55","alignment":"left","animate":"1"}'),
+('hero', 'Hero', 1, 10, 'Trading journal · AI discipline terminal', 'Trade your plan. Prove it with data.', 'journzey.ai brings every broker account into one institutional-grade journal, measures your execution against your own rules and turns your history into clear, unemotional feedback.', '', '', 'default', '', 'Start free', '/signup', 'See pricing', '/pricing', '[{"title":"Multi-broker journal","text":"","icon":"layers"},{"title":"Rules & risk tracking","text":"","icon":"shield"},{"title":"AI discipline feedback","text":"","icon":"brain"}]', '{"media_type":"visual","video_url":"","mobile_image":"","overlay_color":"#070a12","overlay_opacity":"55","alignment":"left","animate":"1"}'),
 ('intro', 'Introduction', 1, 20, 'Why it matters', 'Your broker shows what happened. Your journal should show why.', 'Most trading mistakes are not about analysis — they are about execution and discipline. journzey.ai is built to make those patterns visible.', '', '', 'muted', '', '', '', '', '', '[{"title":"Journal","text":"Capture every trade with the plan, context and reflection behind it.","icon":"journal"},{"title":"Measure","text":"See the statistics that explain your results, not just the P&L.","icon":"bars"},{"title":"Improve","text":"Turn findings into rules and check whether you follow them.","icon":"trend-up"}]', '{}'),
 ('about', 'About', 1, 30, 'The approach', 'Discipline is a process, not a personality trait', '', '<p>Consistency comes from a repeatable loop: plan the trade, execute the plan, review the outcome honestly and adjust. journzey.ai gives that loop structure — from the first fill to the weekly review.</p><p>No signals, no promises. Just a clear record of your decisions and the tools to learn from them.</p>', '', 'default', '', 'About journzey.ai', '/about', '', '', '[]', '{}'),
 ('services', 'Services', 1, 40, 'Platform', 'Everything you need to run your trading like a desk', 'Five connected capabilities that turn raw trade history into better decisions.', '', '', 'default', '', 'View all capabilities', '/services', '', '', '[]', '{"limit":"6"}'),
 ('benefits', 'Why journzey.ai', 1, 50, 'Why a journal', 'What changes when you measure your process', '', '', '', 'muted', '', '', '', '', '', '[{"title":"Objective feedback","text":"Replace gut feel about your trading with numbers you can check.","icon":"scale"},{"title":"Every account in one view","text":"Stop reconciling spreadsheets across brokers and platforms.","icon":"layers"},{"title":"Rules you can verify","text":"Know how often you actually follow your trading plan.","icon":"shield"},{"title":"Patterns surfaced early","text":"Spot behavioural leaks before they become expensive habits.","icon":"eye"},{"title":"A review routine","text":"Make daily and weekly reviews quick enough to keep doing.","icon":"calendar"},{"title":"Calm under pressure","text":"A clear interface built for focus during and after the session.","icon":"target"}]', '{}'),
 ('stats', 'Statistics', 0, 60, '', '[Replace] Add verified figures before enabling this section', 'Do not publish statistics you cannot verify.', '', '', 'dark', '', '', '', '', '', '[{"title":"[Replace]","text":"Your first verified metric","icon":""},{"title":"[Replace]","text":"Your second verified metric","icon":""},{"title":"[Replace]","text":"Your third verified metric","icon":""}]', '{}'),
-('process', 'Process', 1, 70, 'How it works', 'From raw fills to better decisions', 'A simple loop you can repeat after every session.', '', '', 'default', '', 'Book a demo', '/book-consultation', '', '', '[]', '{}'),
+('process', 'Process', 1, 70, 'How it works', 'From raw fills to better decisions', 'A simple loop you can repeat after every session.', '', '', 'default', '', 'Start free', '/signup', '', '', '[]', '{}'),
 ('featured', 'Featured content', 1, 80, 'From the blog', 'Ideas for a more measurable trading process', '', '', '', 'muted', '', 'Read the blog', '/blog', '', '', '[]', '{"limit":"3"}'),
 ('testimonials', 'Testimonials', 1, 90, 'Testimonials', 'What traders say', 'Demo testimonials are shown with a "Demo" label until you replace them with real reviews.', '', '', 'default', '', '', '', '', '', '[]', '{"limit":"6"}'),
-('faq', 'FAQ', 1, 100, 'FAQ', 'Frequently asked questions', '', '', '', 'muted', '', 'Ask a question', '/contact', '', '', '[]', '{"category":"general","limit":"8"}'),
-('cta', 'Call to action', 1, 110, 'Get started', 'Ready to see your trading clearly?', 'Book a guided walkthrough of the journal, analytics and discipline tools — built around how you already trade.', '', '', 'brand', '', 'Book a demo', '/book-consultation', 'Contact us', '/contact', '[]', '{}'),
-('contact', 'Contact', 1, 120, 'Contact', 'Talk to the team', 'Questions about the platform or onboarding? We are happy to help.', '', '', 'default', '', 'Send a message', '/contact', '', '', '[]', '{}');
+('pricing', 'Pricing', 1, 100, 'Pricing', 'Simple pricing. Start free.', 'Explore everything in demo mode, then upgrade to journal your live accounts.', '', '', 'muted', '', 'Compare plans', '/pricing', '', '', '[]', '{}'),
+('faq', 'FAQ', 1, 110, 'FAQ', 'Frequently asked questions', '', '', '', 'muted', '', 'Ask a question', '/contact', '', '', '[]', '{"category":"general","limit":"8"}'),
+('cta', 'Call to action', 1, 120, 'Get started', 'Ready to see your trading clearly?', 'Create a free account in seconds with Google, explore the terminal with demo data, and upgrade when you are ready to journal live accounts.', '', '', 'brand', '', 'Start free', '/signup', 'View pricing', '/pricing', '[]', '{}'),
+('contact', 'Contact', 1, 130, 'Contact', 'Talk to the team', 'Questions about the platform or onboarding? We are happy to help.', '', '', 'default', '', 'Send a message', '/contact', '', '', '[]', '{}');
 
 INSERT INTO `process_steps` (`step_number`, `title`, `description`, `icon`, `image`, `status`, `sort_order`) VALUES
 ('01', 'Bring your accounts together', 'Add each broker account and import your trade history into one journal.', 'link', '', 'published', 10),
@@ -627,7 +928,7 @@ INSERT INTO `faqs` (`question`, `answer`, `category`, `status`, `sort_order`) VA
 ('Can I use it with more than one broker?', 'Yes — the journal is designed for traders with several accounts. [Replace] List the specific broker connections and import formats available in your plan.', 'general', 'published', 30),
 ('Who is it for?', 'Active traders who want to treat their trading like a professional process — including traders working towards or managing funded accounts and those running several personal accounts.', 'general', 'published', 40),
 ('How is my data handled?', '[Replace] Describe where data is stored, who can access it and how it is protected. Link to your Privacy Policy for full details.', 'general', 'published', 50),
-('How do I get started?', 'Book a demo and we will walk you through the platform and help you set up your accounts and rules.', 'general', 'published', 60);
+('How do I get started?', 'Sign up free with Google or email. You can load a demo journal or log test trades in a demo account straight away. Upgrade to a paid plan to add live accounts.', 'general', 'published', 60);
 
 INSERT INTO `testimonials` (`name`, `designation`, `company`, `photo`, `message`, `rating`, `is_demo`, `status`, `sort_order`) VALUES
 ('Demo Testimonial', 'Sample reviewer', 'Replace in Control Panel', '', '[Demo content] This is a placeholder testimonial. Replace it with a genuine review from a real customer, with their permission, or disable the testimonials section.', NULL, 1, 'published', 10),
@@ -647,9 +948,9 @@ INSERT INTO `blog_tags` (`id`, `name`, `slug`) VALUES
 (5, 'Multi-account', 'multi-account');
 
 INSERT INTO `blog_posts` (`id`, `category_id`, `author_id`, `author_name`, `title`, `slug`, `excerpt`, `content`, `featured_image`, `status`, `is_featured`, `published_at`, `meta_title`, `meta_description`, `og_image`) VALUES
-(1, 1, NULL, 'journzey.ai Team', 'How to build a pre-trade checklist you will actually use', 'how-to-build-a-pre-trade-checklist', 'A checklist only helps if it is short enough to use under pressure. Here is a practical way to build one from your own trading history.', '<p>Pre-trade checklists fail for one of two reasons: they are too long to use in the moment, or they are written from generic advice rather than your own mistakes. The fix for both is the same — build the checklist from your journal.</p><h2>1. Start from your losses</h2><p>Filter your journal for your largest losing trades and ask a single question of each: what would I have needed to check to avoid this? Write the answers down without editing them.</p><h2>2. Group and reduce</h2><p>You will find the same few causes repeating — entering before confirmation, trading outside your session, sizing up after a loss. Merge similar items until you have five or fewer.</p><h2>3. Make each item binary</h2><p>"Is the market trending?" invites debate. "Is price above the 20-period average on the higher timeframe?" does not. Every item should be answerable with yes or no in seconds.</p><h2>4. Record whether you used it</h2><p>Add a field to your journal for checklist completion. After a few weeks, compare results for trades taken with and without a complete checklist. The data will tell you whether the checklist is working.</p><blockquote>A checklist is a hypothesis about what makes a good trade. Your journal is how you test it.</blockquote>', '', 'published', 1, '2026-09-26 19:22:40', '', 'A checklist only helps if it is short enough to use under pressure. Here is a practical way to build one from your own trading history.', ''),
-(2, 2, NULL, 'journzey.ai Team', 'Why R-multiples beat dollar P&L for reviewing trades', 'why-r-multiples-beat-dollar-pnl', 'Dollar P&L changes with position size. R-multiples measure the quality of the decision itself — and make different accounts comparable.', '<p>If you risk different amounts on different trades, or trade several accounts of different sizes, dollar P&L is a noisy way to judge your decisions. R-multiples remove that noise.</p><h2>What is an R-multiple?</h2><p>R is the amount you planned to risk on a trade — the distance from entry to your stop, multiplied by size. A trade that makes twice what you risked is +2R; one that hits its stop is −1R.</p><h2>Why it matters for review</h2><ul><li><strong>Comparable across accounts.</strong> A +2R trade is +2R whether the account is large or small.</li><li><strong>Separates decision from size.</strong> You can see whether a setup is good independently of how big you traded it.</li><li><strong>Exposes stop discipline.</strong> Losses larger than −1R show where stops were moved or ignored.</li></ul><h2>Expectancy in R</h2><p>Average R per trade is your expectancy. Tracked by setup, it shows which strategies deserve more of your attention — and which are quietly costing you.</p>', '', 'published', 1, '2026-09-30 19:22:40', '', 'Dollar P&L changes with position size. R-multiples measure the quality of the decision itself — and make different accounts comparable.', ''),
-(3, 1, NULL, 'journzey.ai Team', 'Journaling across multiple broker accounts: a practical workflow', 'journaling-across-multiple-broker-accounts', 'Running several accounts makes review harder. A simple, consistent workflow keeps your record complete without eating your evening.', '<p>Many traders run more than one account — a funded account alongside a personal one, or separate accounts for different strategies. Each extra account multiplies the review work unless you have a routine.</p><h2>Keep accounts separate, review them together</h2><p>Each account should keep its own history so balances and limits stay accurate. But your behaviour is shared across all of them, so your review should look at the combined picture too.</p><h2>A ten-minute daily routine</h2><ol><li>Bring in the day&#39;s trades from every account.</li><li>Tag each trade with its setup.</li><li>Add a one-line reflection to any trade that broke a rule.</li><li>Check the day against your daily loss and trade-count limits.</li></ol><h2>A weekly deep-dive</h2><p>Once a week, compare setups across accounts. A strategy that works in one account but not another usually points to a difference in execution, sizing or session — exactly the kind of insight a combined journal makes visible.</p>', '', 'published', 0, '2026-10-04 19:22:40', '', 'Running several accounts makes review harder. A simple, consistent workflow keeps your record complete without eating your evening.', '');
+(1, 1, NULL, 'journzey.ai Team', 'How to build a pre-trade checklist you will actually use', 'how-to-build-a-pre-trade-checklist', 'A checklist only helps if it is short enough to use under pressure. Here is a practical way to build one from your own trading history.', '<p>Pre-trade checklists fail for one of two reasons: they are too long to use in the moment, or they are written from generic advice rather than your own mistakes. The fix for both is the same — build the checklist from your journal.</p><h2>1. Start from your losses</h2><p>Filter your journal for your largest losing trades and ask a single question of each: what would I have needed to check to avoid this? Write the answers down without editing them.</p><h2>2. Group and reduce</h2><p>You will find the same few causes repeating — entering before confirmation, trading outside your session, sizing up after a loss. Merge similar items until you have five or fewer.</p><h2>3. Make each item binary</h2><p>"Is the market trending?" invites debate. "Is price above the 20-period average on the higher timeframe?" does not. Every item should be answerable with yes or no in seconds.</p><h2>4. Record whether you used it</h2><p>Add a field to your journal for checklist completion. After a few weeks, compare results for trades taken with and without a complete checklist. The data will tell you whether the checklist is working.</p><blockquote>A checklist is a hypothesis about what makes a good trade. Your journal is how you test it.</blockquote>', '', 'published', 1, '2026-09-26 20:38:00', '', 'A checklist only helps if it is short enough to use under pressure. Here is a practical way to build one from your own trading history.', ''),
+(2, 2, NULL, 'journzey.ai Team', 'Why R-multiples beat dollar P&L for reviewing trades', 'why-r-multiples-beat-dollar-pnl', 'Dollar P&L changes with position size. R-multiples measure the quality of the decision itself — and make different accounts comparable.', '<p>If you risk different amounts on different trades, or trade several accounts of different sizes, dollar P&L is a noisy way to judge your decisions. R-multiples remove that noise.</p><h2>What is an R-multiple?</h2><p>R is the amount you planned to risk on a trade — the distance from entry to your stop, multiplied by size. A trade that makes twice what you risked is +2R; one that hits its stop is −1R.</p><h2>Why it matters for review</h2><ul><li><strong>Comparable across accounts.</strong> A +2R trade is +2R whether the account is large or small.</li><li><strong>Separates decision from size.</strong> You can see whether a setup is good independently of how big you traded it.</li><li><strong>Exposes stop discipline.</strong> Losses larger than −1R show where stops were moved or ignored.</li></ul><h2>Expectancy in R</h2><p>Average R per trade is your expectancy. Tracked by setup, it shows which strategies deserve more of your attention — and which are quietly costing you.</p>', '', 'published', 1, '2026-09-30 20:38:00', '', 'Dollar P&L changes with position size. R-multiples measure the quality of the decision itself — and make different accounts comparable.', ''),
+(3, 1, NULL, 'journzey.ai Team', 'Journaling across multiple broker accounts: a practical workflow', 'journaling-across-multiple-broker-accounts', 'Running several accounts makes review harder. A simple, consistent workflow keeps your record complete without eating your evening.', '<p>Many traders run more than one account — a funded account alongside a personal one, or separate accounts for different strategies. Each extra account multiplies the review work unless you have a routine.</p><h2>Keep accounts separate, review them together</h2><p>Each account should keep its own history so balances and limits stay accurate. But your behaviour is shared across all of them, so your review should look at the combined picture too.</p><h2>A ten-minute daily routine</h2><ol><li>Bring in the day&#39;s trades from every account.</li><li>Tag each trade with its setup.</li><li>Add a one-line reflection to any trade that broke a rule.</li><li>Check the day against your daily loss and trade-count limits.</li></ol><h2>A weekly deep-dive</h2><p>Once a week, compare setups across accounts. A strategy that works in one account but not another usually points to a difference in execution, sizing or session — exactly the kind of insight a combined journal makes visible.</p>', '', 'published', 0, '2026-10-04 20:38:00', '', 'Running several accounts makes review harder. A simple, consistent workflow keeps your record complete without eating your evening.', '');
 
 INSERT INTO `blog_post_tags` (`post_id`, `tag_id`) VALUES
 (1, 1),
@@ -664,9 +965,20 @@ INSERT INTO `custom_sections` (`name`, `placement`, `layout`, `eyebrow`, `headin
 ('Example banner', 'home', 'banner', 'Announcement', 'Use custom sections for announcements or extra content', '<p>This is a draft example. Edit it under Content → Custom Sections, choose where it appears and publish it.</p>', '', 'brand', 'Contact us', '/contact', 'draft', 10);
 
 INSERT INTO `email_templates` (`template_key`, `name`, `description`, `subject`, `body`, `is_enabled`) VALUES
-('lead_admin', 'New lead notification', 'Sent to the team when someone books a demo / consultation.', 'New demo request from {name}', '<p>A new demo request was submitted on {site_name}.</p><p><strong>Name:</strong> {name}<br><strong>Email:</strong> {email}<br><strong>Phone:</strong> {phone}<br><strong>Interested in:</strong> {service}<br><strong>Preferred time:</strong> {preferred_date} {preferred_time}</p><p><strong>Message:</strong><br>{message}</p><p>Submitted {date}. View it in the Control Panel under Leads.</p>', 1),
-('lead_user', 'Lead confirmation', 'Sent to the visitor after booking a demo / consultation.', 'We received your request — {site_name}', '<p>Hi {name},</p><p>Thank you for your interest in {site_name}. We have received your request and will confirm your session by email.</p><p><strong>Interested in:</strong> {service}<br><strong>Preferred time:</strong> {preferred_date} {preferred_time}</p><p>— The {site_name} team</p>', 1),
+('welcome', 'Welcome email', 'Sent to a member after they sign up.', 'Welcome to {site_name}', '<p>Hi {name},</p><p>Your {site_name} account is ready. Sign in at {site_url}/login to start journaling. You can load the demo journal from the Home Hub to explore every tool.</p><p>— The {site_name} team</p>', 1),
+('password_reset', 'Password reset', 'Sent when a member asks to reset their password.', 'Reset your {site_name} password', '<p>Hi {name},</p><p>Use the link below to choose a new password. It expires in 60 minutes and can be used once.</p><p><a href="{reset_url}">{reset_url}</a></p><p>If you did not ask for this, you can ignore this email.</p>', 1),
+('payment_receipt', 'Payment receipt', 'Sent to a member after a successful payment.', 'Payment received — {plan}', '<p>Hi {name},</p><p>Thank you for your payment of {amount} for <strong>{plan}</strong>. Your access is active until {access_until}.</p><p>Payment reference: {reference}</p><p>— The {site_name} team</p>', 1),
+('payment_admin', 'New payment notification', 'Sent to the team when a payment succeeds.', 'New payment: {plan} — {amount}', '<p>{name} ({email}) paid {amount} for {plan}.</p><p>Reference: {reference}</p>', 1),
 ('contact_admin', 'Contact message notification', 'Sent to the team when the contact form is submitted.', 'New contact message: {subject}', '<p>A new message was submitted on {site_name}.</p><p><strong>Name:</strong> {name}<br><strong>Email:</strong> {email}<br><strong>Phone:</strong> {phone}<br><strong>Subject:</strong> {subject}</p><p><strong>Message:</strong><br>{message}</p><p>Submitted {date}.</p>', 1),
 ('contact_user', 'Contact confirmation', 'Sent to the visitor after using the contact form.', 'Thanks for contacting {site_name}', '<p>Hi {name},</p><p>Thanks for getting in touch. We have received your message and will reply as soon as we can.</p><p><strong>Your message:</strong><br>{message}</p><p>— The {site_name} team</p>', 1);
+
+INSERT INTO `plans` (`id`, `name`, `slug`, `tagline`, `price`, `currency`, `interval_days`, `interval_label`, `features`, `allow_live`, `max_live_accounts`, `ai_daily_limit`, `is_featured`, `is_active`, `sort_order`) VALUES
+(1, 'Pro', 'pro-monthly', 'For active traders journaling live accounts.', '19.00', 'USD', 30, 'month', 'Everything in Free\nUp to 3 live trading accounts\nFull analytics on live data\nCSV import and signed webhooks\nAI Coach: 50 messages per day\nWeekly and monthly AI reviews', 1, 3, 50, 1, 1, 10),
+(2, 'Pro Annual', 'pro-annual', 'Pro, billed once a year.', '190.00', 'USD', 365, 'year', 'Everything in Pro\nUp to 3 live trading accounts\nAI Coach: 50 messages per day\nTwo months free compared with monthly', 1, 3, 50, 0, 1, 20),
+(3, 'Desk', 'desk-monthly', 'For prop traders running many accounts.', '49.00', 'USD', 30, 'month', 'Everything in Pro\nUp to 15 live trading accounts\nAI Coach: 200 messages per day\nPriority support', 1, 15, 200, 0, 1, 30);
+
+INSERT INTO `pages` (`title`, `slug`, `template`, `hero_eyebrow`, `hero_title`, `hero_subtitle`, `featured_image`, `content`, `blocks`, `status`, `in_sitemap`, `meta_title`, `meta_description`, `og_image`, `canonical_url`, `noindex`, `is_system`, `sort_order`) VALUES
+('Risk Disclaimer', 'disclaimer', 'legal', 'Legal', 'Risk Disclaimer', 'Please read this before using journzey.ai.', '', '<p class="notice"><strong>Template text.</strong> Have this page reviewed by a qualified professional before launch.</p><h2>Journal and analytics software only</h2><p>journzey.ai is trading journal and performance-analytics software. It does not execute trades, hold funds or act as a broker.</p><h2>No guaranteed outcomes</h2><p>journzey.ai does not guarantee profits or any investment outcome. Analytics are based on the historical data you enter or import, and past performance does not predict future results.</p><h2>Hypothetical and statistical results</h2><p>Features such as the Monte Carlo risk simulation, the discipline leak mirror and the runner auditor produce hypothetical or statistical estimates. They are not predictions and not recommendations.</p><h2>AI Coach</h2><p>AI-generated analysis can be incomplete or wrong. It is educational feedback on your own data, not personalised financial advice.</p><h2>Not financial advice</h2><p>Nothing in journzey.ai replaces advice from a licensed financial professional. Trading involves substantial risk of loss.</p>', '[]', 'published', 1, 'Risk Disclaimer', 'journzey.ai is trading journal software and does not guarantee outcomes.', '', '', 0, 1, 40),
+('Security', 'security', 'legal', 'Legal', 'Security', 'How we protect your account and trading data.', '', '<p class="notice"><strong>Template text.</strong> Have this page reviewed by a qualified professional before launch.</p><h2>Your data is private to your account</h2><p>Every trade, journal entry, strategy and AI conversation is linked to your account and checked on the server on every request. Other members can never see your data.</p><h2>Sign-in</h2><p>Sign in with Google (OpenID Connect) or with an email and password. Passwords are stored only as salted one-way hashes. Sign-in attempts are rate-limited.</p><h2>Sessions and transport</h2><p>The site runs over HTTPS. Session cookies are HttpOnly and Secure, and every form is protected against cross-site request forgery.</p><h2>Secrets</h2><p>Webhook secrets and API keys are encrypted at rest and never shown in the browser after creation.</p><h2>Payments</h2><p>Card and UPI details are entered on the payment provider&#39;s secure checkout and never reach our servers.</p><h2>Report a vulnerability</h2><p>[Replace] Add the email address for security reports.</p>', '[]', 'published', 1, 'Security', 'How journzey.ai protects member accounts and trading data.', '', '', 0, 1, 50);
 
 INSERT INTO `smtp_settings` (`id`, `host`, `port`, `username`, `password_enc`, `encryption`, `from_email`, `from_name`, `reply_to`, `is_enabled`) VALUES (1, '', 587, '', NULL, 'tls', '', 'journzey.ai', '', 0);

@@ -15,7 +15,7 @@ $attrs = ($required ? ' required' : '') . (isset($max) ? ' maxlength="' . (int) 
       <?php foreach ($options as $k => $l): ?><option value="<?= e($k) ?>"<?= (string) $val === (string) $k ? ' selected' : '' ?>><?= e($l) ?></option><?php endforeach; ?>
     </select>
   <?php else: ?>
-    <input id="<?= e($id) ?>" type="<?= e($type) ?>" name="<?= e($name) ?>" value="<?= e($val) ?>"<?= $attrs . $aria ?><?= isset($minDate) ? ' min="' . e($minDate) . '"' : '' ?>>
+    <input id="<?= e($id) ?>" type="<?= e($type) ?>" name="<?= e($name) ?>" value="<?= e($val) ?>"<?= $attrs . $aria ?><?= isset($minDate) ? ' min="' . e($minDate) . '"' : '' ?><?= $type === 'number' ? ' step="any"' : '' ?>>
   <?php endif; ?>
   <?php if ($hint): ?><small class="hint" id="<?= e($id) ?>-hint"><?= e($hint) ?></small><?php endif; ?>
   <?= field_error($name) ?>

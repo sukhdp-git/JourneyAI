@@ -39,9 +39,9 @@ $mapOk = $map !== '' && preg_match('#^https://(www\.)?google\.[a-z.]+/maps/embed
       </ul>
       <?php endif; ?>
       <div class="aside-card">
-        <h2 class="h4">Prefer a live walkthrough?</h2>
-        <p>Book a session and see the platform with your own workflow in mind.</p>
-        <?= cms_button(setting('header_cta_label', 'Book a demo'), setting('header_cta_url', '/book-consultation'), 'btn btn-ghost btn-block', true) ?>
+        <h2 class="h4">Try it yourself</h2>
+        <p>Create a free account and explore the full terminal with demo data.</p>
+        <?= cms_button('Create a free account', '/signup', 'btn btn-ghost btn-block', true) ?>
       </div>
     </aside>
   </div>

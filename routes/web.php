@@ -26,8 +26,6 @@ $router->get('/blog/{slug}', [BlogController::class, 'show']);
 
 $router->get('/contact', [FormController::class, 'contact']);
 $router->post('/contact', [FormController::class, 'contactSubmit']);
-$router->get('/book-consultation', [FormController::class, 'booking']);
-$router->post('/book-consultation', [FormController::class, 'bookingSubmit']);
 
 $router->get('/sitemap.xml', [SeoController::class, 'sitemap']);
 $router->get('/robots.txt', [SeoController::class, 'robots']);

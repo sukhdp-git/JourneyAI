@@ -13,7 +13,7 @@ final class SeoController
     public function sitemap(Request $req): never
     {
         $base = rtrim(Settings::get('seo_canonical_base') ?: BASE_URL, '/');
-        $urls = [['/', null, '1.0'], ['/services', null, '0.8'], ['/blog', null, '0.8'], ['/contact', null, '0.6'], ['/book-consultation', null, '0.7']];
+        $urls = [['/', null, '1.0'], ['/services', null, '0.8'], ['/blog', null, '0.8'], ['/contact', null, '0.6'], ['/pricing', null, '0.8'], ['/login', null, '0.3'], ['/signup', null, '0.5']];
         foreach (Database::all("SELECT slug, updated_at FROM services WHERE status = 'published' ORDER BY sort_order") as $r) {
             $urls[] = ['/services/' . $r['slug'], $r['updated_at'], '0.8'];
         }
@@ -45,7 +45,7 @@ final class SeoController
             echo "User-agent: *\nDisallow: /\n";
             exit;
         }
-        echo "User-agent: *\nDisallow: /" . ADMIN_PREFIX . "/\nDisallow: /setup\nDisallow: /blog?q=\n";
+        echo "User-agent: *\nDisallow: /" . ADMIN_PREFIX . "/\nDisallow: /setup\nDisallow: /terminal\nDisallow: /checkout\nDisallow: /onboarding\nDisallow: /api/\nDisallow: /webhooks/\nDisallow: /blog?q=\n";
         $extra = trim(Settings::get('seo_robots_extra'));
         if ($extra !== '') {
             echo preg_replace('/[^\x20-\x7E\n]/', '', $extra) . "\n";

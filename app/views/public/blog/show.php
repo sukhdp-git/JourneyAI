@@ -31,9 +31,9 @@ $meta = '<p class="article-meta"><span>' . icon('user', 'icon icon-sm') . e($aut
     </article>
     <aside class="article-aside">
       <div class="aside-card sticky-aside">
-        <h2 class="h4"><?= e(setting('footer_cta_heading') ?: 'Want to see the platform?') ?></h2>
-        <p><?= e(setting('footer_cta_text') ?: 'Book a walkthrough with our team.') ?></p>
-        <?= cms_button(setting('header_cta_label', 'Book a demo'), setting('header_cta_url', '/book-consultation'), 'btn btn-primary btn-block', true) ?>
+        <h2 class="h4"><?= e(setting('footer_cta_heading') ?: 'Journal your trading with data') ?></h2>
+        <p><?= e(setting('footer_cta_text') ?: 'Start free in demo mode.') ?></p>
+        <?= cms_button(setting('header_cta_label', 'Start free'), setting('header_cta_url', '/signup'), 'btn btn-primary btn-block', true) ?>
       </div>
     </aside>
   </div>

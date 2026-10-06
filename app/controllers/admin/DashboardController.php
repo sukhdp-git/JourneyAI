@@ -7,46 +7,55 @@ use App\Core\Auth;
 use App\Core\Database;
 use App\Core\Mailer;
 use App\Core\Request;
+use App\Trading\AiCoach;
+use App\Trading\GoogleAuth;
+use App\Trading\MarketData;
+use App\Trading\Payments;
 
 /** Dashboard: every number comes from the database. */
 final class DashboardController extends AdminController
 {
     public function index(Request $req): never
     {
-        $leads = Auth::can('leads');
+        $members = Auth::can('members') || Auth::can('members.view');
         $m = [];
-        if ($leads) {
-            $s = array_column(Database::all('SELECT status, COUNT(*) c FROM leads GROUP BY status'), 'c', 'status');
-            $m['leads_total'] = array_sum($s);
-            $m['leads_new'] = (int) ($s['new'] ?? 0);
-            $m['leads_follow'] = (int) ($s['follow_up'] ?? 0);
-            $m['leads_converted'] = (int) ($s['converted'] ?? 0);
-            $m['leads_status'] = $s;
-            $m['leads_week'] = (int) Database::value('SELECT COUNT(*) FROM leads WHERE created_at >= UTC_TIMESTAMP() - INTERVAL 7 DAY');
-            $m['email_failed'] = (int) Database::value("SELECT COUNT(*) FROM leads WHERE email_status = 'failed' AND created_at >= UTC_TIMESTAMP() - INTERVAL 30 DAY");
-            // Leads per day, last 30 days (UTC days).
-            $daily = array_column(Database::all('SELECT DATE(created_at) d, COUNT(*) c FROM leads WHERE created_at >= UTC_DATE() - INTERVAL 29 DAY GROUP BY DATE(created_at)'), 'c', 'd');
+        if ($members) {
+            $m['users'] = Database::one("SELECT COUNT(*) total, COALESCE(SUM(signup_method = 'google'), 0) google, COALESCE(SUM(signup_method = 'email'), 0) email,
+                    COALESCE(SUM(plan_id IS NOT NULL AND plan_expires_at > UTC_TIMESTAMP()), 0) paid, COALESCE(SUM(last_login_at >= UTC_DATE()), 0) today,
+                    COALESCE(SUM(created_at >= UTC_TIMESTAMP() - INTERVAL 7 DAY), 0) week, COALESCE(SUM(status = 'suspended'), 0) suspended,
+                    COALESCE(SUM(last_login_at >= UTC_TIMESTAMP() - INTERVAL 30 DAY), 0) active30
+                FROM users");
+            $m['logins_today'] = (int) Database::value('SELECT COUNT(*) FROM user_logins WHERE success = 1 AND created_at >= UTC_DATE()');
+            $m['failed_today'] = (int) Database::value('SELECT COUNT(*) FROM user_logins WHERE success = 0 AND created_at >= UTC_DATE()');
+            $m['trades'] = (int) Database::value("SELECT COUNT(*) FROM trades WHERE source <> 'DEMO'");
+            $m['trades_week'] = (int) Database::value("SELECT COUNT(*) FROM trades WHERE source <> 'DEMO' AND created_at >= UTC_TIMESTAMP() - INTERVAL 7 DAY");
+            $m['ai_today'] = (int) Database::value("SELECT COUNT(*) FROM ai_messages WHERE role = 'user' AND created_at >= UTC_DATE()");
+            $daily = [];
+            foreach (Database::all("SELECT DATE(created_at) d, signup_method m, COUNT(*) c FROM users WHERE created_at >= UTC_DATE() - INTERVAL 29 DAY GROUP BY DATE(created_at), signup_method") as $r) {
+                $daily[$r['d']][$r['m']] = (int) $r['c'];
+            }
             $series = [];
             for ($i = 29; $i >= 0; $i--) {
                 $day = gmdate('Y-m-d', strtotime("-$i days"));
-                $series[] = ['date' => $day, 'count' => (int) ($daily[$day] ?? 0)];
+                $series[] = ['date' => $day, 'google' => $daily[$day]['google'] ?? 0, 'email' => $daily[$day]['email'] ?? 0];
             }
             $m['series'] = $series;
-            $m['recent_leads'] = Database::all('SELECT id, name, email, service_name, status, created_at FROM leads ORDER BY created_at DESC, id DESC LIMIT 6');
+            $m['recent_users'] = Database::all('SELECT u.id, u.name, u.email, u.signup_method, u.created_at, u.last_login_at, (u.plan_id IS NOT NULL AND u.plan_expires_at > UTC_TIMESTAMP()) paid FROM users u ORDER BY u.id DESC LIMIT 8');
+            $m['recent_logins'] = Database::all('SELECT l.user_id, l.email, l.method, l.success, l.created_at, u.name FROM user_logins l LEFT JOIN users u ON u.id = l.user_id ORDER BY l.id DESC LIMIT 8');
+        }
+        if (Auth::can('billing')) {
+            $m['revenue'] = Database::all("SELECT currency, SUM(amount) total, SUM(CASE WHEN paid_at >= UTC_TIMESTAMP() - INTERVAL 30 DAY THEN amount ELSE 0 END) last30, COUNT(*) n FROM payments WHERE status = 'paid' AND gateway <> 'manual' GROUP BY currency");
         }
         if (Auth::can('messages')) {
-            $m['messages_total'] = (int) Database::value('SELECT COUNT(*) FROM contact_messages');
             $m['messages_new'] = (int) Database::value("SELECT COUNT(*) FROM contact_messages WHERE status = 'new'");
-            $m['recent_messages'] = Database::all('SELECT id, name, subject, status, created_at FROM contact_messages ORDER BY created_at DESC, id DESC LIMIT 5');
         }
-        $m['services'] = (int) Database::value("SELECT COUNT(*) FROM services WHERE status = 'published'");
-        $m['posts'] = (int) Database::value("SELECT COUNT(*) FROM blog_posts WHERE status IN ('published','scheduled') AND published_at <= UTC_TIMESTAMP()");
-        $m['drafts'] = (int) Database::value("SELECT COUNT(*) FROM blog_posts WHERE status = 'draft' OR (status = 'scheduled' AND published_at > UTC_TIMESTAMP())");
-        $m['pages'] = (int) Database::value("SELECT COUNT(*) FROM pages WHERE status = 'published'");
-        $m['media'] = (int) Database::value('SELECT COUNT(*) FROM media');
-        $m['demo_testimonials'] = (int) Database::value("SELECT COUNT(*) FROM testimonials WHERE is_demo = 1 AND status = 'published'");
         $m['smtp_enabled'] = (int) Mailer::config()['is_enabled'] === 1;
+        $m['google'] = GoogleAuth::configured();
+        $m['gateway'] = Payments::gateway();
+        $m['ai'] = AiCoach::configured();
+        $m['market'] = MarketData::configured();
+        $m['demo_testimonials'] = (int) Database::value("SELECT COUNT(*) FROM testimonials WHERE is_demo = 1 AND status = 'published'");
         $m['activity'] = Auth::can('logs') ? Database::all('SELECT l.action, l.module, l.details, l.created_at, a.name FROM activity_logs l LEFT JOIN admins a ON a.id = l.admin_id ORDER BY l.id DESC LIMIT 6') : [];
-        $this->render('dashboard', ['m' => $m, 'canLeads' => $leads], 'Dashboard', [['Dashboard', null]]);
+        $this->render('dashboard', ['m' => $m, 'canMembers' => $members], 'Dashboard', [['Dashboard', null]]);
     }
 }
