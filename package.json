@@ -1,0 +1,43 @@
+{
+  "name": "journzey-ai",
+  "version": "1.0.0",
+  "private": true,
+  "description": "journzey.ai — Institutional Trading Journal & AI Discipline Terminal",
+  "type": "module",
+  "workspaces": [
+    "packages/shared",
+    "apps/api",
+    "apps/web"
+  ],
+  "engines": {
+    "node": ">=20.11"
+  },
+  "scripts": {
+    "build:shared": "npm run build -w @journzey/shared",
+    "dev": "npm run build:shared && concurrently -n api,web -c cyan,magenta \"npm run dev -w @journzey/api\" \"npm run dev -w @journzey/web\"",
+    "dev:api": "npm run build:shared && npm run dev -w @journzey/api",
+    "dev:web": "npm run build:shared && npm run dev -w @journzey/web",
+    "build": "npm run build:shared && npm run build -w @journzey/api && npm run build -w @journzey/web",
+    "typecheck": "npm run build:shared && npm run typecheck --workspaces --if-present",
+    "lint": "eslint .",
+    "test": "npm run build:shared && npm run test --workspaces --if-present",
+    "test:e2e": "playwright test -c tests/e2e/playwright.config.ts",
+    "db:generate": "npm run db:generate -w @journzey/api",
+    "db:migrate": "npm run build:shared && npm run db:migrate -w @journzey/api",
+    "db:seed": "npm run build:shared && npm run db:seed -w @journzey/api",
+    "db:schema-sql": "node scripts/export-schema-sql.mjs",
+    "db:seed-sql": "npm run build:shared && node scripts/generate-seed-sql.mjs",
+    "start": "npm run start -w @journzey/api",
+    "package:zip": "node scripts/package-zip.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@playwright/test": "1.49.1",
+    "concurrently": "^9.1.0",
+    "eslint": "^9.17.0",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "globals": "^15.14.0",
+    "typescript": "5.7.3",
+    "typescript-eslint": "^8.18.2"
+  }
+}

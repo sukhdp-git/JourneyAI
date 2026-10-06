@@ -1,0 +1,16 @@
+node_modules/
+dist/
+build/
+coverage/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+uploads/
+apps/api/uploads/
+playwright-report/
+test-results/
+*.tsbuildinfo
+journzey-ai-production.zip
+.vite/
