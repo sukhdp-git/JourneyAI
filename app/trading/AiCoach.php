@@ -89,25 +89,27 @@ TXT;
             // Server-side fallback: if the primary model declines a request, the API retries it on a fallback model.
             $body['fallbacks'] = 'default';
         }
-        [$status, $json, $err] = self::post('https://api.anthropic.com/v1/messages', [
-            'x-api-key: ' . $key,
-            'anthropic-version: 2023-06-01',
-            'anthropic-beta: server-side-fallback-2026-07-01',
-            'content-type: application/json',
-        ], $body);
+        $headers = ['x-api-key: ' . $key, 'anthropic-version: 2023-06-01', 'content-type: application/json'];
+        [$status, $json, $err] = self::post('https://api.anthropic.com/v1/messages', array_merge($headers, ['anthropic-beta: server-side-fallback-2026-07-01']), $body);
+        if ($err === null && $status === 400 && preg_match('/fallback|beta/i', (string) ($json['error']['message'] ?? ''))) {
+            // The key's account does not accept server-side fallbacks: retry the same request without them.
+            unset($body['fallbacks']);
+            [$status, $json, $err] = self::post('https://api.anthropic.com/v1/messages', $headers, $body);
+        }
         if ($err !== null) {
             return self::fail('Could not reach the AI provider.', $err);
         }
         if ($status !== 200) {
+            $detail = self::providerMessage($json, $key);
             $msg = match ($status) {
                 401 => 'The AI provider rejected the API key.',
                 403 => 'The API key does not have access to this model.',
-                404 => 'The configured AI model was not found.',
+                404 => 'The configured AI model was not found. Leave the Model field empty to use the default.',
                 429 => 'The AI provider is rate-limiting requests. Please try again shortly.',
                 529, 503 => 'The AI provider is temporarily overloaded. Please try again shortly.',
-                default => 'The AI provider returned an error (HTTP ' . $status . ').',
+                default => 'The AI provider returned an error (HTTP ' . $status . ')' . ($detail !== '' ? ': ' . $detail : '.'),
             };
-            return self::fail($msg, 'anthropic http ' . $status . ' ' . ($json['error']['type'] ?? ''));
+            return self::fail($msg, 'anthropic http ' . $status . ' ' . ($json['error']['type'] ?? '') . ' ' . $detail);
         }
         if (($json['stop_reason'] ?? '') === 'refusal') {
             return ['ok' => false, 'text' => '', 'model' => (string) ($json['model'] ?? $model), 'error' => 'The AI Coach declined to answer this request. Try rephrasing it around your own trading performance.'];
@@ -141,7 +143,7 @@ TXT;
         }
         if ($status !== 200) {
             $msg = match ($status) {
-                400, 401, 403 => 'The AI provider rejected the API key or request.',
+                400, 401, 403 => 'The AI provider rejected the API key or request' . (($d = self::providerMessage($json, $key)) !== '' ? ': ' . $d : '.'),
                 404 => 'The configured AI model was not found.',
                 429 => 'The AI provider is rate-limiting requests. Please try again shortly.',
                 default => 'The AI provider returned an error (HTTP ' . $status . ').',
@@ -180,6 +182,16 @@ TXT;
         curl_close($ch);
         $json = is_string($raw) ? (json_decode($raw, true) ?: []) : [];
         return [$status, $json, $err];
+    }
+
+    /** The provider's own error text (e.g. "credit balance is too low"), with the key scrubbed and length capped. */
+    private static function providerMessage(array $json, string $key): string
+    {
+        $m = (string) ($json['error']['message'] ?? '');
+        if ($key !== '') {
+            $m = str_replace($key, '[key]', $m);
+        }
+        return mb_strimwidth(trim(strip_tags($m)), 0, 220, '…');
     }
 
     private static function fail(string $public, string $log): array
