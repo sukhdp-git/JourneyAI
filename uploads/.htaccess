@@ -1,0 +1,21 @@
+# Uploaded media: images only. Script execution is disabled and unknown types are refused.
+Options -Indexes -ExecCGI
+<IfModule mod_mime.c>
+    RemoveHandler .php .phtml .php3 .php4 .php5 .php7 .php8 .phps .pht .phar .cgi .pl .py .asp .aspx .jsp .sh
+    RemoveType .php .phtml .php3 .php4 .php5 .php7 .php8 .phps .pht .phar
+</IfModule>
+<FilesMatch "\.(?i:php[0-9]?|phtml|phps|pht|phar|cgi|pl|py|asp|aspx|jsp|sh|html?|js|htaccess)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    <FilesMatch "\.svg$">
+        Header set Content-Security-Policy "default-src 'none'; style-src 'unsafe-inline'; sandbox"
+    </FilesMatch>
+</IfModule>

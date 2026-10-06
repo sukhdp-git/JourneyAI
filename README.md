@@ -1,419 +1,476 @@
-# journzey.ai
+# journzey.ai — Website & Control Panel
 
-**Institutional Trading Journal & AI Discipline Terminal**
+The production marketing website and CMS for **journzey.ai**, an institutional multi-broker trading journal and AI discipline terminal.
 
-journzey.ai is a full-stack trading journal and analytics terminal for gold, forex, indices, crypto and commodities. Traders log executions in seconds (natural-language Quick Trade or a full manual form), and the platform turns that history into institutional-grade analytics: equity and drawdown, profit factor and expectancy, session and strategy edge, a conservative **Discipline Leak Mirror**, **Monte Carlo risk of ruin**, tilt detection, a psychology journal with voice dictation, and an optional AI Coach.
-
-All authoritative data lives in PostgreSQL behind an authenticated, per-user-isolated REST API. Browser storage is used only for harmless conveniences (theme before first paint, unsaved journal drafts).
-
-> journzey.ai is journaling and analytics software. It does not provide investment advice or guarantee any outcome. See `/disclaimer` in the app.
+- **Stack:** plain PHP 8.1+ (8.2+ recommended), MySQL/MariaDB with PDO, vanilla JavaScript and Apache `.htaccess`.
+- **Hosting:** built for cPanel shared hosting (e.g. Namecheap). No Node, npm, Composer, Docker or SSH is needed.
+- **Admin:** a separate Control Panel at **`/control-panel/`** manages every part of the public site.
 
 ---
 
 ## Contents
-
-1. [What's in the box](#1-whats-in-the-box)
-2. [Architecture](#2-architecture)
-3. [Requirements](#3-requirements)
-4. [Installation](#4-installation)
-5. [Environment configuration](#5-environment-configuration)
-6. [PostgreSQL setup](#6-postgresql-setup)
-7. [Migrations](#7-migrations)
-8. [Seeding](#8-seeding)
-9. [Google OAuth configuration](#9-google-oauth-configuration)
-10. [Running the frontend](#10-running-the-frontend)
-11. [Running the backend](#11-running-the-backend)
-12. [Running with Docker](#12-running-with-docker)
-13. [Running tests](#13-running-tests)
-14. [Production build](#14-production-build)
-15. [Deployment](#15-deployment)
-16. [Integrations: AI, market data, storage, brokers](#16-integrations)
-17. [Control panel (admin portal)](#control-panel-admin-portal)
-17. [Security model](#17-security-model)
-18. [API reference](#18-api-reference)
-19. [Project layout](#19-project-layout)
+1. [Project overview](#1-project-overview)
+2. [Requirements](#2-requirements)
+3. [Folder structure](#3-folder-structure)
+4. [Installation on cPanel](#4-installation-on-cpanel)
+   - upload, database creation, SQL import, configuration, installer
+5. [Admin setup & Admin URL](#5-admin-setup--admin-url)
+6. [SMTP setup & test email](#6-smtp-setup--test-email)
+7. [Managing the website](#7-managing-the-website)
+   - logo, homepage, navigation, services, blog, pages, leads, media, SEO, analytics, WhatsApp
+8. [Admin users & roles](#8-admin-users--roles)
+9. [Backups](#9-backups)
+10. [Security](#10-security)
+11. [Troubleshooting](#11-troubleshooting)
+    - general, 404, `.htaccess`, SMTP
+12. [Content rules & placeholders](#12-content-rules--placeholders)
+13. [Development notes](#13-development-notes)
 
 ---
 
-## 1. What's in the box
+## 1. Project overview
 
-| Area | Highlights |
-| --- | --- |
-| **Home Hub** | Market ticker (live via Twelve Data, otherwise clearly labelled **DEMO DATA**), six world clocks with session status, rotating discipline quotes, persistent 9-step checklist, execution desk with Quick Trade |
-| **Quick Trade** | `buy gold 2862 sl 2858 3r 0.5 lot val bounce` → parsed preview chips → Enter logs it. Parsed in the browser for preview and **re-parsed and validated on the server** |
-| **Dashboard** | Date presets (All/Today/Week/Month/Last Month/Custom), Net P&L, win rate, PF, avg win/loss, payoff, best/worst, equity, cumulative P&L and drawdown charts, weekday/session/instrument/strategy breakdowns |
-| **Calendar** | Monthly P&L grid in the user's time zone, weekly summaries, day drill-down |
-| **Trade Log** | Server-side pagination, search, sort and filters; view/edit/delete/share; CSV export `JournzeyAI_Trades_YYYY-MM-DD.csv` with formula-injection protection; screenshot upload (picker, drag-and-drop, paste) |
-| **Strategy Analysis** | Nine default playbooks plus your own; trades, W/L, win rate, P&L, PF, avg R, rule compliance per strategy |
-| **Edge Matrix** | Previous-month breakdown by strategy/session/instrument/hour/mistake, best trading window, disciplined vs emotional, Discipline Leak Mirror (+PNG export), Monte Carlo risk of ruin (0.25–5% slider, 5,000 paths), tilt rules |
-| **Daily Notepad** | Typed or dictated (EN/RU/ZH/PT, Web Speech API) journal with compliance, emotional state, discipline rating, lessons, history; Performance Messenger weekly/monthly reviews (copy, print-to-PDF, optional AI narrative) |
-| **AI Coach** | Claude-powered coach that sees **server-aggregated statistics only**; multilingual; disabled with an explicit message when `AI_API_KEY` is not set |
-| **Tilt Circuit Breaker** | N losses within M minutes → TILT RISK DETECTED, cooldown timer, breathing exercise, remaining risk budget, optional **JOURNZEY TERMINAL LOCK**. Clearly states that the **broker** is not locked |
-| **Post-Trade Runner Auditor** | Hypothetical 20% runner with a breakeven stop, evaluated on real historical candles from the market-data provider (never simulated prices) |
-| **Flex cards** | Canvas-rendered share cards in four themes (Neon Cyan, Matrix Emerald, Cyber Amethyst, Gold Bullion), PNG download and clipboard copy; no account identifiers |
-| **Broker Sync Hub** | Honest catalogue with status labels; working CSV statement import (MT4/MT5/cTrader/NinjaTrader), signed webhook ingestion, Binance Spot (beta) |
-| **Accounts & capital** | Multiple trading accounts, real vs demo, deposits/withdrawals/adjustments, live current capital |
-| **Demo mode** | 42 demo trades (Aug–Oct 2026, XAUUSD/US500/NAS100/EURUSD/BTCUSDT/USOIL) and 13 journal entries in a separate account, always labelled **DEMO DATA**, never mixed into real analytics; reset or remove at any time |
-| **Data rights** | Export all data (JSON) and trades (CSV); delete account with typed-email confirmation |
-| **UX** | Four themes (Clean Light, Dark Terminal, Cyberpunk Slate, Midnight Navy) saved per user; mobile-first shell with slide-out nav, sticky top bar, bottom quick tabs and a floating Log button; accessible modals, labelled forms, icons + text (never colour alone), tabular numerals |
+### Public website
+All URLs are clean and never end in `.php`.
 
-## 2. Architecture
+| URL | Purpose |
+|---|---|
+| `/` | Homepage. Its 12 sections are CMS-managed, reorderable and can be switched on or off. |
+| `/about` | About page: hero plus content blocks. |
+| `/services`, `/services/{slug}` | Platform capabilities, each with benefits, process, FAQ and SEO. |
+| `/blog`, `/blog/{slug}` | Blog with featured post, search, pagination, related posts and sharing. |
+| `/blog/category/{slug}`, `/blog/tag/{slug}`, `/blog/page/2` | Blog archives and pagination. |
+| `/contact` | Contact details, map and contact form (saved to MySQL). |
+| `/book-consultation` | Demo/consultation booking form (saved to MySQL as a lead). |
+| `/privacy-policy`, `/terms-and-conditions` | Legal pages (CMS pages). |
+| `/{any-page-slug}` | Any page created in the Control Panel, e.g. `/refund-policy`. |
+| `/sitemap.xml`, `/robots.txt` | Generated automatically. |
+
+### Control Panel (`/control-panel/`)
+The Control Panel has its own visual identity: a SaaS dashboard with sidebar, breadcrumbs, toasts, modals and responsive tables.
+
+- **Dashboard:** real metrics, a 30-day leads chart, the lead pipeline, recent leads and messages, quick actions and a setup checklist.
+- **Website:** General settings, Homepage sections, Header, Footer, Navigation, SEO, Social links, Contact details, WhatsApp, Analytics.
+- **Content:** Pages (with content blocks), Services, Blog (posts, categories, tags), Testimonials, FAQs, Process steps, Custom sections.
+- **Leads:** Consultation leads (status, notes, assignment, history, email log, CSV export) and Contact messages.
+- **Media:** Library with secure uploads, WebP optimisation, alt text, copy URL and a picker inside every image field.
+- **Email:** SMTP settings, Email templates, Send test email, Delivery log.
+- **Appearance:** Colours, Typography, Buttons, Layout options, Custom CSS.
+- **System:** Admin users, Roles & permissions, Activity logs, System information, My profile.
+
+---
+
+## 2. Requirements
+
+- PHP **8.1 or newer** (8.2+ recommended), with these extensions:
+  - `pdo_mysql`, `gd` (with WebP), `sodium`, `fileinfo`, `mbstring`, `dom`, `openssl`
+  - `exif` is optional
+  - all are enabled by default on Namecheap/cPanel
+- MySQL **5.7+** or MariaDB **10.3+** (InnoDB, utf8mb4).
+- Apache with `mod_rewrite` and `AllowOverride All`, which is standard on cPanel. `mod_headers`, `mod_expires` and `mod_deflate` are used when available.
+- An SSL certificate. Use cPanel → SSL/TLS Status → AutoSSL; it is free.
+
+---
+
+## 3. Folder structure
 
 ```
-journzey-ai/
-├── apps/
-│   ├── web/                 React 18 + TypeScript + Vite + Tailwind + TanStack Query + React Router
-│   ├── admin/               Control panel — separate React app served at /control-panel/
-│   └── api/                 Node.js + TypeScript + Express REST API (/api/v1) + Drizzle ORM
-│       └── src/
-│           ├── routes/      HTTP layer (controllers) per domain
-│           ├── services/    business logic (trades, analytics, AI, brokers, storage, …)
-│           ├── middleware/  auth, CSRF, rate limiting
-│           ├── validators/  request schemas (re-exports shared Zod schemas)
-│           ├── auth/        Google OIDC client, session typing
-│           └── db/          Drizzle schema, migrator, seed
-├── packages/
-│   ├── shared/              domain logic shared by API and web: instruments, decimal-safe trade math,
-│   │                        quick-trade parser, analytics, sessions, Zod schemas, API types, demo dataset
-│   └── config/              shared TypeScript configuration
-├── database/
-│   ├── schema.sql           full schema (generated from migrations)
-│   ├── seed.sql             reference data + demo-data loader function (generated)
-│   └── migrations/          Drizzle SQL migrations (source of truth)
-├── docker/                  API + web Dockerfiles, nginx config
-├── tests/e2e/               Playwright end-to-end tests
-├── scripts/                 schema/seed SQL generators, ZIP packager
-├── docker-compose.yml
-├── .env.example
+/                      ← upload these files into public_html (or the domain's folder)
+├── index.php          ← the single front controller (all clean URLs route here)
+├── .htaccess          ← HTTPS redirect, clean URLs, file protection, caching, compression
+├── database.sql       ← schema + starter content (import with phpMyAdmin or via /setup)
 ├── README.md
-└── DEPLOYMENT.md
+├── app/               ← application code (web access denied)
+│   ├── bootstrap.php
+│   ├── core/          ← Router, Request, Database (PDO), Auth, Csrf, Session, Mailer, Media, Seo, sanitizers…
+│   ├── controllers/   ← public controllers; controllers/admin/ = Control Panel (+ resources.php, settings.php)
+│   ├── models/        ← read-side queries (Content, Blog, Navigation)
+│   ├── helpers/       ← helper functions + icon set
+│   └── views/         ← templates: public/, admin/, setup/
+├── config/            ← config.example.php (and config.php after install) — web access denied
+├── routes/            ← web.php (public) and admin.php (Control Panel) — web access denied
+├── public/assets/     ← css/site.css, js/site.js, admin/admin.css, admin/admin.js, images/
+├── storage/           ← logs/, sessions/, installed.lock — web access denied
+├── uploads/           ← media uploads (script execution disabled by uploads/.htaccess)
+└── vendor/phpmailer/  ← PHPMailer 6 (bundled; no Composer needed)
 ```
 
-**Request flow:** React UI → TanStack Query → `fetch` (same-origin, HttpOnly session cookie, CSRF header) → Express middleware (request id, Helmet, CORS, rate limit, session, CSRF, auth) → route → service → Drizzle → PostgreSQL.
+> The Control Panel lives at the clean URL `/control-panel/`. It is a route, not a physical folder. Its views are in `app/views/admin/` and its assets are in `public/assets/admin/`. **Do not create a real `control-panel` folder**, because Apache would serve the folder instead of the route.
 
-**Design decisions (documented deviations from the brief):**
+---
 
-- **ORM:** Drizzle ORM (a mature TypeScript PostgreSQL ORM) instead of Prisma. It has no native engine binaries, emits plain SQL migrations, and maps `NUMERIC` to strings so money never passes through floats.
-- **`packages/types` merged into `packages/shared`:** API types live next to the Zod schemas that produce them so they cannot drift.
-- **Sessions in PostgreSQL** (`user_sessions`) rather than Redis, so no extra service is needed. Redis is optional and unused by default (see §12).
-- **Same-origin by default:** the browser talks to `/api` on the web origin (Vite proxy in dev, nginx or the API's static hosting in prod). This keeps cookies first-party with `SameSite=Lax`.
-- **Local email/password auth is not enabled.** Google OIDC is the only sign-in method. `users.auth_provider` and the identity-provider abstraction (`apps/api/src/auth/google.ts → IdentityProvider`) let a password provider be added later. A **developer sign-in** exists only when `DEV_AUTH_BYPASS=true` and `NODE_ENV≠production` (the API refuses to boot otherwise). It is labelled "local only, not Google" in the UI.
-- **P&L currency conversion:** P&L is computed from instrument metadata when the quote currency equals the account currency, or when the account currency is the pair's base (e.g. USDJPY on a USD account). Otherwise the API refuses to guess an FX rate and asks for the broker-reported P&L.
-- **R multiples are signed** (losses are negative). Magnitude equals the brief's `abs(exit-entry)/abs(entry-stop)`.
+## 4. Installation on cPanel
 
-## 3. Requirements
+### 4.1 Upload the files
+1. Open **cPanel → File Manager** and go to `public_html`, or the document root of your domain or subdomain.
+2. Click **Upload** and upload `journzey-ai-production.zip`.
+3. Right-click the ZIP and choose **Extract**. Make sure the files end up directly in `public_html`, so `public_html/index.php` exists. If they extracted into a sub-folder, move them up.
+4. In File Manager, open **Settings** (top right) and tick **Show Hidden Files**. Confirm that `.htaccess` is present in `public_html`, `uploads/` and the private folders.
+5. Delete the ZIP afterwards.
 
-- **Node.js ≥ 20.11** (22 LTS recommended) and npm 10+
-- **PostgreSQL 13+** (16 recommended), local or via Docker
-- Optional: Docker 24+ with Compose v2.24+
-- Optional: a Google Cloud project (for real sign-in), an Anthropic API key (AI Coach), a Twelve Data key (live prices), an S3-compatible bucket (production screenshots)
+### 4.2 Create the database
+1. Open **cPanel → MySQL® Databases** and create a database, e.g. `cpuser_journzey`.
+2. Create a MySQL user with a strong password, e.g. `cpuser_jzuser`.
+3. Under **Add User To Database**, add the user to the database and tick **ALL PRIVILEGES**.
 
-## 4. Installation
+### 4.3 Install
 
-```bash
-git clone <your-repo-url> journzey-ai
-cd journzey-ai
-npm ci                       # installs all workspaces from package-lock.json
-cp .env.example .env         # then edit .env (see below)
-```
+You can install in one of two ways.
 
-Generate the two required secrets and paste them into `.env`:
+#### Option A — Web installer (recommended)
+1. Visit `https://YOUR-DOMAIN/setup`. Any page redirects there until installation is complete.
+2. Check the requirements list. Everything should show ✓.
+3. Enter the database details:
+   - host: usually `localhost`
+   - database name, user and password
+   - the website URL, e.g. `https://journzey.ai`
+4. Create your **Super Admin**: name, email, and a password of at least 10 characters with letters and numbers.
+5. Click **Install**. The installer then:
+   - tests the database connection;
+   - imports `database.sql` if the tables are not already there;
+   - writes `config/config.php` with a random `APP_KEY`;
+   - creates your Super Admin;
+   - writes `storage/installed.lock`. After that, `/setup` returns 404 and **cannot run again**.
 
-```bash
-node -e "console.log('SESSION_SECRET=' + require('crypto').randomBytes(48).toString('base64url'))"
-node -e "console.log('ENCRYPTION_KEY=' + require('crypto').randomBytes(32).toString('base64'))"
-```
-
-## 5. Environment configuration
-
-All variables are documented inline in [`.env.example`](.env.example). The API validates them at boot and exits with a list of problems if anything is wrong.
-
-| Variable | Required | Purpose |
-| --- | --- | --- |
-| `DATABASE_URL` | ✅ | PostgreSQL connection string |
-| `SESSION_SECRET` | ✅ | ≥ 32 chars; signs the session cookie |
-| `ENCRYPTION_KEY` | ✅ | 32 random bytes, base64; AES-256-GCM key for broker credentials and webhook secrets |
-| `APP_URL` | ✅ | Browser origin of the web app; the only allowed CORS/CSRF origin (plus `CORS_ORIGINS`) |
-| `API_URL` | ✅ | Public API base incl. `/api` (used to build webhook URLs) |
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_CALLBACK_URL` | for sign-in | Google OAuth (§9). Can instead be entered in the control panel |
-| `ADMIN_BOOTSTRAP_EMAIL` / `ADMIN_BOOTSTRAP_PASSWORD` | first run | Creates the first control-panel owner if none exists |
-| `ADMIN_IP_ALLOWLIST`, `ADMIN_SESSION_IDLE_MINUTES`, `ADMIN_SESSION_MAX_HOURS` | optional | Control-panel hardening |
-| `ADMIN_DIST_DIR` | optional | Serve the built control panel from the API at `/control-panel/` |
-| `DEV_AUTH_BYPASS` | dev only | Enables labelled developer sign-in. Forbidden in production |
-| `AI_API_KEY`, `AI_MODEL` | optional | Anthropic API key; model defaults to `claude-opus-5-5` |
-| `MARKET_DATA_API_KEY` | optional | Twelve Data key for live quotes and runner audits |
-| `STORAGE_PROVIDER` + `STORAGE_*` | optional | `local` (default) or `s3` (AWS S3 / Cloudflare R2 / Supabase S3 API) |
-| `RUN_MIGRATIONS_ON_START` | optional | Apply migrations + reference seed on boot (Docker) |
-| `WEB_DIST_DIR` | optional | Serve the built web app from the API (single-container deployments) |
-| `TRUST_PROXY` | optional | Express trust-proxy setting; defaults to `1` in production |
-| `SENTRY_DSN` | optional | Error reporting. Logs are structured JSON on stdout for Logtail/Datadog/etc. |
-| `REDIS_URL` | optional | Reserved; not used by the current build |
-
-Never commit `.env`. `.gitignore` and `.dockerignore` already exclude it.
-
-## 6. PostgreSQL setup
-
-**With Docker** (simplest):
-
-```bash
-docker compose up -d postgres     # postgres://journzey:journzey@localhost:5432/journzey
-```
-
-**With a local PostgreSQL:**
-
-```sql
-CREATE ROLE journzey WITH LOGIN PASSWORD 'journzey';
-CREATE DATABASE journzey OWNER journzey;
-CREATE DATABASE journzey_test OWNER journzey;   -- used by the API integration tests
-```
-
-## 7. Migrations
-
-Migrations live in `database/migrations/` and are applied with Drizzle's migrator, which records applied migrations in the `drizzle.__drizzle_migrations` table.
-
-```bash
-npm run db:migrate          # apply all pending migrations to DATABASE_URL
-npm run db:generate         # after editing apps/api/src/db/schema.ts: generate a new SQL migration
-npm run db:schema-sql       # regenerate database/schema.sql from the migrations
-```
-
-`database/schema.sql` is a reviewable, single-file copy of the schema (tables, PKs, FKs, unique constraints, check constraints, indexes, `NUMERIC` money columns, `TIMESTAMPTZ` timestamps). You can bootstrap an empty database with `psql "$DATABASE_URL" -f database/schema.sql`, but `npm run db:migrate` is preferred because it tracks state.
-
-## 8. Seeding
-
-```bash
-npm run db:seed             # ORM seed: 9 strategy templates + 23 instruments (idempotent)
-npm run db:seed-sql         # regenerate database/seed.sql from packages/shared
-psql "$DATABASE_URL" -f database/seed.sql   # SQL alternative to db:seed (idempotent)
-```
-
-No users are seeded. Demo data is attached to **real signed-in users** only, either:
-
-- during onboarding ("Demo Mode"), or Settings → Data & privacy → **Load / Reset Demo Data**; or
-- from SQL: `SELECT journzey_load_demo_data('<existing user uuid>');` (defined in `seed.sql`).
-
-Demo trades go into a separate account flagged `demo = true, sample_data = true`, and demo journal entries carry `demo = true`. The default `real` analytics scope never includes them.
-
-## 9. Google OAuth configuration
-
-journzey.ai uses the **authorization-code flow with PKCE**, plus `state` and `nonce`. The backend exchanges the code, verifies the ID token signature against Google's JWKS, checks issuer, audience, expiry and nonce, requires `email_verified`, then creates or finds the user by the stable Google subject id and rotates the session.
-
-1. Open [Google Cloud Console](https://console.cloud.google.com/) and **create or select a project**.
-2. **APIs & Services → OAuth consent screen:** choose *External* (or *Internal* for Workspace), set the app name, support email, and authorised domain (e.g. `journzey.ai`). Scopes: `openid`, `email`, `profile`. While the app is in *Testing*, add your Google accounts as test users.
-3. **APIs & Services → Credentials → Create credentials → OAuth client ID → Web application.**
-4. **Authorised JavaScript origins:** not required for this server-side flow. Adding your web origin is harmless:
-   - Development: `http://localhost:3000`
-   - Production: `https://journzey.ai`
-5. **Authorised redirect URIs.** These must exactly match `GOOGLE_CALLBACK_URL`. The callback is an **API** route, reached through the same origin as the web app:
-   - Development: `http://localhost:3000/api/v1/auth/google/callback`
-   - Production: `https://journzey.ai/api/v1/auth/google/callback`
-6. Paste the client ID and secret into **Control panel → Integrations & API keys → Google sign-in**, save, then click **Test connection**. This takes effect immediately with no restart. Alternatively, put them in `.env`:
-
-   ```dotenv
-   GOOGLE_CLIENT_ID=1234567890-abc.apps.googleusercontent.com
-   GOOGLE_CLIENT_SECRET=GOCSPX-...
-   GOOGLE_CALLBACK_URL=http://localhost:3000/api/v1/auth/google/callback
+#### Option B — phpMyAdmin and a manual config
+1. Open **cPanel → phpMyAdmin**, select the database, open **Import**, choose `database.sql` and click **Import**.
+2. Copy `config/config.example.php` to `config/config.php` and edit it:
+   ```php
+   define('DB_HOST', 'localhost');
+   define('DB_NAME', 'cpuser_journzey');
+   define('DB_USER', 'cpuser_jzuser');
+   define('DB_PASS', 'your-db-password');
+   define('BASE_URL', 'https://journzey.ai');
+   define('APP_KEY', '64 random hex characters');
    ```
+   Generate the APP_KEY with any password generator (letters and digits, 64 characters).
+3. Visit `https://YOUR-DOMAIN/setup`. The installer detects the config and only asks you to create the Super Admin, then locks itself.
 
-7. Restart the API. The login page's **Continue with Google** button now redirects to Google. After consent, Google calls the callback, the API creates the session and redirects to `/auth/callback`. The SPA then routes to `/onboarding` (first login) or `/app`.
+### 4.4 Folder permissions
+On cPanel the defaults are usually right: folders `755`, files `644`.
 
-If the variables are missing, the button is disabled and the login page explains which variables an administrator must set. Authentication is never simulated. The client secret is only ever read by the API and is never sent to the browser.
+- `config/`, `storage/` (with `storage/logs`, `storage/sessions`) and `uploads/` must be writable by PHP.
+- After installation you may set `config/config.php` to `640` or `600`.
 
-## 10. Running the frontend
+### 4.5 Configuration reference (`config/config.php`)
 
-```bash
-npm run dev:web             # http://localhost:3000 (proxies /api → http://localhost:4000)
-```
+| Constant | Meaning |
+|---|---|
+| `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASS` | Database connection. |
+| `BASE_URL` | Full site URL with **no trailing slash**. Include a sub-folder if installed in one, e.g. `https://example.com/site`. |
+| `APP_KEY` | 32+ random characters. Encrypts the SMTP password. **Back it up.** If you change it, re-enter the SMTP password. |
+| `APP_ENV` | `production` (default) or `development`. |
+| `APP_DEBUG` | `false` on live sites. Errors are then logged to `storage/logs/`, never shown to visitors. |
 
-## 11. Running the backend
+### 4.6 Verify the installation
 
-```bash
-npm run db:migrate && npm run db:seed
-npm run dev:api             # http://localhost:4000/api/v1/health (tsx watch)
-```
+| Check | Expected |
+|---|---|
+| `https://YOUR-DOMAIN/` | The homepage loads. |
+| `https://YOUR-DOMAIN/about` and `/services` | Load with clean URLs. |
+| `http://YOUR-DOMAIN/` | Redirects to `https://`. |
+| `https://YOUR-DOMAIN/config/config.php` and `/database.sql` | Show the 404 page, so they are protected. |
+| `https://YOUR-DOMAIN/control-panel/` | Opens the sign-in page. |
 
-Or run both together with `npm run dev`.
+---
 
-**Local sign-in without Google credentials:** set `DEV_AUTH_BYPASS=true` in `.env` (development only). The login page then shows a dashed "Developer sign-in — local only, not Google" form.
+## 5. Admin setup & Admin URL
 
-## 12. Running with Docker
+**Admin URL:** `https://YOUR-DOMAIN/control-panel/`. It redirects to `/control-panel/login`.
 
-```bash
-cp .env.example .env        # set SESSION_SECRET and ENCRYPTION_KEY (+ Google vars if available)
-docker compose up --build
-```
+After the first sign-in, follow the **Finish setting up** checklist on the dashboard:
+1. **Website → General settings:** site name, tagline, logos, favicon, timezone, copyright.
+2. **Website → Contact details:** email, phone, WhatsApp, address, hours, map, form texts, and where notifications go.
+3. **Email → SMTP settings:** configure and **Send test email** (section 6).
+4. **Content → Testimonials:** replace the **demo** testimonials with genuine ones, or unpublish them.
+5. **Pages → Privacy Policy / Terms:** replace the template text with legally reviewed policies.
+6. **Website → SEO & Analytics:** set the default meta data and enable tracking if needed.
 
-| Service | URL |
-| --- | --- |
-| web (nginx + SPA, proxies `/api`) | http://localhost:3000 |
-| api | http://localhost:4000/api/v1/health |
-| postgres | localhost:5432 (journzey/journzey) |
+The session times out after **30 minutes** of inactivity, and after 12 hours in total.
 
-The API container applies migrations and reference data on start (`RUN_MIGRATIONS_ON_START=true`). Screenshots persist in the `uploads` volume, the database in `pgdata`. Optional Redis: `docker compose --profile redis up` (not required).
+---
 
-## 13. Running tests
+## 6. SMTP setup & test email
 
-```bash
-npm run typecheck           # strict TypeScript across all workspaces
-npm run lint                # ESLint (typescript-eslint + react-hooks)
-npm test                    # shared unit tests + API integration tests + web component tests
-```
+The Control Panel route is `/control-panel/email/smtp`.
 
-API integration tests (Vitest + Supertest) use a real PostgreSQL database. By default that is `postgres://journzey:journzey@localhost:5432/journzey_test`; override it with `TEST_DATABASE_URL`. The suite **drops and rebuilds** that database's `public` schema from migrations, so never point it at real data. Coverage includes:
+1. In cPanel, open **Email Accounts** and create a mailbox, e.g. `noreply@yourdomain.com`.
+2. Use **Connect Devices** to find the settings.
+3. In the Control Panel, fill in:
 
-- authentication: unauthenticated rejection, the real OAuth callback route with a fake IdP (state, nonce, unverified email), cookie flags, logout destroying the server session, CSRF, dev-login gating
-- **multi-user isolation**: user B cannot list, read, edit, delete, export, scope analytics to, or log into user A's trades, journals, strategies, accounts or screenshots
-- trades: create/edit/delete, server-side calculations, quick-trade parsing, validation errors, filtering/sorting/pagination, CSV escaping, screenshot content validation
-- analytics: win rate, profit factor, payoff, equity, drawdown, discipline leak, calendar, Monte Carlo, demo isolation, AI context aggregation
-- brokers: encrypted secrets, webhook signature/timestamp/replay/idempotency, CSV import + duplicate skipping, Binance FIFO pairing
-- account lifecycle: settings, journal upsert, checklist, capital flows, terminal lock, export, deletion
+   | Field | Value |
+   |---|---|
+   | SMTP host | `mail.yourdomain.com` |
+   | Encryption / port | **SSL / 465** (recommended on cPanel) or **TLS / 587** |
+   | Username | the full mailbox address |
+   | Password | the mailbox password |
+   | From email | the same mailbox (must be on your domain) |
+   | From name | e.g. `journzey.ai` |
+   | Reply-to | optional |
 
-**End-to-end (Playwright):** start the stack with `DEV_AUTH_BYPASS=true` (`npm run dev`, or Docker with that flag), then:
+4. Tick **Enable SMTP** and click **Save settings**.
+5. Under **Send test email**, enter a recipient and send. The panel shows a safe success or error message. The password is never displayed.
 
-```bash
-npx playwright install chromium      # once
-npm run test:e2e
-```
+How email and form submissions work:
+- **Password storage.** The SMTP password is encrypted in the database with `APP_KEY` (libsodium). The field always shows empty with a "saved" placeholder; leave it empty to keep the saved password.
+- **Notifications.** Form notifications go to **Contact details → Send form notifications to**, falling back to the contact email.
+- **Templates.** Edit the email templates under **Email → Email templates**. Available variables: `{name} {email} {phone} {service} {message} {date} {subject} {preferred_date} {preferred_time} {site_name} {site_url}`.
+- **Failure handling.** Every lead or contact message is **saved to MySQL first**, so an SMTP failure never loses it. The lead shows "Email failed" with a safe diagnostic. All attempts appear in **Email → Delivery log**.
 
-The e2e suite signs in, completes onboarding with demo data, logs a quick trade, edits it, checks the dashboard, Edge Matrix, calendar, journal, AI-not-configured state, theme persistence and broker hub, deletes the trade, signs out, and runs a mobile-viewport flow. It fails on any browser console error. Set `PLAYWRIGHT_CHROMIUM_EXECUTABLE` to use a preinstalled Chromium.
+---
 
-## 14. Production build
+## 7. Managing the website
 
-```bash
-npm run build               # shared → api (tsc → apps/api/dist) → web (vite → apps/web/dist)
-NODE_ENV=production node apps/api/dist/server.js
-```
+### Logo management
+Go to **Website → General settings** and set:
+- **Desktop logo**, plus an optional **Mobile logo**. Use SVG or a transparent PNG about 36 px tall.
+- **Favicon**.
 
-With `WEB_DIST_DIR=apps/web/dist` the API also serves the SPA (with SPA fallback and immutable asset caching), so one process serves the whole product. Routes are lazy-loaded and split into chunks (React, query, charts).
+With no logo, the text wordmark is used.
 
-## 15. Deployment
+### Homepage management
+Go to **Website → Homepage**. To change the order of the 12 sections, drag a row or use the arrows. The switch shows or hides a section.
 
-See **[DEPLOYMENT.md](DEPLOYMENT.md)** for the recommended architecture (single container on Railway/Render/Fly + Neon PostgreSQL + Cloudflare R2), DNS/HTTPS, environment variables, the Google callback URL, CORS, migrations and health checks.
+Edit a section to change:
+- eyebrow, heading, subheading, body, image, background (including an image), buttons and repeatable items such as pillars, benefit cards and statistics;
+- for the **Hero**: style (built-in product visual, background image, background video or text only), alignment, mobile image, overlay colour and opacity, and animation;
+- for **Services, Blog, Testimonials and FAQ**: how many items to show.
 
-## 16. Integrations
+The **Statistics** section is disabled by default and contains `[Replace]` placeholders. Only enable it with real, verifiable numbers.
 
-| Integration | Status in this build | Notes |
-| --- | --- | --- |
-| Google OAuth / OIDC | **Implemented** | Requires your Google credentials. Tested end-to-end through the real callback route with a fake identity provider. Not exercised against live Google from CI |
-| AI Coach (Anthropic Claude) | **Implemented** | `@anthropic-ai/sdk`, model `claude-opus-5-5` (configurable), adaptive thinking, server-side refusal fallback. Sends aggregated statistics only. Disabled with "AI Coach requires server configuration." when `AI_API_KEY` is empty. Verified with a fake client, not against the live API |
-| Market data (Twelve Data) | **Implemented, configurable** | `/quote` for the ticker (60 s cache) and `/time_series` for runner audits. Symbol mappings are in `apps/api/src/services/marketData.ts`; coverage depends on your plan, and unavailable symbols show "n/a". Without a key the ticker shows static levels clearly labelled **DEMO DATA** |
-| Screenshot storage | **Implemented** | `local` (filesystem, served through an authenticated route) or `s3` (private bucket, 5-minute signed URLs). Files are validated by MIME type, extension, size (≤ 5 MB) and magic bytes |
-| CSV statement import | **Available** | MT4/MT5, cTrader, NinjaTrader exports; auto column detection; broker server-time offset; duplicates skipped by ticket |
-| Signed webhook | **Available** | See below |
-| Binance Spot | **Beta** | Read-only API key verified on connect and encrypted at rest; FIFO pairs spot fills into round trips. Not tested against live Binance |
-| Vantage, Exness, FTMO, FundedNext, NinjaTrader | Available **via CSV/webhook** | No public journal API; the hub routes them to statement import |
-| cTrader Open API, Tradovate, Topstep, Apex | **Coming soon** | Not implemented; shown as such |
-| Broker execution lock | **Unsupported** | journzey.ai cannot block broker orders |
+**Content → Custom sections** adds extra banners or text sections to the homepage (before the final call to action), or to the About, Services or Contact pages.
 
-### Broker webhooks
+### Header, footer and navigation management
+- **Website → Navigation:** add, edit, delete, enable/disable and drag-reorder links for the **Header** menu and **Footer columns 1–3**.
+  - Set a **Parent** to create a dropdown (header only).
+  - Set **Open in** to open the link in the same tab or a new tab.
+- **Website → Header:** sticky header, transparent over the hero, CTA button, optional secondary link and announcement bar.
+- **Website → Footer:**
+  - column titles;
+  - column 1 can list the services automatically;
+  - contact and social toggles;
+  - the footer call-to-action band and the risk disclaimer.
 
-Create a *Signed Webhook* connection in Settings → Broker sync. The secret (`whsec_…`) is shown **once**. POST closed trades to `https://<host>/api/v1/webhooks/broker/<connectionId>`:
+### Services management
+Go to **Content → Services**. Each service has:
+- title, URL slug and icon;
+- short and full description (rich text);
+- thumbnail and hero image;
+- CTA, benefits, process steps and FAQs;
+- SEO and OG image, status, and whether it appears on the homepage.
 
-```
-Content-Type: application/json
-X-Journzey-Timestamp: <unix seconds>
-X-Journzey-Signature: sha256=<hex HMAC-SHA256(secret, "<timestamp>.<raw body>")>
-X-Journzey-Event-Id: <unique id per delivery>        (optional; defaults to brokerTradeId)
+You can search, filter and sort. Drag rows to reorder, and use the switch to publish or unpublish. A service's FAQs produce `FAQPage` structured data.
 
-{"brokerTradeId":"mt5-1001","symbol":"XAUUSD","side":"LONG","executedAt":"2026-09-20T09:00:00Z",
- "closedAt":"2026-09-20T10:00:00Z","entryPrice":"2862","exitPrice":"2870","stopLoss":"2858","lotSize":"0.5"}
-```
+### Blog management
+Go to **Content → Blog** to manage posts. **Categories** and **Tags** buttons are at the top of the list. Each post has:
+- title, slug, excerpt, rich-text content (with images from the library) and featured image;
+- category and tags (comma-separated; new tags are created automatically);
+- author name, featured flag, SEO and OG image.
 
-Deliveries older or newer than 5 minutes are rejected. Event ids and broker trade ids are deduplicated, so retries are safe (`200 {"status":"duplicate"}`).
+Statuses:
+- **Draft:** hidden from the site.
+- **Published:** live from its publish date.
+- **Scheduled:** goes live automatically at the publish date. No cron job is needed.
 
-```bash
-BODY='{"brokerTradeId":"t-1","symbol":"EURUSD","side":"SHORT","executedAt":"2026-09-20T09:00:00Z","entryPrice":"1.165","exitPrice":"1.161","stopLoss":"1.167","lotSize":"1"}'
-TS=$(date +%s); SIG=$(printf '%s.%s' "$TS" "$BODY" | openssl dgst -sha256 -hmac "$WHSEC" -hex | sed 's/.* //')
-curl -X POST "$URL" -H 'content-type: application/json' -H "x-journzey-timestamp: $TS" -H "x-journzey-signature: sha256=$SIG" -d "$BODY"
-```
+### Page management
+Go to **Content → Pages**. Pages are served at `/{slug}`. System slugs such as `blog`, `services`, `contact` and `control-panel` are reserved. Each page can use:
+- a template: Default, About, Legal or Landing;
+- hero texts and a featured image;
+- rich-text content;
+- **content blocks**: Text, Text + image, Cards/values, Statistics, Process steps, FAQs, Services grid, Testimonials, Call to action. For cards and stats, enter one item per line as `Title | Text | icon`.
 
-## Control panel (admin portal)
+System pages (About, Privacy, Terms) cannot be deleted; unpublish them instead.
 
-A separate, private administration app lives at **`/control-panel/`**. It is its own bundle (`apps/admin`), uses a light SaaS-style design that is distinct from the trading terminal, and is never reachable through the public routes. URLs are clean: `/control-panel/login`, `/control-panel/` (dashboard), `/control-panel/users`, `/control-panel/integrations`, `/control-panel/website`, `/control-panel/admins`, `/control-panel/audit`, `/control-panel/system`, `/control-panel/account`.
+### Lead management
+Go to **Leads → Consultation leads**.
 
-| Section | What it controls |
-| --- | --- |
-| **Dashboard** | Traders, active users, live sessions, trades (excluding demo data), AI usage, 30-day sign-up and trade charts, integration status, recent admin activity |
-| **Integrations & API keys** | Google OAuth client ID, client secret and redirect URI; Anthropic API key and model; Twelve Data key. Each has an enable switch and a **Test connection** button. Saved values take effect on the live site immediately |
-| **Website controls** | Maintenance mode (trader API returns 503 and the site shows a maintenance page), new sign-ups open/closed, announcement banner (text and style), branding (name, tagline, support email), feature switches (AI Coach, Broker Sync, Demo data, Market ticker), all enforced server-side |
-| **Users** | Search and filter traders, view usage and security events, force sign-out, suspend/restore (revokes sessions; blocks sign-in), delete with typed confirmation (owner only) |
-| **Administrators** | Owner-only: add admins, set roles (`owner`, `admin`, `viewer`), disable, reset passwords, remove. At least one active owner is always kept |
-| **Audit log** | Every control-panel action, plus trader security events. Secret values are never recorded |
-| **System health** | Environment, uptime, memory, DB latency, migrations applied, storage, Sentry, IP allow-list, dev-bypass warning |
-| **Account & security** | Change password; set up TOTP two-factor authentication (QR code) |
+- **Statuses:** New, Contacted, Follow-up, Converted, Closed.
+- **List:** filter by status, assignee, service and date range; search; sort.
+- **Status changes:** change the status straight from the list.
+- **Export:** export to CSV. Values are protected against spreadsheet formula injection.
 
-**Creating the first administrator** (choose one):
+The **lead detail** page has:
+- the full submission;
+- internal notes;
+- a history timeline (status changes, assignment, edits, email results);
+- the email delivery log;
+- assignment to an admin, editing and deleting.
 
-```bash
-npm run admin:create -- --email you@example.com --name "Your Name"     # prompts for a password (hidden)
-ADMIN_PASSWORD='…' npm run admin:create -- --email you@example.com --name "Your Name" --role owner
-npm run admin:reset-password -- --email you@example.com
-```
+**Leads → Contact messages** works the same way with the statuses New, Read, Replied and Archived.
 
-Or set `ADMIN_BOOTSTRAP_EMAIL` and `ADMIN_BOOTSTRAP_PASSWORD` once. If no administrator exists at boot, an owner is created; remove the password variable afterwards.
+### Media management
+Go to **Media → Media library**.
 
-**How settings are stored:** in the `app_settings` table. Secrets (Google client secret, API keys) are encrypted with AES-256-GCM using `ENCRYPTION_KEY` and are write-only: the panel shows only "configured · …last4". Precedence is **control panel → environment variable → default**, and every API instance re-reads settings within 30 seconds (immediately on the instance that saved them). Reverting a field removes the panel value so the environment variable applies again.
+- **Upload:** drag and drop, or click. Images are re-encoded to WebP with a medium-size variant for fast loading.
+- **Per file:** search, set alt text, copy the URL and delete. File info (size, dimensions, uploader) is shown.
+- **Picker:** every image field opens the same library and can upload too.
 
-**Control-panel security:**
-- Completely separate from trader accounts: own `admin_users` table, own session cookie `jz.cp` (`HttpOnly`, `Secure` in production, `SameSite=Strict`, `Path=/api/v1/admin`), 30-minute idle timeout and 12-hour absolute limit (configurable). A trader session never grants admin access.
-- Argon2id password hashing; policy of at least 12 characters with mixed case and digits, not containing the email name. 5 failed attempts lock the account for 15 minutes, plus 10 attempts per 15 minutes per IP. Timing is equalised for unknown emails.
-- Optional TOTP two-factor authentication (RFC 6238; any authenticator app). Changing or resetting a password signs out the admin's other sessions.
-- Own CSRF token, `Cache-Control: no-store`, `X-Robots-Tag: noindex`, and optional `ADMIN_IP_ALLOWLIST` (other IPs get a 404, so the panel's existence is not revealed).
-- Roles: `viewer` (read-only), `admin` (settings, keys, users), `owner` (also administrators and permanent user deletion).
+Upload rules:
 
-In development, `npm run dev` starts the panel on :3001 and the website proxies `/control-panel` to it, so use `http://localhost:3000/control-panel/`. In Docker and single-container deployments it is served from the same origin (`ADMIN_DIST_DIR` is preset in the image, and nginx serves it in the compose stack).
+| Rule | Detail |
+|---|---|
+| Allowed types | JPG, JPEG, PNG, WebP, and SVG only after strict sanitising (scripts, event handlers and external references are rejected). |
+| Validation | Extension, real MIME type, image decoding, size (default limit 5 MB, set in General settings) and file name. |
+| Rejected | `.php`, `.phtml`, `.php5`, `.phar`, double extensions such as `x.php.jpg`, executables, and files whose content does not match their extension. |
+| Folder protection | `uploads/.htaccess` disables script execution and directory listing. |
 
-## 17. Security model
+### SEO setup
+Go to **Website → SEO**.
+- **Defaults:** default title and description, title separator, robots, a global **Allow indexing** switch (untick it on staging) and the canonical base URL.
+- **Social sharing:** default OG title, description and image, Twitter card and handle.
+- **Page titles:** title and description for the homepage, services list, blog, contact and booking pages.
+- **Structured data:** `Organization` and `WebSite` are always output. `LocalBusiness` only appears when you enable it **and** a real address is configured. `BreadcrumbList`, `Article` and `FAQPage` are generated automatically.
+- **robots.txt:** add extra rules. `/robots.txt` and `/sitemap.xml` are generated from published content and contain clean URLs only.
+- **Per-item SEO:** each page, service and post has meta title, description and OG image fields, plus canonical override and noindex for pages.
 
-- **Sessions:** server-side in PostgreSQL; cookie `jz.sid` is `HttpOnly`, `SameSite=Lax`, `Secure` in production, and rolling. The session id is regenerated at login. Logout and account deletion destroy the session.
-- **Authorization:** every protected request loads the user from the session. Every user-owned query is filtered by `user_id` and cross-resource references (account, strategy) are ownership-checked. Strict Zod schemas reject unknown fields such as a client-supplied `userId`.
-- **CSRF:** per-session synchronizer token (`X-CSRF-Token`) plus an Origin/Referer allow-list. Webhooks are exempt and authenticate by HMAC.
-- **Headers:** Helmet with CSP, HSTS (production), `frame-ancestors 'none'`, no `X-Powered-By`; strict CORS allow-list.
-- **Input:** Zod validation on every endpoint with standardised `{"error":{"code","message","fields"}}` errors; no stack traces in production; parameterised SQL via Drizzle.
-- **Secrets:** broker credentials and webhook secrets are AES-256-GCM encrypted and never returned. AI and market-data keys stay server-side. Logs redact cookies, auth headers, tokens, secrets and signatures.
-- **Rate limits:** API (600/min), auth (30/15 min), AI (15/min), uploads (40/10 min), webhooks (120/min).
-- **Uploads:** content sniffing (magic bytes), type/extension/size checks, `nosniff`, private storage.
-- **CSV:** RFC 4180 escaping plus spreadsheet formula-injection neutralisation.
-- **Audit log:** login/logout/failed login, account and settings changes, broker connect/disconnect/rotate/sync/import, exports, demo resets, deletions, terminal lock.
-- **Data deletion policy:** deleting an account hard-deletes the user row. `ON DELETE CASCADE` removes settings, accounts, trades, journals, strategies, checklist, capital flows, broker connections (with encrypted credentials), webhook events, AI history and snapshots. Stored screenshots are deleted from object storage. Audit rows are kept with `user_id = NULL`.
+### Analytics setup
+Go to **Website → Analytics** and enable any of:
+- **Google Analytics 4** (`G-…`)
+- **Google Tag Manager** (`GTM-…`)
+- **Meta Pixel** (digits)
+- **Search Console** verification (paste the code or the whole meta tag)
 
-## 18. API reference
+Nothing is hard-coded. Each tag is output only when it is enabled and the ID format is valid.
 
-Base path `/api/v1`. All endpoints except `health`, `ready`, `auth/*` and `webhooks/*` require a session; unsafe methods require `X-CSRF-Token`.
+### WhatsApp setup
+Go to **Website → WhatsApp** and set:
+- enable/disable, the number (international format) and the button label;
+- the default message, position (left or right), and mobile/desktop visibility.
 
-```
-GET    /health  /ready
-GET    /auth/csrf   /auth/providers   /auth/google   /auth/google/callback   /auth/me
-POST   /auth/logout   /auth/dev-login (dev only)
-POST   /onboarding
-GET    /trades?page&pageSize&sort&order&search&account&strategyId&session&symbol&side&outcome&status&from&to
-POST   /trades   /trades/quick
-GET    /trades/export.csv
-GET|PATCH|DELETE /trades/:id
-POST|GET|DELETE  /trades/:id/screenshot
-POST   /trades/:id/runner-audit
-GET    /dashboard?account&from&to      GET /calendar?month=YYYY-MM&account
-GET    /analytics/strategies | sessions | discipline | edge-matrix | risk-of-ruin | review
-GET|POST /journal     PATCH|DELETE /journal/:id
-GET|PUT  /checklist
-GET|POST /strategies  PATCH|DELETE /strategies/:id
-GET|POST /accounts    PATCH|DELETE /accounts/:id
-GET|POST /accounts/:id/transactions   DELETE /accounts/:id/transactions/:txId
-GET|PATCH /settings   POST /settings/terminal-lock
-PATCH  /account/profile   GET /account/export   DELETE /account
-POST   /demo/reset   DELETE /demo
-GET    /market/quotes
-GET    /ai/status   GET /ai/conversations   GET /ai/conversations/:id/messages   DELETE /ai/conversations/:id
-POST   /ai/chat   /ai/monthly-review
-GET    /broker-connections/providers   GET|POST /broker-connections   DELETE /broker-connections/:id
-POST   /broker-connections/:id/sync | import | rotate-secret
-POST   /webhooks/broker/:connectionId   (HMAC-signed, no session)
-```
+### Appearance
+Go to **Appearance**.
 
-`account` scope values: `real` (default; non-demo accounts), `demo`, `all`, or a trading-account UUID.
+| Screen | What it controls |
+|---|---|
+| **Colours** | 9 tokens, with a live preview. |
+| **Typography** | Google Fonts from an allow-list, or System. |
+| **Buttons** | Pill, rounded or square buttons, corner radius, glow, uppercase. |
+| **Layout options** | Content width, section spacing, animations. |
+| **Custom CSS** | Only for roles with the *Custom CSS* permission; Super Admin by default. |
 
-## 19. Project layout
+Animations always respect the visitor's *reduce motion* setting.
 
-See §2. Root scripts: `dev`, `dev:api`, `dev:web`, `dev:admin`, `admin:create`, `admin:reset-password`, `build`, `typecheck`, `lint`, `test`, `test:e2e`, `db:migrate`, `db:seed`, `db:generate`, `db:schema-sql`, `db:seed-sql`, `package:zip`.
+---
 
-Internationalisation: UI strings live in `apps/web/src/locales/{en,ru,zh,pt}.ts`. English is complete. Russian, Chinese and Portuguese cover navigation and core labels and fall back to English per key. The AI Coach and voice dictation support all four languages.
+## 8. Admin users & roles
+
+**System → Admin users** lets you create, edit, disable and delete admins and reset their passwords. Safeguards:
+- you cannot disable or delete yourself;
+- the last active Super Admin cannot be removed or downgraded;
+- only a Super Admin can grant the Super Admin role.
+
+**System → Roles** has two built-in roles:
+
+| Role | Access |
+|---|---|
+| **Super Admin** | Everything. Cannot be edited. |
+| **Editor** | Pages, Services, Blog, Testimonials, FAQs, Process steps, Custom sections, Homepage, Navigation, Media, Leads and Contact messages. **No** access to SMTP credentials, email templates, admin users, roles, website and SEO settings, analytics, appearance, custom CSS, activity logs or system information. |
+
+You can create more roles by ticking permissions per module. Every permission is checked **on the server** for each request; hidden menu items are only a convenience. Denied attempts are written to the activity log.
+
+**System → Activity logs** records:
+- sign-ins, sign-outs and recent sign-in attempts;
+- every create, update, delete, publish and reorder;
+- settings and SMTP changes, uploads, lead actions and user management.
+
+Passwords and secrets are never logged.
+
+---
+
+## 9. Backups
+
+- **Database.** Use cPanel → **Backup** → *Download a MySQL Database Backup*, or phpMyAdmin → Export. Do this at least weekly and before updates.
+- **Files.** Back up `uploads/` (your media) and `config/config.php`, which holds the DB credentials and **APP_KEY**. Store them privately. cPanel → Backup → *Home Directory* covers everything.
+- **Restore.** Re-upload the files, import the SQL dump into an empty database and restore `config/config.php`. Keep `storage/installed.lock` so the installer stays disabled.
+- **Never** leave backup files (`*.sql`, `*.zip`) inside `public_html`. `.htaccess` blocks `.sql`, `.bak`, `.log` and `.md`, but a ZIP is not blocked.
+
+---
+
+## 10. Security
+
+| Area | How it is handled |
+|---|---|
+| **SQL injection** | Every query is a PDO prepared statement, with native prepares. Column names only come from code. |
+| **XSS** | All output is escaped with `e()`. Rich text is cleaned server-side by an allow-list HTML sanitizer: scripts, styles, event handlers and `javascript:` URLs are removed, and iframes are limited to YouTube, Vimeo and Google Maps. Custom CSS cannot break out of its `<style>` tag. |
+| **CSRF** | A per-session token is required on every POST, in forms and AJAX. Failures show a branded "session expired" page. |
+| **Sessions** | Separate cookies for the public site (`JZSESS`) and the Control Panel (`JZADMIN`, path `/control-panel`, `SameSite=Strict`). Cookies are `HttpOnly`, and `Secure` on HTTPS. Strict mode is on. The session ID is regenerated at sign-in. Sessions time out after 30 minutes idle or 12 hours absolute. |
+| **Authentication** | `password_hash()`/`password_verify()` with automatic rehash. Sign-in is rate-limited to 5 attempts per email and 20 per IP per 15 minutes. Failed sign-ins are recorded with their IP. Responses are timing-safe for unknown accounts. |
+| **Authorization** | Role permissions are checked server-side in every controller. |
+| **Forms** | CSRF, a honeypot field, an HMAC-signed minimum fill time and a per-IP rate limit (5 per 10 minutes). Validation runs on the server; browser validation is only a convenience. |
+| **Uploads** | See [Media management](#media-management). Files are re-encoded, given random names and stored in a non-executable folder. Path-traversal-safe deletion. |
+| **Secrets** | The SMTP password is encrypted at rest and never sent to the browser or shown in errors. No credentials ship in the ZIP. |
+| **Files** | `.htaccess` denies `app/`, `config/`, `routes/`, `storage/`, `vendor/`, dot-files and `*.sql/.md/.log/.ini/.lock/.bak`. Directory listing is disabled. Direct `*.php` URLs return 404 (`/index.php` redirects to `/`). |
+| **Errors** | `display_errors` is off in production. Branded 404 and 403 pages, and a 500 page. Errors are logged to `storage/logs/`. |
+| **Headers** | HSTS (on HTTPS), `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`. The Control Panel sends `noindex` and `no-store`. |
+
+Recommended extras:
+- use a long, unique Super Admin password;
+- keep PHP up to date in cPanel → *Select PHP Version*;
+- optionally restrict `/control-panel` by IP with cPanel → *IP Blocker*/*Directory Privacy* or Cloudflare.
+
+---
+
+## 11. Troubleshooting
+
+### General
+- **White page or "Something went wrong".** Check `storage/logs/app-YYYY-MM.log` and `storage/logs/php-error.log` in File Manager. Temporarily setting `APP_DEBUG` to `true` in `config/config.php` shows the error; **turn it off again**.
+- **Redirect loop to `/setup`.** `config/config.php` or `storage/installed.lock` is missing or unreadable. Restore it, or run `/setup` again. The installer will not overwrite existing data, and it locks again if an admin already exists.
+- **"Session expired" when submitting a form.** The page was open too long, or cookies are blocked. Reload and resubmit. Behind Cloudflare, make sure "Always Use HTTPS" is on so the Secure cookies work.
+- **Images do not upload.**
+  - Check that `uploads/` is writable (755).
+  - Check PHP `upload_max_filesize` and `post_max_size` in cPanel → *Select PHP Version → Options*. System → System information shows the current limits.
+- **Dates or times look wrong.** Set **General settings → Timezone**. All data is stored in UTC.
+
+### 404 troubleshooting
+- **Every page except the homepage returns 404.** `mod_rewrite` or `.htaccess` is not active:
+  - make sure `.htaccess` was uploaded (enable *Show Hidden Files*);
+  - make sure the hosting allows overrides (`AllowOverride All`), which is standard on cPanel.
+- **Installed in a sub-folder** such as `https://example.com/site`:
+  - set `BASE_URL` to the full sub-folder URL;
+  - in `.htaccess` change `RewriteBase /` to `RewriteBase /site/`;
+  - change the `ErrorDocument` lines to `/site/index.php`;
+  - change the trailing-slash rule's `^/control-panel/$` to `^/site/control-panel/$`.
+- **A new page shows 404.** Check that it is **Published** and its slug is not reserved.
+- **Blog post 404.** Check that it is published or scheduled and that the publish date is in the past.
+- **Images return 404.** The file was deleted from the library. Choose a new image in the field.
+
+### `.htaccess` troubleshooting
+- **500 Internal Server Error right after upload.** Your server may not support a directive.
+  - First comment out (`#`) the `Options` line, then the `ServerSignature` line, then the `<IfModule mod_headers.c>` block, until it works.
+  - The `<IfModule>` blocks are skipped automatically when a module is missing.
+- **Too many redirects.** HTTPS is terminated by a proxy such as Cloudflare in *Flexible* mode. Switch Cloudflare SSL to **Full**, or remove the HTTPS block in `.htaccess`.
+- **CSS or JS not loading.** Check that the `public/assets/` folder exists and that `BASE_URL` matches the address you are visiting, including `https` and `www`.
+- **`www` versus non-`www`.** Choose one and redirect the other in cPanel → *Domains/Redirects*. Make `BASE_URL` match the one you chose.
+
+### SMTP troubleshooting
+| Message | Fix |
+|---|---|
+| *Could not authenticate* | Wrong username or password. Use the full email address as the username. Re-enter the password and save. |
+| *Could not connect to SMTP host* | Wrong host, port or encryption. Try SSL/465, then TLS/587. Some hosts block outbound SMTP to other providers; use your cPanel mailbox, or ask the host to allow it. |
+| Mail sends but never arrives | Check spam. Set the **From email** to a mailbox on your own domain. Enable **SPF, DKIM and DMARC** in cPanel → *Email Deliverability*. |
+| Test passes but forms don't notify | Set **Contact details → Send form notifications to**. Check that the templates are enabled in Email → Email templates. Check the Delivery log. |
+| SMTP password stopped working after moving servers | `APP_KEY` changed. Re-enter the SMTP password. |
+
+---
+
+## 12. Content rules & placeholders
+
+The starter content describes the journzey.ai product honestly and **contains no invented facts**: no customer counts, statistics, reviews, awards, addresses or team members. Items to replace before launch are clearly marked:
+
+| Location | Placeholder |
+|---|---|
+| Testimonials | 3 entries flagged **Demo content**, shown with a visible "Demo" badge. |
+| Homepage → Statistics and About → statistics block | Disabled or hidden; contain `[Replace]`. |
+| FAQs | Answers containing `[Replace]`: supported brokers, data handling. |
+| Privacy Policy and Terms | Template text with a visible notice to have them legally reviewed. |
+| Contact details, logos, social links, analytics IDs | Empty until you add them. |
+
+---
+
+## 13. Development notes
+
+- **Local development:** any Apache + PHP 8.2 + MySQL stack (XAMPP, MAMP, Laragon) with the project as the document root and `AllowOverride All`. Visit `/setup`.
+- **Routing:** `routes/web.php` and `routes/admin.php`. All browser URLs are clean; `index.php` is the only PHP entry point.
+- **Adding a Control Panel module:** add an entry to `app/controllers/admin/resources.php` (table, columns, fields, filters). The generic CRUD engine supplies list, search, filter, sort, create, edit, delete, toggle and reorder. Add the menu item in `app/views/admin/layouts/app.php` and a permission key in `App\Core\Auth::PERMISSIONS`.
+- **Adding a setting:** add the field to `app/controllers/admin/settings.php` and read it anywhere with `setting('key')`.
+- **Third-party code:** PHPMailer 6.12 (LGPL-2.1) is in `vendor/phpmailer/`. There are no other dependencies.

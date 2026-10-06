@@ -1,0 +1,82 @@
+# ---------------------------------------------------------------------------------------------
+# journzey.ai — Apache configuration (works on cPanel / Namecheap shared hosting)
+# ---------------------------------------------------------------------------------------------
+Options -Indexes -MultiViews
+DirectoryIndex index.php
+ServerSignature Off
+AddDefaultCharset UTF-8
+
+# Branded error pages (served by the application). Adjust the path if installed in a sub-folder.
+ErrorDocument 403 /index.php
+ErrorDocument 404 /index.php
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    # If the site lives in a sub-folder (e.g. https://example.com/site), set: RewriteBase /site/
+    RewriteBase /
+
+    # 1) Force HTTPS (skipped on localhost so local development works without a certificate).
+    RewriteCond %{HTTPS} !=on
+    RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+    RewriteCond %{HTTP_HOST} !^(localhost|127\.0\.0\.1)(:[0-9]+)?$ [NC]
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+    # 2) Block private folders, hidden files and sensitive file types.
+    RewriteRule ^(app|config|storage|routes|vendor)(/|$) - [F,L]
+    RewriteRule (^|/)\.(?!well-known/) - [F,L]
+    RewriteRule \.(sql|md|log|ini|lock|bak|old|orig|swp|dist|sh|env|ya?ml|tpl|inc|phar)$ - [F,NC,L]
+    RewriteRule ^uploads/.*\.(php[0-9]?|phtml|phps|pht|phar|cgi|pl|py|asp|aspx|jsp|sh|html?|js)$ - [F,NC,L]
+
+    # 3) Never expose .php URLs: /index.php → /, any other direct .php request → 404.
+    RewriteCond %{ENV:REDIRECT_STATUS} ^$
+    RewriteCond %{THE_REQUEST} \s/+(.*/)?index\.php[\s?/] [NC]
+    RewriteRule ^(.*/)?index\.php$ /$1 [R=301,L,NC]
+    RewriteCond %{ENV:REDIRECT_STATUS} ^$
+    RewriteRule \.php$ index.php [L,NC,E=JZ_PHP404:1]
+
+    # 4) Remove trailing slashes from clean URLs (except the admin root).
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} !^/control-panel/$
+    RewriteRule ^(.+)/$ /$1 [R=301,L]
+
+    # 5) Front controller: anything that is not a real file goes to index.php.
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.php [L,QSA]
+</IfModule>
+
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always unset X-Powered-By
+    <FilesMatch "\.(css|js|webp|png|jpe?g|gif|svg|ico|woff2?)$">
+        Header set Cache-Control "public, max-age=2592000"
+    </FilesMatch>
+</IfModule>
+
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css "access plus 30 days"
+    ExpiresByType application/javascript "access plus 30 days"
+    ExpiresByType text/javascript "access plus 30 days"
+    ExpiresByType image/webp "access plus 30 days"
+    ExpiresByType image/png "access plus 30 days"
+    ExpiresByType image/jpeg "access plus 30 days"
+    ExpiresByType image/svg+xml "access plus 30 days"
+    ExpiresByType image/x-icon "access plus 30 days"
+    ExpiresByType font/woff2 "access plus 1 year"
+</IfModule>
+
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/css text/xml application/xml application/javascript text/javascript application/json image/svg+xml
+</IfModule>
+
+# Deny sensitive files even if mod_rewrite is unavailable.
+<FilesMatch "(^\.|\.(sql|md|log|ini|lock|bak|env|ya?ml|sh)$|^config\.php$)">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
