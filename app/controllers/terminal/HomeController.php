@@ -8,15 +8,13 @@ use App\Core\Request;
 use App\Core\Response;
 use App\Trading\Analytics;
 use App\Trading\Domain;
-use App\Trading\Instruments;
 use App\Trading\Ledger;
-use App\Trading\MarketData;
 use App\Trading\Members;
 use App\Trading\QuickTrade;
 use App\Trading\Sessions;
 use App\Trading\TradeMath;
 
-/** Home Hub: market ticker, world clocks, discipline quote, 9-step checklist, quick trade, tilt breaker. */
+/** Home Hub: clock & sessions, discipline quotes, risk limits, 9-step checklist, quick trade, tilt breaker. */
 final class HomeController extends TerminalController
 {
     public function index(Request $req): never
@@ -28,17 +26,16 @@ final class HomeController extends TerminalController
         $tilt = Analytics::tilt($recent, (int) $this->m['tilt_loss_count'], (int) $this->m['tilt_window_minutes'], (int) $this->m['tilt_cooldown_minutes']);
         $todaySum = Analytics::summarize($trades);
         [$latest] = Ledger::trades($this->uid, (int) $this->acc['id'], [], $this->tz, 6);
-        $quote = Domain::QUOTES[(int) floor(time() / 3600) % count(Domain::QUOTES)];
         $this->render('home', [
-            'market' => MarketData::quotes(), 'done' => $done, 'today' => $today, 'tilt' => $tilt, 'todaySum' => $todaySum, 'latest' => $latest, 'quote' => $quote,
-            'budget' => $this->m['max_daily_loss'] !== null ? (float) $this->m['max_daily_loss'] + min(0, (float) $todaySum['net']) : null,
+            'quoteStart' => (int) floor(time() / 3600) % count(Domain::QUOTES), 'sessions' => Sessions::status($this->tz), 'done' => $done, 'today' => $today, 'tilt' => $tilt, 'todaySum' => $todaySum, 'latest' => $latest,
+            
             'hasDemoData' => (bool) Database::value('SELECT id FROM trading_accounts WHERE user_id = :u AND has_demo_data = 1', ['u' => $this->uid]),
         ], 'Home Hub', 'home');
     }
 
     public function parse(Request $req): never
     {
-        $p = QuickTrade::parse(mb_substr((string) $req->post('command', ''), 0, 300));
+        $p = QuickTrade::parse(mb_substr((string) $req->post('command', ''), 0, 400), $req->post('voice') === '1');
         if (!$p['errors'] && $p['exit'] !== null) {
             $calc = TradeMath::compute($p['symbol'], $p['side'], $p['entry'], $p['exit'], $p['stop'], $p['lots'], 0, $this->acc['currency']);
             $p['pnl'] = $calc['pnl'];
@@ -100,16 +97,14 @@ final class HomeController extends TerminalController
         Response::json(['ok' => true, 'done' => $done, 'total' => count($all), 'pct' => (int) round($done / count($all) * 100)]);
     }
 
-    public function ticker(Request $req): never
+    /** Changes the member's display timezone (used for the clock, trade times, journals and analytics). */
+    public function timezone(Request $req): never
     {
-        Response::json(MarketData::quotes());
-    }
-
-    public function lotSize(Request $req): never
-    {
-        $sym = Instruments::resolve((string) $req->post('symbol')) ?? '';
-        $r = $sym ? TradeMath::lotSize($sym, (float) $req->post('equity'), (float) $req->post('risk'), (float) $req->post('entry'), (float) $req->post('stop'), $this->acc['currency']) : null;
-        Response::json($r ? ['ok' => true] + ['lots' => $r['lots'], 'risk_amount' => money($r['risk_amount'], $this->acc['currency']), 'per_lot_risk' => money($r['per_lot_risk'], $this->acc['currency'])] : ['ok' => false, 'error' => 'Check the instrument, entry and stop. Instruments not quoted in ' . $this->acc['currency'] . ' cannot be sized automatically.']);
+        $tz = (string) $req->post('timezone');
+        if (Sessions::isValidTz($tz)) {
+            Database::update('user_settings', ['timezone' => $tz], 'user_id = :u', ['u' => $this->uid]);
+        }
+        Response::back('/terminal');
     }
 
     public function switchAccount(Request $req): never

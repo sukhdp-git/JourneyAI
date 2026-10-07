@@ -433,4 +433,27 @@ return [
             ['name' => 'is_active', 'label' => 'Available for purchase', 'type' => 'checkbox', 'default' => 1],
         ],
     ],
+
+    'instruments' => [
+        'table' => 'instruments', 'label' => 'Instruments', 'singular' => 'Instrument', 'perm' => 'instruments', 'icon' => 'bars',
+        'order' => 'sort_order ASC, symbol ASC', 'reorder' => true, 'toggle' => ['field' => 'is_active', 'on' => '1', 'off' => '0'],
+        'search' => ['symbol', 'name', 'aliases'],
+        'filters' => ['asset_class' => ['label' => 'Class', 'options' => ['METALS' => 'Metals', 'FOREX' => 'Forex', 'INDICES' => 'Indices', 'CRYPTO' => 'Crypto', 'COMMODITIES' => 'Commodities']]],
+        'columns' => [['symbol', 'Symbol', 'title'], ['name', 'Name', 'text'], ['asset_class', 'Class', 'tag'], ['contract_size', 'Contract', 'text'], ['pip_size', 'Pip/point', 'text'], ['quote_currency', 'Quote', 'tag']],
+        'fields' => [
+            ['name' => 'symbol', 'label' => 'Symbol', 'type' => 'text', 'rules' => 'required|max:20', 'unique' => true, 'width' => 'half', 'help' => 'Upper-case, e.g. XAUUSD. Changing it does not rename existing trades.'],
+            ['name' => 'name', 'label' => 'Display name', 'type' => 'text', 'rules' => 'required|max:80', 'width' => 'half'],
+            ['name' => 'asset_class', 'label' => 'Asset class', 'type' => 'select', 'options' => ['METALS' => 'Metals', 'FOREX' => 'Forex', 'INDICES' => 'Indices', 'CRYPTO' => 'Crypto', 'COMMODITIES' => 'Commodities'], 'rules' => 'required', 'width' => 'half'],
+            ['name' => 'price_decimals', 'label' => 'Price decimals', 'type' => 'number', 'rules' => 'required|int|between:0,8', 'default' => 2, 'width' => 'half'],
+            ['name' => 'base_currency', 'label' => 'Base / underlying', 'type' => 'text', 'rules' => 'required|max:10', 'width' => 'half', 'help' => 'e.g. EUR for EURUSD, XAU for gold, DAX for an index.'],
+            ['name' => 'quote_currency', 'label' => 'Quote currency (P&L currency)', 'type' => 'text', 'rules' => 'required|max:3', 'width' => 'half', 'help' => 'e.g. USD. P&L is converted to the account currency automatically when possible.'],
+            ['name' => 'contract_size', 'label' => 'Contract size (units per 1 lot)', 'type' => 'number', 'rules' => 'required|numeric|between:0.000001,100000000', 'width' => 'half', 'help' => 'FX 100000 · gold 100 · silver 5000 · indices 1 · crypto 1. Check your broker.'],
+            ['name' => 'tick_size', 'label' => 'Tick size (minimum price move)', 'type' => 'number', 'rules' => 'required|numeric|between:0.0000000001,100000', 'width' => 'half'],
+            ['name' => 'pip_size', 'label' => 'Pip / point size', 'type' => 'number', 'rules' => 'required|numeric|between:0.0000000001,100000', 'width' => 'half', 'help' => 'Used to show stop distances, e.g. 0.0001 for EURUSD, 0.1 for gold.'],
+            ['name' => 'min_lot', 'label' => 'Minimum lot', 'type' => 'number', 'rules' => 'required|numeric|between:0.0001,100000', 'default' => '0.01', 'width' => 'half'],
+            ['name' => 'lot_step', 'label' => 'Lot step', 'type' => 'number', 'rules' => 'required|numeric|between:0.0001,100000', 'default' => '0.01', 'width' => 'half', 'help' => 'Position sizes are rounded down to this step.'],
+            ['name' => 'aliases', 'label' => 'Aliases (comma-separated)', 'type' => 'text', 'rules' => 'max:255', 'help' => 'Words recognised by quick and voice entry and CSV import, e.g. gold, xau.'],
+            ['name' => 'is_active', 'label' => 'Available in the terminal', 'type' => 'checkbox', 'default' => 1],
+        ],
+    ],
 ];

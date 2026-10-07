@@ -1,19 +1,9 @@
 <?php
 use App\Trading\Domain;
-use App\Trading\Ingest;
 $ent = $m['ent'];
 $sel = fn ($a, $b) => (string) $a === (string) $b ? ' selected' : '';
 ?>
-<?php if ($newSecret): ?>
-<section class="panel stack" style="margin-bottom:12px;border-color:var(--warn)" id="webhook-secret">
-  <div class="panel-head"><h2>New webhook — copy these now</h2><span class="badge warn">Shown once</span></div>
-  <dl class="dl">
-    <dt>Endpoint URL</dt><dd><code id="wh-url"><?= e($newSecret['url']) ?></code> <button type="button" class="tm-btn tm-btn-sm" data-copy-target="#wh-url">Copy</button></dd>
-    <dt>Signing secret</dt><dd><code id="wh-secret" style="word-break:break-all"><?= e($newSecret['secret']) ?></code> <button type="button" class="tm-btn tm-btn-sm" data-copy-target="#wh-secret">Copy</button></dd>
-  </dl>
-  <p class="muted small">Store the secret in your EA or script. journzey.ai keeps it encrypted and cannot show it again; delete the connection and create a new one if you lose it.</p>
-</section>
-<?php endif; ?>
+
 
 <section class="panel" style="margin-bottom:12px">
   <div class="panel-head"><h2>Your accounts</h2><span class="muted small"><?= (int) $liveCount ?> / <?= $ent['live'] ? (int) $ent['max_live'] : 0 ?> live accounts on <?= e($ent['plan_name']) ?></span></div>
@@ -79,23 +69,23 @@ $sel = fn ($a, $b) => (string) $a === (string) $b ? ' selected' : '';
   </section>
 
   <section class="panel stack">
-    <h2>Capital flows · <?= e($acc['name']) ?></h2>
-    <?php if ($acc['writable']): ?>
-    <form method="post" action="<?= e(url('/terminal/accounts/' . $acc['id'] . '/capital')) ?>" class="stack"><?= csrf_field() ?>
-      <div class="grid-form">
-        <div class="f"><label for="cf-t">Type</label><select id="cf-t" name="type"><option value="DEPOSIT">Deposit</option><option value="WITHDRAWAL">Withdrawal</option><option value="ADJUSTMENT">Adjustment (±)</option></select></div>
-        <div class="f"><label for="cf-a">Amount (<?= e($acc['currency']) ?>)</label><input id="cf-a" name="amount" type="number" step="0.01" required></div>
-      </div>
-      <div class="f"><label for="cf-d">Date</label><input id="cf-d" name="occurred_at" type="datetime-local"></div>
-      <div class="f"><label for="cf-n">Note</label><input id="cf-n" name="note" maxlength="255"></div>
-      <button class="tm-btn">Record</button>
-    </form>
-    <?php else: ?><p class="muted small">This live account is read-only without an active plan.</p><?php endif; ?>
+    <div class="panel-head"><h2>Capital · <?= e($acc['name']) ?></h2><button type="button" class="tm-btn tm-btn-sm" data-open-modal="#tm-equity"<?= $acc['writable'] ? '' : ' disabled' ?>><?= icon('edit', 'icon icon-sm') ?> Edit / adjust equity</button></div>
+    <?php $dep = $wd = $adj = 0.0; foreach ($flows as $f) { if ($f['type'] === 'DEPOSIT') $dep += abs((float) $f['amount']); elseif ($f['type'] === 'WITHDRAWAL') $wd += abs((float) $f['amount']); else $adj += (float) $f['amount']; } ?>
+    <dl class="dl">
+      <dt>Starting capital</dt><dd class="num"><?= e(money($balance['start'], $acc['currency'])) ?></dd>
+      <dt>Deposits</dt><dd class="num up"><?= e(money($dep, $acc['currency'], true)) ?></dd>
+      <dt>Withdrawals</dt><dd class="num down"><?= e(money(-$wd, $acc['currency'])) ?></dd>
+      <?php if ($adj != 0.0): ?><dt>Adjustments</dt><dd class="num"><?= e(money($adj, $acc['currency'], true)) ?></dd><?php endif; ?>
+      <dt>Closed trade P&amp;L</dt><dd class="num <?= $balance['pnl'] >= 0 ? 'up' : 'down' ?>"><?= e(money($balance['pnl'], $acc['currency'], true)) ?></dd>
+      <dt><strong>Current equity</strong></dt><dd class="num strong"><?= e(money($balance['equity'], $acc['currency'])) ?></dd>
+    </dl>
+    <?php if (!$acc['writable']): ?><p class="muted small">This live account is read-only without an active plan.</p><?php endif; ?>
+    <h3 style="margin-top:6px">Capital history</h3>
     <?php if ($flows): ?>
     <div class="table-wrap"><table class="tbl"><tbody>
-      <?php foreach ($flows as $f): ?><tr><td><?= e(fmt_date($f['occurred_at'], 'M j, Y')) ?></td><td><?= e(ucfirst(strtolower($f['type']))) ?></td><td class="r num"><?= e(money($f['type'] === 'WITHDRAWAL' ? -abs((float) $f['amount']) : $f['amount'], $acc['currency'], true)) ?></td></tr><?php endforeach; ?>
+      <?php foreach ($flows as $f): $v = $f['type'] === 'WITHDRAWAL' ? -abs((float) $f['amount']) : (float) $f['amount']; ?><tr><td><?= e(fmt_date($f['occurred_at'], 'M j, Y')) ?></td><td><?= e(ucfirst(strtolower($f['type']))) ?><?php if ($f['note']): ?><br><span class="muted small"><?= e(mb_strimwidth($f['note'], 0, 60, '…')) ?></span><?php endif; ?></td><td class="r num <?= $v >= 0 ? 'up' : 'down' ?>"><?= e(money($v, $acc['currency'], true)) ?></td></tr><?php endforeach; ?>
     </tbody></table></div>
-    <?php endif; ?>
+    <?php else: ?><p class="muted small">No deposits, withdrawals or adjustments yet.</p><?php endif; ?>
   </section>
 
   <section class="panel stack">
@@ -114,50 +104,3 @@ $sel = fn ($a, $b) => (string) $a === (string) $b ? ' selected' : '';
     <?php endif; ?>
   </section>
 </div>
-
-<section class="panel stack" id="webhooks" style="margin-bottom:12px">
-  <div class="panel-head"><h2>Signed webhooks</h2><span class="muted small">Push closed trades from an MT5 EA, TradingView relay or script</span></div>
-  <?php if ($connections): ?>
-  <div class="table-wrap"><table class="tbl cards">
-    <thead><tr><th>Label</th><th>Account</th><th>Endpoint</th><th class="r">Events</th><th>Last event</th><th></th></tr></thead>
-    <tbody><?php foreach ($connections as $c): ?>
-      <tr><td data-label="Label" class="strong"><?= e($c['label']) ?></td><td data-label="Account"><?= e($c['account_name']) ?></td>
-      <td data-label="Endpoint"><code class="small"><?= e(url('/api/webhooks/trades/' . $c['public_id'])) ?></code></td>
-      <td data-label="Events" class="r num"><?= (int) $c['events_count'] ?></td><td data-label="Last event"><?= e($c['last_event_at'] ? fmt_date($c['last_event_at'], 'M j, H:i') : 'never') ?></td>
-      <td class="r"><form method="post" action="<?= e(url('/terminal/connections/' . $c['id'] . '/delete')) ?>" data-confirm="Delete this webhook? Its URL will stop accepting trades."><?= csrf_field() ?><button class="tm-btn tm-btn-sm">Delete</button></form></td></tr>
-    <?php endforeach; ?></tbody>
-  </table></div>
-  <?php endif; ?>
-  <?php if ($acc['writable'] && !(int) $acc['has_demo_data']): ?>
-  <form method="post" action="<?= e(url('/terminal/accounts/' . $acc['id'] . '/webhook')) ?>" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end"><?= csrf_field() ?>
-    <div class="f" style="flex:1 1 220px"><label for="wh-l">Label</label><input id="wh-l" name="label" maxlength="80" placeholder="MT5 EA · <?= e($acc['name']) ?>"></div>
-    <button class="tm-btn">Create webhook for <?= e($acc['name']) ?></button>
-  </form>
-  <?php endif; ?>
-  <details><summary class="strong">Webhook format</summary>
-<pre class="small" style="white-space:pre-wrap;overflow-x:auto">POST {endpoint}
-Content-Type: application/json
-X-Journzey-Timestamp: {unix seconds}
-X-Journzey-Signature: sha256={hex HMAC-SHA256 of "{timestamp}.{raw body}" with your signing secret}
-
-{"event_id": "unique-id-per-delivery",
- "trade": {"id": "123456", "symbol": "XAUUSD", "side": "buy", "open_time": "2026-10-06T08:14:00Z",
-           "close_time": "2026-10-06T09:02:00Z", "entry_price": 2650.5, "exit_price": 2662.0,
-           "stop_loss": 2645.0, "take_profit": 2665.0, "volume": 0.5, "profit": 575.0, "fees": 3.5,
-           "setup": "London breakout", "comment": "optional"}}</pre>
-    <p class="muted small">Requests older than 5 minutes are rejected (replay protection). Each <code>event_id</code> and each trade <code>id</code> is processed once (idempotent). Live accounts accept webhook trades only while a paid plan is active.</p>
-  </details>
-</section>
-
-<section class="panel">
-  <div class="panel-head"><h2>Broker connectors</h2><span class="muted small">Honest status — nothing pretends to sync</span></div>
-  <div class="grid g-3">
-    <?php foreach (Ingest::CATALOG as [$id, $name, $status, $method, $desc]): ?>
-    <div class="plan-card">
-      <div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><strong><?= e($name) ?></strong><span class="badge<?= $status === 'AVAILABLE' ? ' win' : ($status === 'UNSUPPORTED' ? ' loss' : ($status === 'COMING SOON' ? ' warn' : '')) ?>"><?= e($status) ?></span></div>
-      <p class="muted small" style="margin:6px 0 0"><?= e($method) ?></p>
-      <p class="small" style="margin:6px 0 0"><?= e($desc) ?></p>
-    </div>
-    <?php endforeach; ?>
-  </div>
-</section>

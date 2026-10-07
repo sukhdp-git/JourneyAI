@@ -1,7 +1,8 @@
 /* journzey.ai terminal charts — dependency-free SVG.
  * Elements: <div class="chart" data-chart="line|bars|band" data-json='…' data-format="money:USD|pct|num|r">.
  * Line/area: crosshair + tooltip snapping to the nearest point. Bars: per-bar hover/focus tooltip, signed value labels,
- * gains blue / losses red (validated diverging pair) — never colour alone: values carry a sign. */
+ * gains green / losses red with signed labels and a zero baseline (secondary encoding for colour-blind readers).
+ * Multi-series lines: data-chart="lines" with {series:[{name, cls, points:[{x,y}]}], base}. */
 (function () {
   'use strict';
   var NS = 'http://www.w3.org/2000/svg';
@@ -113,12 +114,38 @@
     root.insertBefore(svg, root.firstChild);
   }
 
+  function lines(root, data, f) {
+    var series = data.series || [], w = root.clientWidth || 600, h = +(root.dataset.height || 220), pl = 62, pr = 10, pt = 10, pb = 24;
+    root.querySelectorAll('svg').forEach(function (s) { s.remove(); });
+    var n = series.length ? series[0].points.length : 0;
+    if (!n) { root.innerHTML = '<div class="chart-empty">' + (root.dataset.empty || 'Not enough data yet.') + '</div>'; return; }
+    var ys = []; series.forEach(function (s) { s.points.forEach(function (p) { ys.push(p.y); }); }); if (data.base !== undefined) ys.push(data.base);
+    var ticks = niceTicks(Math.min.apply(null, ys), Math.max.apply(null, ys), 4), min = ticks[0], max = ticks[ticks.length - 1];
+    var svg = el('svg', { viewBox: '0 0 ' + w + ' ' + h, role: 'img', 'aria-label': root.dataset.label || 'Line chart' }, null);
+    var X = function (i) { return pl + (n === 1 ? (w - pl - pr) / 2 : i * (w - pl - pr) / (n - 1)); }, Y = function (v) { return pt + (max - v) / (max - min) * (h - pt - pb); };
+    ticks.forEach(function (t) { el('line', { x1: pl, x2: w - pr, y1: Y(t), y2: Y(t), class: 'grid-l' }, svg); var tx = el('text', { x: pl - 8, y: Y(t) + 3.5, 'text-anchor': 'end', class: 'axis-t' }, svg); tx.textContent = fmt(t, f); });
+    if (data.base !== undefined) el('line', { x1: pl, x2: w - pr, y1: Y(data.base), y2: Y(data.base), class: 'zero' }, svg);
+    series.forEach(function (s) { el('path', { d: s.points.map(function (p, i) { return (i ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(p.y).toFixed(1); }).join(' '), class: 'line ' + (s.cls || '') }, svg); });
+    var nx = Math.min(n, Math.max(2, Math.floor((w - pl) / 110)));
+    for (var k = 0; k < nx; k++) { var i = Math.round(k * (n - 1) / Math.max(1, nx - 1)); var lx = el('text', { x: X(i), y: h - 6, 'text-anchor': k === 0 ? 'start' : k === nx - 1 ? 'end' : 'middle', class: 'axis-t' }, svg); lx.textContent = series[0].points[i].x; }
+    var cross = el('line', { y1: pt, y2: h - pb, class: 'cross', visibility: 'hidden' }, svg), t = tip(root), cur = n - 1;
+    var hit = el('rect', { x: pl, y: 0, width: w - pl - pr, height: h, fill: 'transparent', tabindex: 0 }, svg);
+    var show = function (i) { i = Math.max(0, Math.min(n - 1, i)); cur = i; cross.setAttribute('x1', X(i)); cross.setAttribute('x2', X(i)); cross.setAttribute('visibility', 'visible'); var sc = root.clientWidth / w;
+      setTip(t, series.map(function (s) { return s.name + ': ' + fmt(s.points[i].y, f); }).join(' · '), series[0].points[i].x, X(i) * sc, Y(series[0].points[i].y) * sc - 8); };
+    hit.addEventListener('pointermove', function (e) { var r = svg.getBoundingClientRect(); show(Math.round(((e.clientX - r.left) / r.width * w - pl) / ((w - pl - pr) / Math.max(1, n - 1)))); });
+    hit.addEventListener('pointerleave', function () { t.hidden = true; cross.setAttribute('visibility', 'hidden'); });
+    hit.addEventListener('keydown', function (e) { if (e.key === 'ArrowLeft') show(cur - 1); if (e.key === 'ArrowRight') show(cur + 1); });
+    hit.addEventListener('focus', function () { show(cur); }); hit.addEventListener('blur', function () { t.hidden = true; });
+    root.insertBefore(svg, root.firstChild);
+  }
+
   function render(root) {
     var data; try { data = JSON.parse(root.dataset.json || '[]'); } catch (e) { return; }
     var f = root.dataset.format || 'num';
     if (root.dataset.chart === 'line') line(root, data, f);
     else if (root.dataset.chart === 'bars') bars(root, data, f);
     else if (root.dataset.chart === 'band') band(root, data, f);
+    else if (root.dataset.chart === 'lines') lines(root, data, f);
   }
   window.jzChart = render;
   function all() { document.querySelectorAll('.chart[data-chart]').forEach(render); }

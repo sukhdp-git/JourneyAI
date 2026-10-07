@@ -18,10 +18,56 @@ final class QuickTrade
     ];
     private const NUM = '/^-?\d+(?:\.\d+)?$/';
 
-    public static function parse(string $command): array
+    /** Spoken number words → digits (covers lot sizes like "one lot", "half a lot", "point five lots"). */
+    private const WORDS = ['zero' => '0', 'one' => '1', 'two' => '2', 'three' => '3', 'four' => '4', 'five' => '5', 'six' => '6', 'seven' => '7', 'eight' => '8', 'nine' => '9', 'ten' => '10'];
+
+    /**
+     * Turns a natural spoken/typed sentence into the command grammar, e.g.
+     * "Bought gold at 2,645.50, stop loss 2639, take profit 2660, 0.5 lots." → "buy gold at 2645.50 sl 2639 tp 2660 0.5 lots".
+     */
+    public static function normalize(string $text): string
     {
+        $t = mb_strtolower(trim($text));
+        $t = preg_replace('/(\d),(\d{3})/', '$1$2', $t) ?? $t;               // 2,645.50 → 2645.50
+        $t = preg_replace('/(\d),(\d{3})/', '$1$2', $t) ?? $t;               // 1,234,567
+        foreach (Instruments::phraseAliases() as $phrase => $sym) {           // "euro dollar" → eurusd
+            $t = preg_replace('/\b' . preg_quote($phrase, '/') . '\b/u', ' ' . strtolower($sym) . ' ', $t) ?? $t;
+        }
+        $ccy = 'eur|usd|gbp|jpy|aud|nzd|cad|chf|xau|xag|btc|eth|sol|xrp';
+        $t = preg_replace('/\b(' . $ccy . ')\s*\/?\s*(' . $ccy . ')\b/', '$1$2', $t) ?? $t; // "eur usd", "eur/usd" → eurusd
+        $t = preg_replace_callback('/\b(?:zero\s+)?point\s+(' . implode('|', array_keys(self::WORDS)) . ')\b/', fn ($m) => ' 0.' . self::WORDS[$m[1]], $t) ?? $t; // "point five" → 0.5
+        $t = preg_replace('/[,;!?]+|\.(?=\s|$)/', ' ', $t) ?? $t;               // punctuation (keeps decimal points)
+        $rules = [
+            '/\b(?:went|go|going)\s+long\b|\bbought\b|\bbuying\b|\blonged\b/' => ' buy ',
+            '/\b(?:went|go|going)\s+short\b|\bsold\b|\bselling\b|\bshorted\b/' => ' sell ',
+            '/\bstop[\s-]*loss\b|\bstop\s+at\b|\bstopped\s+at\b|\bstop\b|\bs\s*l\b/' => ' sl ',
+            '/\btake[\s-]*profit\b|\bprofit\s+target\b|\btarget(?:ing|ed)?\b|\bt\s*p\b/' => ' tp ',
+            '/\b(?:exited|closed|exit|close|out|got\s+out)(?:\s+(?:at|@))?\b/' => ' exit ',
+            '/\bentry(?:\s+price)?(?:\s+(?:at|of))?\b|\bentered(?:\s+at)?\b|\bin\s+at\b/' => ' at ',
+            '/\bhalf\s+(?:a\s+)?lots?\b/' => ' 0.5 lot ',
+            '/\b(?:a\s+)?quarter\s+(?:of\s+)?(?:a\s+)?lots?\b/' => ' 0.25 lot ',
+            '/\bpoint\s+(\d+)/' => ' 0.$1',
+            '/\bstandard\s+lots?\b/' => ' lot ',
+            '/\bmicro\s+lots?\b/' => ' microlot ',
+        ];
+        foreach ($rules as $re => $rep) {
+            $t = preg_replace($re, $rep, $t) ?? $t;
+        }
+        $t = preg_replace_callback('/\b(' . implode('|', array_keys(self::WORDS)) . ')\b(?=\s+(?:lots?|microlot))/', fn ($m) => self::WORDS[$m[1]], $t) ?? $t;
+        $t = preg_replace('/\b(\d+(?:\.\d+)?)\s+microlots?\b/', '$1 microlot', $t) ?? $t;
+        $t = preg_replace_callback('/\b(\d+(?:\.\d+)?)\s+microlot\b/', fn ($m) => rtrim(rtrim(number_format((float) $m[1] / 100, 4, '.', ''), '0'), '.') . ' lot', $t) ?? $t;
+        // Filler words that carry no trade information in speech.
+        $t = preg_replace('/\b(i|we|my|the|a|an|and|with|of|for|on|trade|position|price|was|then|it|size|sized|lot\s+size\s+of|took|take|placed|put|set|order|market)\b/', ' ', $t) ?? $t;
+        return trim(preg_replace('/\s+/', ' ', $t) ?? $t);
+    }
+
+    public static function parse(string $command, bool $voice = false): array
+    {
+        if ($voice) {
+            $command = self::normalize($command);
+        }
         $o = ['symbol' => null, 'side' => null, 'entry' => null, 'stop' => null, 'tp' => null, 'exit' => null, 'target_r' => null, 'rr' => null, 'lots' => null,
-            'setup' => null, 'mistake' => null, 'emotion' => null, 'outcome' => null, 'errors' => [], 'warnings' => []];
+            'setup' => null, 'mistake' => null, 'emotion' => null, 'outcome' => null, 'errors' => [], 'warnings' => [], 'normalized' => $command, 'exit_spoken' => null, 'lots_spoken' => false];
         $tokens = array_values(array_filter(explode(' ', preg_replace('/\s+/', ' ', trim($command)) ?? ''), 'strlen'));
         if (!$tokens) {
             $o['errors'][] = 'Enter a command, e.g. "buy gold 2862 sl 2858 3r 0.5 lot val bounce"';
@@ -60,6 +106,7 @@ final class QuickTrade
                 $i++;
             } elseif (in_array($t, ['exit', 'out', 'closed', 'close'], true) && $isNum($next)) {
                 $o['exit'] = (float) $next;
+                $o['exit_spoken'] = (float) $next;
                 $i++;
             } elseif (in_array($t, ['lot', 'lots', 'size'], true) && $isNum($next) && $o['lots'] === null) {
                 $o['lots'] = (float) $next;
@@ -89,6 +136,10 @@ final class QuickTrade
                 $setup[] = $raw;
             }
         }
+        if ($voice) {
+            $setup = []; // spoken filler is never turned into a setup name
+        }
+        $o['lots_spoken'] = $o['lots'] !== null;
         if ($setup) {
             $s = ucwords(strtolower(mb_substr(implode(' ', $setup), 0, 120)));
             $o['setup'] = preg_replace_callback('/\b(Val|Vah|Poc|Ict|Fvg|Ob|Bos|Choch|Vwap)\b/', fn ($m) => strtoupper($m[1]), $s);
@@ -158,7 +209,7 @@ final class QuickTrade
         }
         if ($o['symbol']) {
             $d = Instruments::get($o['symbol'])['decimals'];
-            foreach (['entry', 'stop', 'tp', 'exit'] as $k) {
+            foreach (['entry', 'stop', 'tp', 'exit', 'exit_spoken'] as $k) {
                 if ($o[$k] !== null) {
                     $o[$k] = round($o[$k], $d);
                 }

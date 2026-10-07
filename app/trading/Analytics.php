@@ -140,6 +140,24 @@ final class Analytics
      * Discipline Leak = Flawless Execution P&L − Actual P&L. The hypothetical is conservative: impulse
      * entries are treated as not taken, stop/size violations have losses capped at 1R, nothing gains upside.
      */
+    /** Conservative rule-compliant ("emotion-filtered") P&L of one trade: never adds hypothetical profit. */
+    public static function hypothetical(array $t): float
+    {
+        $p = (float) $t['pnl'];
+        $mistake = $t['mistake_tag'] ?: 'NONE';
+        if ((int) $t['rules_followed'] && $mistake === 'NONE') {
+            return $p;
+        }
+        $treat = Domain::LEAK_TREATMENT[$mistake !== 'NONE' ? $mistake : 'IGNORED_PLAN'] ?? 'ACTUAL';
+        if ($treat === 'SKIP') {
+            return 0.0;
+        }
+        if ($treat === 'CAP_LOSS' && $p < 0 && $t['risk_amount']) {
+            return max($p, -abs((float) $t['risk_amount']));
+        }
+        return $p;
+    }
+
     public static function disciplineLeak(array $all): array
     {
         $actual = $flawless = 0.0;

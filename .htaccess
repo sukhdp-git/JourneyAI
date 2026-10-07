@@ -22,7 +22,7 @@ ErrorDocument 404 /index.php
     RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
     # 2) Block private folders, hidden files and sensitive file types.
-    RewriteRule ^(app|config|storage|routes|vendor)(/|$) - [F,L]
+    RewriteRule ^(app|config|storage|routes|vendor|tests)(/|$) - [F,L]
     RewriteRule (^|/)\.(?!well-known/) - [F,L]
     RewriteRule \.(sql|md|log|ini|lock|bak|old|orig|swp|dist|sh|env|ya?ml|tpl|inc|phar)$ - [F,NC,L]
     RewriteRule ^uploads/.*\.(php[0-9]?|phtml|phps|pht|phar|cgi|pl|py|asp|aspx|jsp|sh|html?|js)$ - [F,NC,L]

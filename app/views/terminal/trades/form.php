@@ -13,7 +13,20 @@ $v = function (string $k, string $d = '') use ($t, $tz) {
 $err = fn ($k) => field_error($k);
 $action = $t ? url('/terminal/trades/' . $t['id']) : url('/terminal/trades');
 ?>
-<form method="post" action="<?= e($action) ?>" class="panel" novalidate>
+<?php if (!$t): ?>
+<section class="voice-box" data-voice-trade="#trade-form" aria-labelledby="vt-title">
+  <div class="panel-head"><h2 id="vt-title">🎙 Voice trade entry</h2><span class="muted small">Speak or type one sentence — values fill the form for you to check before saving</span></div>
+  <div class="voice-row">
+    <button type="button" class="tm-btn tm-btn-primary" data-voice-into="#vt-text" data-voice-after="[data-vt-parse]" data-voice-note="#vt-note">🎙 Speak trade</button>
+    <label class="sr-only" for="vt-text">Trade sentence</label>
+    <input id="vt-text" type="text" maxlength="400" data-vt-text placeholder="e.g. Bought gold at 2645.50, stop loss 2639, take profit 2660, 0.5 lots">
+    <button type="button" class="tm-btn" data-vt-parse>Read sentence</button>
+  </div>
+  <p class="muted small" id="vt-note" hidden>Voice input needs Chrome, Edge or Safari with microphone access. You can still type the sentence and press “Read sentence”.</p>
+  <div data-vt-preview aria-live="polite"></div>
+</section>
+<?php endif; ?>
+<form method="post" action="<?= e($action) ?>" class="panel" id="trade-form" novalidate>
   <?= csrf_field() ?>
   <div class="panel-head"><h2><?= $t ? 'Edit ' . e($t['symbol']) . ' trade' : 'Log a trade' ?></h2><span class="muted small">Account: <?= e($acc['name']) ?> (<?= e($acc['currency']) ?>) · times in <?= e($tz) ?></span></div>
   <div class="grid-form">
@@ -28,7 +41,7 @@ $action = $t ? url('/terminal/trades/' . $t['id']) : url('/terminal/trades');
     <div class="f<?= has_error('fees') ? ' has-error' : '' ?>"><label for="t-fees">Fees / commission</label><input id="t-fees" type="number" step="any" min="0" name="fees" value="<?= e($v('fees', '0')) ?>"><?= $err('fees') ?></div>
     <div class="f<?= has_error('pnl') ? ' has-error' : '' ?>"><label for="t-pnl">Broker P&amp;L (override)</label><input id="t-pnl" type="number" step="any" name="pnl" value="<?= e($v('pnl')) ?>"><span class="f-hint">Optional — otherwise calculated</span><?= $err('pnl') ?></div>
     <div class="f<?= has_error('strategy_id') ? ' has-error' : '' ?>"><label for="t-strat">Strategy</label><select id="t-strat" name="strategy_id"><option value="">— None —</option><?php foreach ($strategies as $s): ?><option value="<?= (int) $s['id'] ?>"<?= $v('strategy_id') == $s['id'] ? ' selected' : '' ?>><?= e($s['name']) ?></option><?php endforeach; ?></select><?= $err('strategy_id') ?></div>
-    <div class="f"><label for="t-setup">Setup tag</label><input id="t-setup" type="text" name="setup_tag" maxlength="120" value="<?= e($v('setup_tag')) ?>"></div>
+    <div class="f"><label for="t-setup">Setup tag</label><input id="t-setup" type="text" name="setup_tag" maxlength="120" value="<?= e($v('setup_tag')) ?>" list="setup-list"><datalist id="setup-list"><?php foreach ($strategies as $s) foreach (preg_split('/\R/', (string) ($s['setups'] ?? '')) as $su) if (trim($su) !== ''): ?><option value="<?= e(trim($su)) ?>"><?= e($s['name']) ?></option><?php endif; ?></datalist><span class="f-hint">Sub-setup, e.g. VAL Bounce</span></div>
     <div class="f"><label for="t-emo">Emotion</label><select id="t-emo" name="emotion"><option value="">—</option><?php foreach (Domain::EMOTIONS as $e): ?><option value="<?= e($e) ?>"<?= $v('emotion') === $e ? ' selected' : '' ?>><?= e(ucfirst(strtolower($e))) ?></option><?php endforeach; ?></select></div>
     <div class="f"><label for="t-mis">Mistake</label><select id="t-mis" name="mistake_tag"><?php foreach (Domain::MISTAKES as $k => $l): ?><option value="<?= e($k) ?>"<?= $v('mistake_tag', 'NONE') === $k ? ' selected' : '' ?>><?= e($l) ?></option><?php endforeach; ?></select></div>
     <div class="f"><span class="lbl">Rules</span><input type="hidden" name="rules_followed" value="0"><label class="check"><input type="checkbox" name="rules_followed" value="1"<?= $v('rules_followed', '1') === '1' ? ' checked' : '' ?>> Plan &amp; rules followed</label></div>

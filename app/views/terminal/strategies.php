@@ -1,48 +1,69 @@
 <?php
+use App\Controllers\Terminal\StrategyController as SC;
+use App\Core\View;
+use App\Trading\Domain;
 $cur = $acc['currency'];
-$rows = [];
-foreach ($strategies as $s) { $rows[] = ['s' => $s, 'st' => $stats[(string) $s['id']] ?? null]; }
-usort($rows, fn ($a, $b) => ($b['st']['net'] ?? -INF) <=> ($a['st']['net'] ?? -INF));
+$ring = fn (?float $v, string $l, string $tone) => View::partial('terminal/partials/ring', ['value' => $v, 'label' => $l, 'tone' => $tone]);
+$sign = fn ($v) => $v === null ? '' : ($v >= 0 ? 'up' : 'down');
+$bars = array_map(fn ($r) => ['label' => $r['key'], 'value' => $r['s']['net'], 'sub' => $r['s']['trades'] . ' trades · ' . pct($r['s']['win_rate'], 0) . ' win'], $scoreboard);
 ?>
-<section class="panel" style="margin-bottom:12px">
-  <div class="panel-head"><h2>Strategy telemetry · <?= e($acc['name']) ?></h2><span class="muted small">All closed trades in this account<?= (int) $acc['has_demo_data'] ? ' · DEMO DATA' : '' ?></span></div>
-  <div class="table-wrap"><table class="tbl cards">
-    <thead><tr><th>Strategy</th><th class="r">Trades</th><th class="r">Wins</th><th class="r">Losses</th><th class="r">Win rate</th><th class="r">P&amp;L</th><th class="r">Profit factor</th><th class="r">Avg R</th><th class="r">Target R</th><th class="r">Rule compliance</th></tr></thead>
-    <tbody>
-    <?php foreach ($rows as ['s' => $s, 'st' => $st]): ?>
-      <tr><td data-label="Strategy" class="strong"><a href="#s<?= (int) $s['id'] ?>"><?= e($s['name']) ?></a><?= $s['active'] ? '' : ' <span class="badge">inactive</span>' ?></td>
-      <?php if ($st): ?>
-        <td data-label="Trades" class="r num"><?= $st['trades'] ?></td><td data-label="Wins" class="r num"><?= $st['wins'] ?></td><td data-label="Losses" class="r num"><?= $st['losses'] ?></td>
-        <td data-label="Win rate" class="r num"><?= e(pct($st['win_rate'])) ?></td><td data-label="P&amp;L" class="r num <?= $st['net'] >= 0 ? 'up' : 'down' ?>"><?= e(money($st['net'], $cur, true)) ?></td>
-        <td data-label="Profit factor" class="r num"><?= $st['profit_factor'] === null ? '∞' : e(number_format($st['profit_factor'], 2)) ?></td><td data-label="Avg R" class="r num"><?= $st['avg_r'] === null ? '—' : e(number_format($st['avg_r'], 2)) . 'R' ?></td>
-        <td data-label="Target R" class="r num"><?= $s['target_rr'] ? e($s['target_rr']) . 'R' : '—' ?></td><td data-label="Compliance" class="r num"><?= e(pct($st['compliance'], 0)) ?></td>
-      <?php else: ?><td colspan="9" class="muted" data-label="Stats">No closed trades yet</td><?php endif; ?></tr>
-    <?php endforeach; ?>
-    <?php if ($unassigned['trades']): ?><tr><td data-label="Strategy" class="muted">Unassigned</td><td class="r num" data-label="Trades"><?= $unassigned['trades'] ?></td><td class="r num" data-label="Wins"><?= $unassigned['wins'] ?></td><td class="r num" data-label="Losses"><?= $unassigned['losses'] ?></td><td class="r num" data-label="Win rate"><?= e(pct($unassigned['win_rate'])) ?></td><td class="r num <?= $unassigned['net'] >= 0 ? 'up' : 'down' ?>" data-label="P&amp;L"><?= e(money($unassigned['net'], $cur, true)) ?></td><td colspan="4"></td></tr><?php endif; ?>
-    </tbody>
-  </table></div>
-</section>
-<div class="grid g-3">
+<div class="toolbar">
+  <a class="tm-btn tm-btn-primary" href="<?= e(url('/terminal/strategies/new')) ?>"><?= icon('plus', 'icon icon-sm') ?> Add personal strategy</a>
+  <span class="muted small">Account <?= e($acc['name']) ?><?= (int) $acc['has_demo_data'] ? ' · DEMO DATA' : '' ?> · <?= (int) $sum['trades'] ?> closed trades</span>
+</div>
+
+<?php if (!$sum['trades']): ?>
+<div class="panel empty"><?= icon('target', 'icon') ?><p>No closed trades yet. Create a strategy, then pick it when you log trades to see its performance here.</p></div>
+<?php else: ?>
+<div class="grid g-2" style="margin-bottom:12px">
   <section class="panel">
-    <h2>New strategy</h2>
-    <form method="post" action="<?= e(url('/terminal/strategies')) ?>" class="stack" style="margin-top:10px"><?= csrf_field() ?>
-      <div class="f"><label for="ns-n">Name</label><input id="ns-n" name="name" maxlength="80" required></div>
-      <div class="f"><label for="ns-r">Target R</label><input id="ns-r" name="target_rr" type="number" step="any"></div>
-      <div class="f"><label for="ns-d">Description</label><textarea id="ns-d" name="description" rows="2" maxlength="500"></textarea></div>
-      <div class="f"><label for="ns-c">Checklist (one rule per line)</label><textarea id="ns-c" name="checklist" rows="3"></textarea></div>
-      <button class="tm-btn tm-btn-primary" type="submit">Create strategy</button>
-    </form>
+    <div class="panel-head"><h2>Strategy scoreboard</h2>
+      <form method="get" action="<?= e(url('/terminal/strategies')) ?>"><label class="sr-only" for="sb-sort">Rank by</label><select id="sb-sort" name="sort" data-autosubmit style="width:auto"><?php foreach (SC::SORTS as $k => $l): ?><option value="<?= $k ?>"<?= $sort === $k ? ' selected' : '' ?>>Rank by <?= e($l) ?></option><?php endforeach; ?></select></form></div>
+    <ol class="scoreboard">
+      <?php foreach ($scoreboard as $i => $r): $s = $r['s']; ?>
+      <li>
+        <span class="rank">#<?= $i + 1 ?></span>
+        <span class="nm"><strong><?= e($r['key']) ?></strong><small><?= (int) $s['trades'] ?> trades · PF <?= $s['profit_factor'] === null ? '∞' : e(number_format($s['profit_factor'], 2)) ?></small></span>
+        <span class="v <?= $sign($s['net']) ?>"><?= e(money($s['net'], $cur, true)) ?><small>Profit</small></span>
+        <span class="v <?= ($s['win_rate'] ?? 0) >= 0.5 ? 'up' : 'down' ?> hide-m"><?= e(pct($s['win_rate'], 0)) ?><small>Win rate</small></span>
+        <span class="v <?= $sign($s['avg_r']) ?> hide-m"><?= $s['avg_r'] === null ? '—' : e(($s['avg_r'] > 0 ? '+' : '') . number_format($s['avg_r'], 2)) . 'R' ?><small>Avg R</small></span>
+      </li>
+      <?php endforeach; ?>
+    </ol>
   </section>
-  <?php foreach ($strategies as $s): ?>
-  <section class="panel" id="s<?= (int) $s['id'] ?>">
-    <form method="post" action="<?= e(url('/terminal/strategies/' . $s['id'])) ?>" class="stack"><?= csrf_field() ?>
-      <div class="f"><label for="s<?= $s['id'] ?>-n">Name</label><input id="s<?= $s['id'] ?>-n" name="name" value="<?= e($s['name']) ?>" maxlength="80" required></div>
-      <div class="grid g-2"><div class="f"><label for="s<?= $s['id'] ?>-r">Target R</label><input id="s<?= $s['id'] ?>-r" name="target_rr" type="number" step="any" value="<?= e((string) $s['target_rr']) ?>"></div><div class="f"><span class="lbl">Status</span><input type="hidden" name="active" value="0"><label class="check"><input type="checkbox" name="active" value="1"<?= $s['active'] ? ' checked' : '' ?>> Active</label></div></div>
-      <div class="f"><label for="s<?= $s['id'] ?>-d">Description</label><textarea id="s<?= $s['id'] ?>-d" name="description" rows="2"><?= e((string) $s['description']) ?></textarea></div>
-      <div class="f"><label for="s<?= $s['id'] ?>-c">Checklist</label><textarea id="s<?= $s['id'] ?>-c" name="checklist" rows="3"><?= e((string) $s['checklist']) ?></textarea></div>
-      <div style="display:flex;gap:6px"><button class="tm-btn tm-btn-sm tm-btn-primary" type="submit">Save</button></div>
-    </form>
-    <form method="post" action="<?= e(url('/terminal/strategies/' . $s['id'] . '/delete')) ?>" data-confirm="Delete the “<?= e($s['name']) ?>” strategy? Trades are kept as unassigned." style="margin-top:6px"><?= csrf_field() ?><button class="tm-btn tm-btn-sm tm-btn-ghost" type="submit">Delete</button></form>
+  <section class="panel">
+    <div class="panel-head"><h2>Win rate by trading session</h2>
+      <form method="get" action="<?= e(url('/terminal/strategies')) ?>"><input type="hidden" name="sort" value="<?= e($sort) ?>"><label class="sr-only" for="ss-f">Strategy</label><select id="ss-f" name="s" data-autosubmit style="width:auto"><option value="">All strategies</option><?php foreach ($strategies as $s): ?><option value="<?= (int) $s['id'] ?>"<?= $filter === (int) $s['id'] ? ' selected' : '' ?>><?= e($s['name']) ?></option><?php endforeach; ?></select></form></div>
+    <div class="sess-bars">
+      <?php foreach ($sessions as $k => $x): $w = $x['s']['win_rate']; ?>
+      <div class="sess-bar"><strong><?= e($x['label']) ?></strong><span class="track" role="img" aria-label="<?= e($x['label']) ?> win rate <?= e(pct($w, 0)) ?>"><span class="<?= $w === null ? '' : ($w >= 0.5 ? 'good' : 'bad') ?>" style="width:<?= $w === null ? 0 : round($w * 100) ?>%"></span></span><span class="val"><?= e(pct($w, 0)) ?> <small class="muted">· <?= (int) $x['s']['trades'] ?> tr · <span class="<?= $sign($x['s']['net']) ?>"><?= e(money($x['s']['net'], $cur, true)) ?></span></small></span></div>
+      <?php endforeach; ?>
+    </div>
+    <p class="panel-note">Asian = before London opens; London = 08:00 London time until New York opens; New York = 08:00–17:00 New York time. Daylight-saving changes are handled.</p>
+    <h3 style="margin:12px 0 6px">Net P&amp;L by strategy</h3>
+    <div class="chart" data-chart="bars" data-format="money:<?= e($cur) ?>" data-label="Net P&L by strategy" data-json="<?= e(json_encode($bars)) ?>"></div>
+  </section>
+</div>
+<?php endif; ?>
+
+<div class="grid g-3">
+  <?php foreach ($strategies as $s): $st = $stats[(string) $s['id']] ?? null; $rules = array_filter(preg_split('/\R/', (string) $s['checklist'])); $setups = array_filter(preg_split('/\R/', (string) ($s['setups'] ?? ''))); ?>
+  <section class="panel strat-card" id="s<?= (int) $s['id'] ?>">
+    <div class="panel-head"><h2><?= e($s['name']) ?><?= $s['active'] ? '' : ' <span class="badge">inactive</span>' ?></h2><a class="tm-btn tm-btn-sm" href="<?= e(url('/terminal/strategies/' . $s['id'] . '/edit')) ?>"><?= icon('edit', 'icon icon-sm') ?> Edit</a></div>
+    <p class="muted small" style="margin:0"><?= e(Domain::STRATEGY_STYLES[$s['style'] ?? ''] ?? 'No style set') ?><?= $s['target_rr'] ? ' · target 1:' . e(rtrim(rtrim((string) $s['target_rr'], '0'), '.')) : '' ?></p>
+    <?php if ($st): ?>
+    <div class="rings"><?= $ring($st['win_rate'], 'Win rate', ($st['win_rate'] ?? 0) >= 0.5 ? 'good' : 'bad') ?><?= $ring($st['compliance'], 'Rule compliance', ($st['compliance'] ?? 0) >= 0.8 ? 'good' : 'bad') ?></div>
+    <div class="strat-kpis">
+      <div><small>P&amp;L</small><strong class="<?= $sign($st['net']) ?>"><?= e(money($st['net'], $cur, true)) ?></strong></div>
+      <div><small>Avg R</small><strong class="<?= $sign($st['avg_r']) ?>"><?= $st['avg_r'] === null ? '—' : e(($st['avg_r'] > 0 ? '+' : '') . number_format($st['avg_r'], 2)) . 'R' ?></strong></div>
+      <div><small>Trades</small><strong><?= (int) $st['trades'] ?></strong></div>
+      <div><small>Profit factor</small><strong class="<?= $st['profit_factor'] === null ? 'up' : $sign($st['profit_factor'] - 1) ?>"><?= $st['profit_factor'] === null ? '∞' : e(number_format($st['profit_factor'], 2)) ?></strong></div>
+    </div>
+    <?php else: ?><p class="muted small">No closed trades tagged with this strategy in this account yet.</p><?php endif; ?>
+    <?php if ($s['thesis']): ?><details><summary class="small strong">Edge / thesis</summary><p class="small" style="white-space:pre-wrap;margin-top:6px"><?= e($s['thesis']) ?></p></details><?php endif; ?>
+    <?php if ($rules): ?><details><summary class="small strong">Rules (<?= count($rules) ?>)</summary><ol class="small" style="margin:6px 0 0;padding-left:18px"><?php foreach ($rules as $r): ?><li><?= e($r) ?></li><?php endforeach; ?></ol></details><?php endif; ?>
+    <?php if ($setups): ?><div class="chips" style="margin:0"><?php foreach ($setups as $su): ?><span class="badge"><?= e($su) ?></span><?php endforeach; ?></div><?php endif; ?>
   </section>
   <?php endforeach; ?>
+  <a class="panel calc-link" href="<?= e(url('/terminal/strategies/new')) ?>"><?= icon('plus', 'icon') ?><div><strong>Add personal strategy</strong><small class="muted">Name, style, edge, rules and sub-setups</small></div></a>
 </div>

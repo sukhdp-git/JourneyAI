@@ -68,8 +68,8 @@ $test = fn (string $which, string $label = 'Test connection') => '<button type="
   </section>
 
   <section class="card form-card">
-    <div class="card-head"><h2 class="card-title"><?= icon('bars', 'icon icon-sm') ?> Market data</h2><?= $badge($status['market'], 'Live quotes', 'Ticker shows DEMO DATA') ?></div>
-    <p class="muted small">Live ticker quotes and the Runner Auditor use <a href="https://twelvedata.com" target="_blank" rel="noopener">Twelve Data</a>. Without a key the ticker shows static levels clearly labelled DEMO DATA and the Runner Auditor is disabled.</p>
+    <div class="card-head"><h2 class="card-title"><?= icon('bars', 'icon icon-sm') ?> Market data</h2><?= $badge($status['market'], 'Connected', 'Runner Auditor off') ?></div>
+    <p class="muted small">Optional. The post-trade Runner Auditor uses real price history from <a href="https://twelvedata.com" target="_blank" rel="noopener">Twelve Data</a>. Without a key the auditor is disabled. The terminal never shows market prices, so no prices are ever invented.</p>
     <div class="form-grid"><?= $secret('market_data_api_key', 'Twelve Data API key') ?></div>
     <div class="form-foot"><?= $test('market') ?></div>
   </section>

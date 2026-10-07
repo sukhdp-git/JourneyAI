@@ -21,7 +21,7 @@ $nav = [
     ],
     'Members' => [
         ['members', 'All members', 'users', can('members') ? 'members' : 'members.view', $newMembers], ['member-logins', 'Sign-in log', 'activity', can('members') ? 'members' : 'members.view'],
-        ['payments', 'Payments', 'zap', 'billing'], ['plans', 'Plans & pricing', 'star', 'billing'], ['integrations', 'Integrations', 'key', 'integrations'],
+        ['payments', 'Payments', 'zap', 'billing'], ['plans', 'Plans & pricing', 'star', 'billing'], ['instruments', 'Instruments', 'bars', 'instruments'], ['integrations', 'Integrations', 'key', 'integrations'],
         ['messages', 'Contact messages', 'message', 'messages', $newMsgs],
     ],
     'Media' => [['media', 'Media library', 'image', 'media']],

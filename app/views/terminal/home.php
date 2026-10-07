@@ -1,16 +1,16 @@
 <?php
 use App\Trading\Domain;
-use App\Trading\Sessions;
 $cur = $acc['currency'];
 $total = 9; $doneN = count($done);
 ?>
-<div class="ticker" data-ticker data-live="<?= $market['live'] ? '1' : '0' ?>" aria-label="Market ticker">
-  <span class="ticker-flag<?= $market['live'] ? ' live' : '' ?>" title="<?= $market['live'] ? 'Quotes from Twelve Data, refreshed every 60 seconds' : 'No market-data API configured — static reference levels, not live prices' ?>"><?= $market['live'] ? 'LIVE' : 'DEMO DATA' ?></span>
-  <?php foreach ($market['quotes'] as $q): ?>
-  <div class="ticker-item" data-sym="<?= e($q['symbol']) ?>"><small><?= e($q['name']) ?></small><strong><?= e($q['price']) ?></strong><em class="<?= $q['up'] ? 'up' : 'down' ?>"><?= e($q['change']) ?></em></div>
-  <?php endforeach; ?>
-</div>
-<?php if ($market['error']): ?><div class="tm-alert tm-alert-warn"><p><?= e($market['error']) ?></p></div><?php endif; ?>
+<section class="quote-hero" data-quotes="<?= e(json_encode(Domain::QUOTES)) ?>" data-start="<?= (int) $quoteStart ?>" aria-label="Trading psychology">
+  <?php $q = Domain::QUOTES[$quoteStart]; ?>
+  <div class="quote-hero-body">
+    <span class="quote-theme" data-q-theme><?= e($q[2]) ?></span>
+    <blockquote><p data-q-text>“<?= e($q[0]) ?>”</p><cite data-q-by>— <?= e($q[1]) ?></cite></blockquote>
+  </div>
+  <button type="button" class="tm-btn tm-btn-sm tm-btn-ghost" data-q-next aria-label="Next quote">Next thought →</button>
+</section>
 
 <?php if ($tilt['active']): ?>
 <section class="panel tilt" role="alert" style="margin-bottom:12px">
@@ -25,7 +25,7 @@ $total = 9; $doneN = count($done);
     <div>
       <h3>Recent losses</h3>
       <ul class="small"><?php foreach ($tilt['losses'] as $l): ?><li><?= e(fmt_date($l['executed_at'], 'H:i')) ?> · <?= e($l['symbol']) ?> · <span class="down"><?= e(money($l['pnl'], $cur)) ?></span></li><?php endforeach; ?></ul>
-      <?php if ($budget !== null): ?><p class="small">Today’s remaining loss budget: <strong class="<?= $budget > 0 ? 'up' : 'down' ?>"><?= e(money(max(0, $budget), $cur)) ?></strong></p><?php endif; ?>
+      <?php if ($limits['daily']['limit'] !== null): ?><p class="small">Today’s remaining loss budget: <strong class="<?= $limits['daily']['remaining'] > 0 ? 'up' : 'down' ?>"><?= e(money($limits['daily']['remaining'], $cur)) ?></strong></p><?php endif; ?>
     </div>
   </div>
 </section>
@@ -55,7 +55,7 @@ $total = 9; $doneN = count($done);
       <div class="kpis" style="margin:0 0 10px">
         <div class="kpi"><small>Net P&amp;L</small><strong class="<?= $todaySum['net'] >= 0 ? 'up' : 'down' ?>"><?= e(money($todaySum['net'], $cur, true)) ?></strong></div>
         <div class="kpi"><small>Trades</small><strong><?= (int) $todaySum['trades'] ?></strong><em><?= (int) $todaySum['wins'] ?>W · <?= (int) $todaySum['losses'] ?>L</em></div>
-        <div class="kpi"><small>Loss budget left</small><strong><?= $budget === null ? '—' : e(money(max(0, $budget), $cur)) ?></strong><em><?= $m['max_daily_loss'] === null ? 'Set in Settings' : 'of ' . e(money($m['max_daily_loss'], $cur)) ?></em></div>
+        <?php $D = $limits['daily']; ?><div class="kpi"><small>Daily loss budget left</small><strong class="<?= $D['limit'] === null ? '' : ($D['reached'] ? 'down' : ($D['warning'] ? 'warn' : 'up')) ?>"><?= $D['limit'] === null ? '—' : e(money($D['remaining'], $cur)) ?></strong><em><?= $D['limit'] === null ? '<a href="' . e(url('/terminal/settings#risk')) . '">Set a daily limit</a>' : 'of ' . e(money($D['limit'], $cur)) ?></em></div>
       </div>
       <?php if ($latest): ?>
       <div class="table-wrap"><table class="tbl cards"><thead><tr><th>Time</th><th>Symbol</th><th>Side</th><th class="r">P&amp;L</th><th class="r">R</th><th>Setup</th></tr></thead><tbody>
@@ -63,13 +63,32 @@ $total = 9; $doneN = count($done);
       </tbody></table></div>
       <?php else: ?><div class="empty"><?= icon('journal', 'icon') ?><?= e(t('empty.trades')) ?></div><?php endif; ?>
     </section>
-    <section class="panel">
-      <div class="panel-head"><h2><?= icon('clock', 'icon icon-sm') ?> World markets</h2><span class="muted small">Cash sessions, Mon–Fri (holidays not modelled)</span></div>
-      <div class="clocks"><?php foreach (Sessions::CLOCKS as $city => [$zone, $o, $c]): ?><div class="clock" data-clock="<?= e($zone) ?>" data-open="<?= $o ?>" data-close="<?= $c ?>"><small><?= e($city) ?> <span class="st">–</span></small><strong class="num">--:--:--</strong></div><?php endforeach; ?></div>
-    </section>
+
   </div>
   <div class="stack">
-    <section class="panel"><blockquote class="quote" style="margin:0">“<?= e($quote[0]) ?>”<cite>— <?= e($quote[1]) ?></cite></blockquote></section>
+    <section class="panel clock-panel" data-clock="<?= e($tz) ?>">
+      <div class="panel-head"><h2><?= icon('clock', 'icon icon-sm') ?> Your time</h2>
+        <form method="post" action="<?= e(url('/terminal/timezone')) ?>"><?= csrf_field() ?><label class="sr-only" for="hub-tz">Timezone</label>
+          <select id="hub-tz" name="timezone" data-autosubmit class="tz-select"><?php $zones = App\Trading\Sessions::ZONES; if (!in_array($tz, $zones, true)) $zones = [$tz => $tz] + $zones; foreach ($zones as $label => $zone): ?><option value="<?= e($zone) ?>"<?= $zone === $tz ? ' selected' : '' ?>><?= e($label) ?></option><?php endforeach; ?></select></form></div>
+      <strong class="clock-time num" data-clock-time><?= e((new DateTimeImmutable('now', new DateTimeZone($tz)))->format('H:i:s')) ?></strong>
+      <span class="muted small" data-clock-date><?= e((new DateTimeImmutable('now', new DateTimeZone($tz)))->format('l j F')) ?></span>
+      <div class="sessions" aria-label="Trading sessions">
+        <?php foreach ($sessions as $key => $sx): ?><div class="session<?= $sx['active'] ? ' on' : '' ?>" data-session data-zone="<?= e($sx['zone']) ?>" data-open="<?= $sx['open'] ?>" data-close="<?= $sx['close'] ?>"><strong><?= e($sx['label']) ?></strong><small data-session-state><?= $sx['active'] ? 'ACTIVE' : 'closed' ?></small><em><?= e($sx['local_hours']) ?> your time</em></div><?php endforeach; ?>
+      </div>
+      <p class="muted small" style="margin:6px 0 0">Main cash sessions Mon–Fri in each market's local time (London &amp; New York daylight-saving handled). Holidays not modelled.</p>
+    </section>
+    <section class="panel">
+      <div class="panel-head"><h2><?= icon('alert', 'icon icon-sm') ?> Risk limits</h2><a class="small" href="<?= e(url('/terminal/settings#risk')) ?>">Edit</a></div>
+      <?php foreach (['daily' => 'Today', 'weekly' => 'This week'] as $lk => $ll): $L = $limits[$lk]; ?>
+      <div class="limit-row">
+        <div class="limit-head"><span><?= $ll ?></span><strong class="num <?= $L['net'] >= 0 ? 'up' : 'down' ?>"><?= e(money($L['net'], $cur, true)) ?></strong></div>
+        <?php if ($L['limit'] !== null): $pc = min(100, (int) round(($L['used'] ?? 0) * 100)); ?>
+        <div class="progress <?= $L['reached'] ? 'bad' : ($L['warning'] ? 'warn' : '') ?>" role="progressbar" aria-label="<?= $ll ?> loss limit used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<?= $pc ?>"><span style="width:<?= $pc ?>%"></span></div>
+        <small class="muted">Loss <?= e(money($L['loss'], $cur)) ?> of <?= e(money($L['limit'], $cur)) ?><?= $L['type'] === 'percent' ? ' (' . e(rtrim(rtrim(number_format((float) $L['value'], 2), '0'), '.')) . '%)' : '' ?> · risked <?= e(money($L['risked'], $cur)) ?><?= $L['reached'] ? ' · <strong class="down">LIMIT REACHED</strong>' : '' ?></small>
+        <?php else: ?><small class="muted">No <?= $lk ?> limit set.</small><?php endif; ?>
+      </div>
+      <?php endforeach; ?>
+    </section>
     <section class="panel checklist" data-checklist>
       <div class="panel-head"><h2><?= icon('check-circle', 'icon icon-sm') ?> Discipline checklist</h2><span class="small num" data-check-count><?= $doneN ?> / <?= $total ?></span></div>
       <div class="progress" role="progressbar" aria-label="Checklist progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<?= (int) round($doneN / $total * 100) ?>" style="margin-bottom:10px"><span data-check-progress style="width:<?= (int) round($doneN / $total * 100) ?>%"></span></div>
@@ -79,17 +98,6 @@ $total = 9; $doneN = count($done);
       </fieldset>
       <?php endforeach; ?>
     </section>
-    <section class="panel">
-      <div class="panel-head"><h2><?= icon('scale', 'icon icon-sm') ?> Lot size calculator</h2></div>
-      <form class="grid-form" data-lot-form>
-        <div class="f"><label for="lc-s">Instrument</label><select id="lc-s" name="symbol"><?php foreach (App\Trading\Instruments::all() as $s => $i): ?><option value="<?= e($s) ?>"><?= e($s) ?></option><?php endforeach; ?></select></div>
-        <div class="f"><label for="lc-e">Equity</label><input id="lc-e" name="equity" type="number" step="any" value="<?= e((string) $balance['equity']) ?>"></div>
-        <div class="f"><label for="lc-r">Risk %</label><input id="lc-r" name="risk" type="number" step="any" value="<?= e((string) $m['default_risk_pct']) ?>"></div>
-        <div class="f"><label for="lc-en">Entry</label><input id="lc-en" name="entry" type="number" step="any" required></div>
-        <div class="f"><label for="lc-st">Stop</label><input id="lc-st" name="stop" type="number" step="any" required></div>
-        <div class="f" style="align-self:end"><button class="tm-btn tm-btn-block" type="submit">Calculate</button></div>
-        <p class="span-all strong num" data-lot-out aria-live="polite"></p>
-      </form>
-    </section>
+    <a class="panel calc-link" href="<?= e(url('/terminal/calculator')) ?>"><?= icon('scale', 'icon') ?><div><strong>Position size &amp; risk calculator</strong><small class="muted">Lot size from % or fixed risk, P&amp;L and R:R for any instrument →</small></div></a>
   </div>
 </div>

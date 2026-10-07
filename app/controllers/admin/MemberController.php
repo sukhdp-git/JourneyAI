@@ -108,7 +108,7 @@ final class MemberController extends AdminController
             'payments' => Database::all('SELECT p.*, pl.name AS plan_name FROM payments p LEFT JOIN plans pl ON pl.id = p.plan_id WHERE p.user_id = :u ORDER BY p.id DESC', ['u' => $id]),
             'audit' => Database::all('SELECT action, details, ip, created_at FROM user_audit_logs WHERE user_id = :u ORDER BY id DESC LIMIT 25', ['u' => $id]),
             'counts' => Database::one("SELECT (SELECT COUNT(*) FROM trades WHERE user_id = :u1 AND source <> 'DEMO') trades, (SELECT COUNT(*) FROM trades WHERE user_id = :u5 AND source = 'DEMO') demo_trades, (SELECT COUNT(*) FROM journal_entries WHERE user_id = :u2) journals,
-                (SELECT COUNT(*) FROM ai_messages WHERE user_id = :u3 AND role = 'user') ai, (SELECT COUNT(*) FROM broker_connections WHERE user_id = :u4) webhooks", ['u1' => $id, 'u2' => $id, 'u3' => $id, 'u4' => $id, 'u5' => $id]),
+                (SELECT COUNT(*) FROM ai_messages WHERE user_id = :u3 AND role = 'user') ai, (SELECT COUNT(*) FROM strategies WHERE user_id = :u4) strategies", ['u1' => $id, 'u2' => $id, 'u3' => $id, 'u4' => $id, 'u5' => $id]),
             'plans' => Database::all('SELECT id, name, interval_days FROM plans ORDER BY sort_order, id'),
         ], $u['name'], [['Members', 'members'], [$u['name'], null]]);
     }

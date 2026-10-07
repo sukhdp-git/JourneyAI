@@ -56,16 +56,17 @@ All URLs are clean and never end in `.php`.
 
 | Page | What it does |
 |---|---|
-| **Home Hub** | Market ticker (live with a Twelve Data key, otherwise clearly labelled **DEMO DATA**), world clocks (India, New York, London, Tokyo, Singapore, Dubai), 9-step pre-trade checklist, quick trade command (`/` hotkey), lot-size calculator. |
+| **Home Hub** | Trading-psychology quotes, a clock in the member's chosen timezone with the London / New York / Tokyo session indicator (daylight saving handled), daily & weekly risk-limit status, 9-step checklist, quick trade command (`/` hotkey). |
 | **Dashboard** | Date presets, KPIs (net P&L, win rate, profit factor, payoff, expectancy…), equity, cumulative P&L and drawdown charts, breakdowns by weekday, session, instrument and strategy. |
 | **Calendar** | Monthly P&L calendar with weekly summaries and day drill-down. |
-| **Trade Log** | Filters, add/edit/delete, CSV export, private screenshots, share cards in 4 themes, runner audit. |
-| **Strategy Analysis** | Strategy playbooks (9 templates) and per-strategy statistics. |
-| **Edge Matrix** | Best trading windows, discipline leak, emotional vs disciplined results, Monte Carlo drawdown simulation (1,000 paths), tilt circuit breaker. |
-| **Daily Notepad** | Daily reflection with compliance, emotion and discipline ratings; voice dictation in English, Russian, Chinese and Portuguese. |
-| **AI Coach** | Chat and weekly/monthly reviews grounded in the member's own aggregated statistics (Anthropic Claude or Google Gemini). |
-| **Accounts & Sync** | Demo and live accounts, deposits/withdrawals, **CSV statement import** (MT4/MT5, cTrader, NinjaTrader) and **signed webhooks**, with an honest broker-connector status list. |
-| **Settings / Plan & Billing** | Profile, timezone, language, theme (4 themes), risk and tilt rules, password, **Export my data** (JSON/CSV), **Delete account**, plan status and payment history. |
+| **Trade Log** | Compact table (cards on mobile), voice/sentence trade entry, filters, add/edit/delete, CSV export, private screenshots, **Share** image per trade (green/red, dark/light), runner audit. |
+| **Risk Calculator** | Position size from % or fixed risk per account, and P&L / R:R for any instrument. |
+| **Strategy Analysis** | Personal strategy builder (style, edge/thesis, reorderable rules, sub-setups), scoreboard, win-rate rings, win rate by Asian/London/New York session. |
+| **Edge Matrix** | Last month audit (positive edges and negative traps), best trading window with cautious A+ setup detection, anti-window detector, Ruin Probability Radar (2,000-path simulation at 0.5–4% risk), discipline-leak counter with actual vs rule-compliant curve, tilt rule. |
+| **Daily Notepad** | “How was your trading day?”, rules followed (yes/partially/no), emotional state, own discipline rating plus a separate system discipline score, key lessons library; voice dictation in English, Russian, Chinese and Portuguese. |
+| **AI Coach** | Automatic strengths & critical-leaks summary, weekly/monthly reviews (with optional AI narrative), and chat with voice input, grounded in the member's trades, journals, lessons and limits (Anthropic Claude or Google Gemini). |
+| **Accounts** | Manual demo, live equity, prop-firm and custom accounts; deposits, withdrawals, equity adjustments and capital history; **CSV statement import**. |
+| **Settings / Plan & Billing** | Profile, timezone, language, theme (4 themes), risk rules, daily/weekly loss limits (% or fixed), A+ risk tier, tilt rule, password, **Export my data** (JSON/CSV), **Delete account**, plan status and payment history. |
 
 **Free vs paid.** Every member can create unlimited **demo** accounts and load the 42-trade demo journal (marked DEMO DATA, kept in its own account). **Live** accounts can be created and written to only while a paid plan is active; when a plan ends, live data stays visible but read-only.
 
@@ -170,6 +171,11 @@ You can install in one of two ways.
    ```
    Generate the APP_KEY with any password generator (letters and digits, 64 characters).
 3. Visit `https://YOUR-DOMAIN/setup`. The installer detects the config and only asks you to create the Super Admin, then locks itself.
+
+### 4.3a Updating an existing installation
+1. Back up the database (phpMyAdmin → Export) and `config/config.php`.
+2. Upload the new ZIP and extract it over the existing files (your `config/config.php`, `uploads/` and `storage/` are not in the ZIP and are kept).
+3. Open the website once. The site applies `database-updated.sql` automatically (it only adds columns, tables and instruments — nothing is deleted). If you prefer, import **database-updated.sql** yourself in phpMyAdmin → Import first; running it twice is harmless.
 
 ### 4.4 Folder permissions
 On cPanel the defaults are usually right: folders `755`, files `644`.
@@ -348,12 +354,17 @@ Use **Test connection** after saving. Plans are activated only after a verified 
 ### AI Coach & market data setup
 - **AI Coach:** **Members → Integrations → AI Coach**. Choose **Anthropic Claude** (key from console.anthropic.com; default model `claude-opus-5-5`) or **Google Gemini** (key from aistudio.google.com; default `gemini-2.5-flash`). Leave *Model* empty to use the default. Claude requests use adaptive thinking and server-side fallbacks, so a request the main model declines is retried on a fallback model automatically. The coach only receives aggregated statistics for the signed-in member plus their own short journal notes. Without a key, members see “AI Coach requires server configuration.”
 - **Daily limits:** per plan (and the free limit). Counted per member per UTC day.
-- **Market data:** **Members → Integrations → Market data** with a [Twelve Data](https://twelvedata.com) API key enables live ticker quotes (cached 60 s) and the Runner Auditor. Without it, the ticker shows static levels labelled **DEMO DATA** and the Runner Auditor is disabled.
+- **Market data (optional):** a [Twelve Data](https://twelvedata.com) key under **Members → Integrations** enables the post-trade Runner Auditor. The terminal never displays market prices.
 
-### Broker import & signed webhooks (members)
-- **CSV import:** *Accounts & Sync → Import statement*. MT4/MT5, cTrader and NinjaTrader exports are auto-detected; balance rows are skipped; duplicates are skipped by ticket number; broker server time offsets are supported.
-- **Signed webhook:** *Accounts & Sync → Create webhook* shows an endpoint URL and a signing secret **once**. Requests must send `X-Journzey-Timestamp` (unix seconds) and `X-Journzey-Signature: sha256=<hex HMAC-SHA256 of "{timestamp}.{raw body}">`. Stale requests (over 5 minutes) are rejected, each `event_id` is processed once and each trade `id` is imported once per account. The full payload format is shown on the page.
-- No direct broker API sync is claimed: the connector list shows each broker's real status.
+### Trade import (members)
+- **Accounts are manual.** Members create live equity, prop-firm and custom accounts themselves, enter the starting capital and record deposits, withdrawals and equity adjustments (*Edit / adjust equity* in the sidebar). There is no broker synchronisation or live broker feed.
+- **CSV import:** *Accounts → Import statement*. MT4/MT5, cTrader and NinjaTrader history exports are auto-detected; balance rows are skipped; duplicates are skipped by ticket number; broker server-time offsets are supported.
+- **Voice / sentence entry:** *Trade Log → New trade → Voice trade entry*. Say or type “Bought gold at 2645.50, stop loss 2639, take profit 2660, 0.5 lots”; the values fill the form and nothing is saved until the member presses **Save trade**. Voice needs Chrome, Edge or Safari with microphone permission.
+
+### Instruments & the Position Size & Risk Calculator
+- **Members → Instruments** holds every instrument's contract size, tick size, pip/point size, price decimals, minimum lot, lot step and aliases (45 metals, forex, indices, commodities and crypto instruments are pre-loaded). Edit them to match your broker; all P&L, R and lot-size maths reads from this table.
+- *Terminal → Risk Calculator* has two modes: **Trade P&L / R** (P&L and risk-to-reward for any entry, stop and exit/take profit) and **Risk-based lot size** (pick an account, % risk or a fixed amount → recommended lots, rounded down to the lot step). Instruments quoted in another currency (e.g. GER40 in a USD account) ask for a conversion rate — journzey.ai does not fetch live prices.
+- `php tests/calculations.php` (SSH/terminal only) runs the deterministic calculation and voice-parsing checks.
 
 ### Contact messages
 **Members → Contact messages** lists messages from `/contact` with the statuses New, Read, Replied and Archived.
@@ -461,7 +472,7 @@ Passwords and secrets are never logged.
 | **Secrets** | The SMTP password, Google client secret, payment keys, AI and market-data keys and webhook signing secrets are encrypted at rest (libsodium + `APP_KEY`), never sent back to the browser and never logged. No credentials ship in the ZIP. |
 | **Members** | Separate `users` table and session from admins. Every terminal query is scoped to the signed-in member's id from the session — never an id from the browser. Passwords use `password_hash()`; sign-in is rate-limited; password reset tokens are single-use, hashed and expire after 60 minutes. Changing a password signs out other sessions. |
 | **Google OAuth** | Authorization code + PKCE, `state` and `nonce`; ID token audience/issuer/expiry checked; only verified Google emails; tokens are never stored in the browser. |
-| **Payments & webhooks** | HMAC signature verification (Razorpay, Stripe, member trade webhooks), timestamp windows, idempotent processing; plan access is only granted server-side. |
+| **Payments & webhooks** | HMAC signature verification (Razorpay and Stripe), timestamp windows, idempotent processing; plan access is only granted server-side. |
 | **Member files** | Trade screenshots (PNG/JPEG/WebP ≤ 5 MB) are re-encoded and stored in `storage/private/`, served only to their owner. |
 | **Files** | `.htaccess` denies `app/`, `config/`, `routes/`, `storage/`, `vendor/`, dot-files and `*.sql/.md/.log/.ini/.lock/.bak`. Directory listing is disabled. Direct `*.php` URLs return 404 (`/index.php` redirects to `/`). |
 | **Errors** | `display_errors` is off in production. Branded 404 and 403 pages, and a 500 page. Errors are logged to `storage/logs/`. |

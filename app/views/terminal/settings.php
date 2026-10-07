@@ -15,12 +15,19 @@ $err = fn ($k) => field_error($k);
       <div class="f"><label for="s-th">Theme</label><select id="s-th" name="theme"><?php foreach (Domain::THEMES as $k => $l): ?><option value="<?= e($k) ?>"<?= $sel($k, $v('theme')) ?>><?= e($l) ?></option><?php endforeach; ?></select></div>
       <div class="f"><label for="s-c">Base currency</label><select id="s-c" name="base_currency"><?php foreach (Domain::CURRENCIES as $c): ?><option<?= $sel($c, $v('base_currency')) ?>><?= e($c) ?></option><?php endforeach; ?></select></div>
     </div>
-    <h2 style="margin-top:8px">Risk rules</h2>
+    <h2 style="margin-top:8px" id="risk">Risk rules</h2>
     <div class="grid-form">
       <div class="f"><label for="s-r">Default risk per trade (%)</label><input id="s-r" name="default_risk_pct" type="number" step="0.01" min="0.01" max="100" value="<?= e($v('default_risk_pct')) ?>"><?= $err('default_risk_pct') ?></div>
       <div class="f"><label for="s-rr">Default target (R)</label><input id="s-rr" name="default_target_rr" type="number" step="0.1" min="0.1" max="50" value="<?= e($v('default_target_rr')) ?>"><?= $err('default_target_rr') ?></div>
-      <div class="f"><label for="s-dl">Max daily loss</label><input id="s-dl" name="max_daily_loss" type="number" step="0.01" min="0" value="<?= e($v('max_daily_loss')) ?>" placeholder="optional"></div>
-      <div class="f"><label for="s-wl">Max weekly loss</label><input id="s-wl" name="max_weekly_loss" type="number" step="0.01" min="0" value="<?= e($v('max_weekly_loss')) ?>" placeholder="optional"></div>
+      <div class="f"><label for="s-ap">Higher-risk tier for A+ setups (%)</label><input id="s-ap" name="a_plus_risk_pct" type="number" step="0.01" min="0.01" max="100" value="<?= e($v('a_plus_risk_pct')) ?>" placeholder="optional, e.g. 1.5"><span class="f-hint">Only mentioned by the Edge Matrix when your history strongly supports a setup.</span><?= $err('a_plus_risk_pct') ?></div>
+    </div>
+    <h3 style="margin-top:6px">Daily &amp; weekly loss limits</h3>
+    <p class="muted small">When realised losses reach a limit, the terminal shows a prominent warning. Percent limits use the account capital at the start of the day/week. Journal warnings only — journzey.ai cannot block orders at your broker.</p>
+    <div class="grid-form">
+      <div class="f"><label for="s-dlt">Daily limit type</label><select id="s-dlt" name="daily_limit_type"><option value="percent"<?= $v('daily_limit_type') === 'percent' ? ' selected' : '' ?>>% of account capital</option><option value="amount"<?= $v('daily_limit_type') !== 'percent' ? ' selected' : '' ?>>Fixed amount</option></select></div>
+      <div class="f"><label for="s-dl">Daily maximum loss</label><input id="s-dl" name="max_daily_loss" type="number" step="0.01" min="0" value="<?= e($v('max_daily_loss')) ?>" placeholder="e.g. 2 (%) or 500"><?= $err('max_daily_loss') ?></div>
+      <div class="f"><label for="s-wlt">Weekly limit type</label><select id="s-wlt" name="weekly_limit_type"><option value="percent"<?= $v('weekly_limit_type') === 'percent' ? ' selected' : '' ?>>% of account capital</option><option value="amount"<?= $v('weekly_limit_type') !== 'percent' ? ' selected' : '' ?>>Fixed amount</option></select></div>
+      <div class="f"><label for="s-wl">Weekly maximum loss</label><input id="s-wl" name="max_weekly_loss" type="number" step="0.01" min="0" value="<?= e($v('max_weekly_loss')) ?>" placeholder="e.g. 5 (%) or 1500"><?= $err('max_weekly_loss') ?></div>
     </div>
     <h2 style="margin-top:8px">Tilt Circuit Breaker</h2>
     <p class="muted small">After this many losses inside the window, the journzey terminal locks new trade entries for the cooldown (TERMINAL LOCK). It cannot block orders at your broker.</p>
@@ -68,7 +75,7 @@ $err = fn ($k) => field_error($k);
 
     <section class="panel stack" id="danger" style="border-color:color-mix(in srgb, var(--neg) 45%, var(--line))">
       <h2>Delete account</h2>
-      <p class="muted small">Permanently deletes your profile, accounts, trades, journal, screenshots, AI conversations and webhooks. Payment records are kept anonymised for accounting. This cannot be undone.</p>
+      <p class="muted small">Permanently deletes your profile, accounts, trades, journal, screenshots, AI conversations and capital history. Payment records are kept anonymised for accounting. This cannot be undone.</p>
       <form method="post" action="<?= e(url('/terminal/settings/delete')) ?>" class="stack" data-confirm="Delete your journzey.ai account and all data permanently?"><?= csrf_field() ?>
         <div class="f"><label for="d-c">Type DELETE to confirm</label><input id="d-c" name="confirm" autocomplete="off" required pattern="DELETE"></div>
         <?php if ($hasPassword): ?><div class="f"><label for="d-p">Password</label><input id="d-p" type="password" name="password" autocomplete="current-password" required></div><?php endif; ?>

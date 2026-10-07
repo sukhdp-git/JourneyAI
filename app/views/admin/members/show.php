@@ -23,7 +23,7 @@
         <dt>Total sign-ins</dt><dd><?= (int) $u['login_count'] ?></dd>
         <dt>Sign-up IP</dt><dd><?= e($u['signup_ip'] ?? '—') ?></dd>
         <dt>Plan</dt><dd><?= $paid ? e($u['plan_name']) . ' until ' . e(fmt_date($u['plan_expires_at'], 'M j, Y g:i A')) : ($u['plan_expires_at'] ? 'Expired on ' . e(fmt_date($u['plan_expires_at'], 'M j, Y')) : 'Free (demo only)') ?></dd>
-        <dt>Usage</dt><dd><?= (int) $counts['trades'] ?> own trades<?= (int) $counts['demo_trades'] ? ' (+' . (int) $counts['demo_trades'] . ' demo)' : '' ?> · <?= (int) $counts['journals'] ?> journal entries · <?= (int) $counts['ai'] ?> AI questions · <?= (int) $counts['webhooks'] ?> webhooks</dd>
+        <dt>Usage</dt><dd><?= (int) $counts['trades'] ?> own trades<?= (int) $counts['demo_trades'] ? ' (+' . (int) $counts['demo_trades'] . ' demo)' : '' ?> · <?= (int) $counts['journals'] ?> journal entries · <?= (int) $counts['ai'] ?> AI questions · <?= (int) $counts['strategies'] ?> strategies</dd>
       </dl>
     </section>
     <section class="card">

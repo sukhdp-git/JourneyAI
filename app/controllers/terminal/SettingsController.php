@@ -53,6 +53,17 @@ final class SettingsController extends TerminalController
         if (!$tc || !$tw || !$tcd) {
             $errors['tilt_loss_count'] = 'Tilt rule: 2–20 losses, window and cooldown 5–1440 minutes.';
         }
+        $dType = $req->post('daily_limit_type') === 'percent' ? 'percent' : 'amount';
+        $wType = $req->post('weekly_limit_type') === 'percent' ? 'percent' : 'amount';
+        foreach (['max_daily_loss' => $dType, 'max_weekly_loss' => $wType] as $k => $ty) {
+            if (($req->post($k) ?? '') !== '' && $num($k, 0, $ty === 'percent' ? 100 : 1e12) === null) {
+                $errors[$k] = $ty === 'percent' ? 'Enter a percentage between 0 and 100.' : 'Enter a positive amount.';
+            }
+        }
+        $aPlus = ($req->post('a_plus_risk_pct') ?? '') === '' ? null : $num('a_plus_risk_pct', 0.01, 100);
+        if (($req->post('a_plus_risk_pct') ?? '') !== '' && $aPlus === null) {
+            $errors['a_plus_risk_pct'] = 'Enter a percentage between 0.01 and 100.';
+        }
         if ($errors) {
             Session::withErrors($errors, $_POST);
             Response::redirect('/terminal/settings');
@@ -66,6 +77,7 @@ final class SettingsController extends TerminalController
             'base_currency' => in_array($req->post('base_currency'), Domain::CURRENCIES, true) ? $req->post('base_currency') : 'USD',
             'default_risk_pct' => round($risk, 2), 'default_target_rr' => round($rr, 2),
             'max_daily_loss' => $loss('max_daily_loss'), 'max_weekly_loss' => $loss('max_weekly_loss'),
+            'daily_limit_type' => $dType, 'weekly_limit_type' => $wType, 'a_plus_risk_pct' => $aPlus === null ? null : round($aPlus, 2),
             'tilt_loss_count' => $tc, 'tilt_window_minutes' => $tw, 'tilt_cooldown_minutes' => $tcd,
         ], 'user_id = :u', ['u' => $this->uid]);
         Members::audit($this->uid, 'settings_updated', 'Preferences saved');

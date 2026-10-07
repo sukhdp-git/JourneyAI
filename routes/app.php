@@ -4,6 +4,7 @@
 use App\Controllers\BillingController;
 use App\Controllers\MemberAuthController as A;
 use App\Controllers\Terminal\AccountsController;
+use App\Controllers\Terminal\CalculatorController;
 use App\Controllers\Terminal\CoachController;
 use App\Controllers\Terminal\EdgeController;
 use App\Controllers\Terminal\HomeController as Hub;
@@ -33,8 +34,9 @@ $router->get('/terminal', [Hub::class, 'index']);
 $router->post('/terminal/quick-trade/parse', [Hub::class, 'parse']);
 $router->post('/terminal/quick-trade', [Hub::class, 'quickTrade']);
 $router->post('/terminal/checklist', [Hub::class, 'checklist']);
-$router->get('/terminal/ticker', [Hub::class, 'ticker']);
-$router->post('/terminal/lot-size', [Hub::class, 'lotSize']);
+$router->post('/terminal/timezone', [Hub::class, 'timezone']);
+$router->get('/terminal/calculator', [CalculatorController::class, 'index']);
+$router->post('/terminal/calculator/compute', [CalculatorController::class, 'compute']);
 $router->post('/terminal/account/switch', [Hub::class, 'switchAccount']);
 $router->post('/terminal/demo/load', [Hub::class, 'loadDemo']);
 
@@ -55,12 +57,13 @@ $router->post('/terminal/trades/{id}/screenshot', [TradeController::class, 'uplo
 $router->post('/terminal/trades/{id}/screenshot/delete', [TradeController::class, 'deleteScreenshot']);
 
 $router->get('/terminal/strategies', [StrategyController::class, 'index']);
+$router->get('/terminal/strategies/new', [StrategyController::class, 'create']);
+$router->get('/terminal/strategies/{id}/edit', [StrategyController::class, 'edit']);
 $router->post('/terminal/strategies', [StrategyController::class, 'store']);
 $router->post('/terminal/strategies/{id}', [StrategyController::class, 'update']);
 $router->post('/terminal/strategies/{id}/delete', [StrategyController::class, 'delete']);
 
 $router->get('/terminal/edge', [EdgeController::class, 'index']);
-$router->post('/terminal/edge/monte-carlo', [EdgeController::class, 'monteCarlo']);
 
 $router->get('/terminal/notepad', [NotepadController::class, 'index']);
 $router->post('/terminal/notepad', [NotepadController::class, 'save']);
@@ -77,8 +80,6 @@ $router->post('/terminal/accounts/{id}', [AccountsController::class, 'update']);
 $router->post('/terminal/accounts/{id}/archive', [AccountsController::class, 'archive']);
 $router->post('/terminal/accounts/{id}/capital', [AccountsController::class, 'capital']);
 $router->post('/terminal/accounts/{id}/import', [AccountsController::class, 'import']);
-$router->post('/terminal/accounts/{id}/webhook', [AccountsController::class, 'createWebhook']);
-$router->post('/terminal/connections/{id}/delete', [AccountsController::class, 'deleteWebhook']);
 
 $router->get('/terminal/settings', [SettingsController::class, 'index']);
 $router->post('/terminal/settings', [SettingsController::class, 'save']);
@@ -96,4 +97,3 @@ $router->post('/checkout/razorpay/verify', [BillingController::class, 'razorpayV
 $router->get('/checkout/stripe/success', [BillingController::class, 'stripeSuccess']);
 $router->post('/webhooks/razorpay', [WebhookController::class, 'razorpay']);
 $router->post('/webhooks/stripe', [WebhookController::class, 'stripe']);
-$router->post('/api/webhooks/trades/{key}', [WebhookController::class, 'trades']);

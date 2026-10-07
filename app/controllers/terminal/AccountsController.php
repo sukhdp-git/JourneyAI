@@ -3,11 +3,9 @@ declare(strict_types=1);
 
 namespace App\Controllers\Terminal;
 
-use App\Core\Crypto;
 use App\Core\Database;
 use App\Core\Request;
 use App\Core\Response;
-use App\Core\Session;
 use App\Trading\Domain;
 use App\Trading\Ingest;
 use App\Trading\Ledger;
@@ -24,14 +22,17 @@ final class AccountsController extends TerminalController
             $a['trades'] = (int) Database::value('SELECT COUNT(*) FROM trades WHERE account_id = :a', ['a' => $a['id']]);
         }
         unset($a);
-        $once = Session::get('webhook_secret_once');
-        Session::forget('webhook_secret_once');
         $this->render('accounts', [
             'list' => $accounts,
-            'connections' => Database::all('SELECT c.*, a.name AS account_name FROM broker_connections c JOIN trading_accounts a ON a.id = c.account_id WHERE c.user_id = :u ORDER BY c.id DESC', ['u' => $this->uid]),
-            'flows' => Database::all('SELECT * FROM capital_transactions WHERE user_id = :u AND account_id = :a ORDER BY occurred_at DESC LIMIT 20', ['u' => $this->uid, 'a' => $this->acc['id']]),
-            'newSecret' => $once, 'liveCount' => Ledger::liveCount($this->uid),
-        ], 'Accounts & Sync', 'accounts');
+            'flows' => Database::all('SELECT * FROM capital_transactions WHERE user_id = :u AND account_id = :a ORDER BY occurred_at DESC, id DESC LIMIT 50', ['u' => $this->uid, 'a' => $this->acc['id']]),
+            'liveCount' => Ledger::liveCount($this->uid),
+        ], 'Accounts', 'accounts');
+    }
+
+    /** Only same-site terminal paths are accepted as a return target. */
+    private function safeBack(string $to): string
+    {
+        return preg_match('#^/terminal(/[a-z0-9/\-]*)?(\?[a-z0-9=&_\-]*)?$#i', $to) ? $to : '/terminal/accounts';
     }
 
     private function own(Request $req): array
@@ -112,15 +113,34 @@ final class AccountsController extends TerminalController
     {
         $acc = $this->own($req);
         $this->requireWritable($acc);
-        $type = in_array($req->post('type'), ['DEPOSIT', 'WITHDRAWAL', 'ADJUSTMENT'], true) ? $req->post('type') : null;
+        $to = $this->safeBack((string) $req->post('return', ''));
+        $type = in_array($req->post('type'), ['DEPOSIT', 'WITHDRAWAL', 'ADJUSTMENT', 'SET'], true) ? $req->post('type') : null;
         $amt = $req->post('amount');
         $when = local_to_utc((string) $req->post('occurred_at', '')) ?? gmdate('Y-m-d H:i:s');
-        if (!$type || !is_numeric($amt) || (float) $amt == 0.0 || abs((float) $amt) > 1e11) {
-            $this->back('/terminal/accounts', 'error', 'Choose a type and a non-zero amount.');
+        if (!$type || !is_numeric($amt) || abs((float) $amt) > 1e11) {
+            $this->back($to, 'error', 'Choose a type and enter an amount.');
         }
-        Database::insert('capital_transactions', ['user_id' => $this->uid, 'account_id' => $acc['id'], 'type' => $type, 'amount' => round((float) $amt, 2),
-            'note' => mb_substr(trim((string) $req->post('note', '')), 0, 255) ?: null, 'occurred_at' => $when]);
-        $this->back('/terminal/accounts', 'success', ucfirst(strtolower($type)) . ' recorded.');
+        $amount = round((float) $amt, 2);
+        $note = mb_substr(trim((string) $req->post('note', '')), 0, 255) ?: null;
+        if ($type === 'SET') {
+            // "Edit equity": record the difference as an adjustment. Historical trade P&L is never rewritten.
+            $current = Ledger::balance($acc)['equity'];
+            if ($amount < 0) {
+                $this->back($to, 'error', 'Equity cannot be negative.');
+            }
+            $diff = round($amount - $current, 2);
+            if ($diff == 0.0) {
+                $this->back($to, 'info', 'Equity is already ' . money($amount, $acc['currency']) . '.');
+            }
+            Database::insert('capital_transactions', ['user_id' => $this->uid, 'account_id' => $acc['id'], 'type' => 'ADJUSTMENT', 'amount' => $diff,
+                'note' => $note ?? 'Equity set to ' . money($amount, $acc['currency']), 'occurred_at' => $when]);
+            $this->back($to, 'success', 'Equity updated to ' . money($amount, $acc['currency']) . ' (adjustment ' . money($diff, $acc['currency'], true) . '). Trade history is unchanged.');
+        }
+        if ($amount == 0.0 || ($type !== 'ADJUSTMENT' && $amount < 0)) {
+            $this->back($to, 'error', 'Enter a positive amount.');
+        }
+        Database::insert('capital_transactions', ['user_id' => $this->uid, 'account_id' => $acc['id'], 'type' => $type, 'amount' => $amount, 'note' => $note, 'occurred_at' => $when]);
+        $this->back($to, 'success', ucfirst(strtolower($type)) . ' of ' . money(abs($amount), $acc['currency']) . ' recorded.');
     }
 
     public function import(Request $req): never
@@ -159,29 +179,5 @@ final class AccountsController extends TerminalController
         }
         Database::update('user_settings', ['active_account_id' => $acc['id']], 'user_id = :u', ['u' => $this->uid]);
         $this->back('/terminal/accounts', $n['imported'] || !$errors ? 'success' : 'error', $msg);
-    }
-
-    public function createWebhook(Request $req): never
-    {
-        $acc = $this->own($req);
-        $this->requireWritable($acc);
-        if ((int) Database::value('SELECT COUNT(*) FROM broker_connections WHERE user_id = :u', ['u' => $this->uid]) >= 10) {
-            $this->back('/terminal/accounts', 'error', 'You can have up to 10 webhook connections.');
-        }
-        $secret = bin2hex(random_bytes(32));
-        $public = bin2hex(random_bytes(12));
-        Database::insert('broker_connections', ['user_id' => $this->uid, 'account_id' => $acc['id'], 'provider' => 'webhook',
-            'label' => mb_substr(trim((string) $req->post('label', '')), 0, 80) ?: 'Webhook · ' . $acc['name'], 'public_id' => $public, 'secret_enc' => Crypto::encrypt($secret)]);
-        Members::audit($this->uid, 'webhook_created', 'Account #' . $acc['id']);
-        // Shown exactly once on the next page view, then removed from the session.
-        Session::set('webhook_secret_once', ['url' => url('/api/webhooks/trades/' . $public), 'secret' => $secret]);
-        $this->back('/terminal/accounts#webhooks', 'success', 'Webhook created. Copy the signing secret now — it will not be shown again.');
-    }
-
-    public function deleteWebhook(Request $req): never
-    {
-        Database::delete('broker_connections', 'id = :id AND user_id = :u', ['id' => (int) $req->params['id'], 'u' => $this->uid]);
-        Members::audit($this->uid, 'webhook_deleted', 'Connection #' . (int) $req->params['id']);
-        $this->back('/terminal/accounts#webhooks', 'success', 'Webhook connection deleted. Requests to its URL are now rejected.');
     }
 }

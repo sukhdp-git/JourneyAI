@@ -8,7 +8,9 @@ use App\Core\Request;
 use App\Core\Response;
 use App\Core\Session;
 use App\Core\View;
+use App\Core\Database;
 use App\Trading\Ledger;
+use App\Trading\RiskLimits;
 use App\Trading\Members;
 
 /**
@@ -50,8 +52,11 @@ abstract class TerminalController
     {
         $GLOBALS['__errors'] = Session::takeErrors();
         $GLOBALS['__old'] = Session::takeOld();
+        $balance = Ledger::balance($this->acc);
         View::show('terminal/' . $view, $data + [
-            'm' => $this->m, 'acc' => $this->acc, 'accounts' => Ledger::accounts($this->uid), 'balance' => Ledger::balance($this->acc),
+            'm' => $this->m, 'acc' => $this->acc, 'accounts' => Ledger::accounts($this->uid), 'balance' => $balance,
+            'limits' => RiskLimits::status($this->m, $this->acc, $balance, $this->tz),
+            'capitalHistory' => Database::all('SELECT type, amount, note, occurred_at FROM capital_transactions WHERE user_id = :u AND account_id = :a ORDER BY occurred_at DESC, id DESC LIMIT 5', ['u' => $this->uid, 'a' => $this->acc['id']]),
             'flash' => Session::takeFlash(), 'pageTitle' => $title, 'nav' => $nav, 'tz' => $this->tz,
         ], 'terminal/layout');
     }

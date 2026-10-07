@@ -8,6 +8,8 @@ use App\Core\Request;
 use App\Core\Response;
 use App\Trading\AiCoach;
 use App\Trading\Domain;
+use App\Trading\Edge;
+use App\Trading\RiskLimits;
 use App\Trading\Ledger;
 use App\Trading\Members;
 
@@ -15,13 +17,32 @@ use App\Trading\Members;
 final class CoachController extends TerminalController
 {
     private const PROMPTS = [
-        'What is my biggest weakness right now?',
-        'Which setup has the best expectancy and why?',
-        'How do my emotions affect my results?',
-        'Which session should I focus on?',
-        'Am I cutting winners too early?',
-        'Give me three rules for next week based on my data.',
+        'What is my strongest setup?',
+        'Why am I losing money?',
+        'Which session should I avoid?',
+        'What emotional mistake costs me the most?',
+        'Compare London vs New York.',
+        'What did I learn this month?',
+        'How disciplined was I this week?',
+        'Which strategy has the highest expectancy?',
+        'What is my historical A+ setup?',
     ];
+    public const PERIODS = ['week' => 'This week', 'last_week' => 'Last week', 'month' => 'This month', 'last_month' => 'Last month'];
+
+    private function journals(?string $from = null, ?string $to = null, int $limit = 31): array
+    {
+        $w = 'user_id = :u AND is_demo = :x';
+        $p = ['u' => $this->uid, 'x' => (int) $this->acc['has_demo_data']];
+        if ($from) {
+            $w .= ' AND journal_date >= :f';
+            $p['f'] = $from;
+        }
+        if ($to) {
+            $w .= ' AND journal_date <= :t';
+            $p['t'] = $to;
+        }
+        return Database::all("SELECT journal_date, compliance, rules_answer, emotional_state, discipline_rating, reflection, key_lesson FROM journal_entries WHERE $w ORDER BY journal_date DESC LIMIT $limit", $p);
+    }
 
     private function usedToday(): int
     {
@@ -40,7 +61,14 @@ final class CoachController extends TerminalController
         if ($id && !$conv) {
             Response::redirect('/terminal/coach');
         }
+        $all = Ledger::forAnalytics($this->uid, (int) $this->acc['id'], $this->tz);
+        $period = array_key_exists((string) $req->query('period'), self::PERIODS) ? (string) $req->query('period') : 'week';
+        [$pf, $pt, $pl] = Edge::periodRange($period, $this->tz);
+        $ptrades = Ledger::forAnalytics($this->uid, (int) $this->acc['id'], $this->tz, $pf, $pt);
+        $equity = (float) Ledger::balance($this->acc)['equity'];
         $this->render('coach', [
+            'home' => Edge::strengthsAndLeaks($all, $this->tz, $this->m, $equity, $this->acc['currency']),
+            'review' => Edge::review($ptrades, $this->journals($pf, $pt), $this->tz, $this->acc['currency']), 'period' => $period, 'periodLabel' => $pl, 'periodFrom' => $pf, 'periodTo' => $pt,
             'configured' => AiCoach::configured(),
             'conversations' => Database::all('SELECT id, title, updated_at FROM ai_conversations WHERE user_id = :u ORDER BY updated_at DESC LIMIT 50', ['u' => $this->uid]),
             'conv' => $conv,
@@ -71,10 +99,11 @@ final class CoachController extends TerminalController
     {
         $from ??= (new \DateTimeImmutable('now', new \DateTimeZone($this->tz)))->modify('-90 days')->format('Y-m-d');
         $trades = Ledger::forAnalytics($this->uid, (int) $this->acc['id'], $this->tz, $from, $to);
-        $journals = Database::all('SELECT journal_date, compliance, emotional_state, discipline_rating, reflection, key_lesson FROM journal_entries
-            WHERE user_id = :u AND is_demo = :x AND journal_date >= :f' . ($to ? ' AND journal_date <= :t' : '') . ' ORDER BY journal_date DESC LIMIT 14',
-            ['u' => $this->uid, 'x' => (int) $this->acc['has_demo_data'], 'f' => $from] + ($to ? ['t' => $to] : []));
-        return AiCoach::context($this->m, $this->acc, $trades, $journals, $label) . $this->langLine($lang);
+        $journals = $this->journals($from, $to, 20);
+        $all = Ledger::forAnalytics($this->uid, (int) $this->acc['id'], $this->tz);
+        $balance = Ledger::balance($this->acc);
+        $extra = AiCoach::intelligence($this->m, $this->acc, $all, $this->journals(null, null, 60), RiskLimits::status($this->m, $this->acc, $balance, $this->tz), (float) $balance['equity'], $this->tz);
+        return AiCoach::context($this->m, $this->acc, $trades, $journals, $label) . "\n\n" . $extra . $this->langLine($lang);
     }
 
     public function send(Request $req): never
@@ -113,18 +142,11 @@ final class CoachController extends TerminalController
     public function review(Request $req): never
     {
         $this->guard();
-        $period = $req->post('period') === 'monthly' ? 'monthly' : 'weekly';
-        $now = new \DateTimeImmutable('now', new \DateTimeZone($this->tz));
-        if ($period === 'weekly') {
-            $from = $now->modify('monday last week')->format('Y-m-d');
-            $to = $now->modify('sunday last week')->format('Y-m-d');
-            $label = 'previous week ' . $from . ' to ' . $to;
-        } else {
-            $from = $now->modify('first day of last month')->format('Y-m-d');
-            $to = $now->modify('last day of last month')->format('Y-m-d');
-            $label = 'previous month ' . $from . ' to ' . $to;
-        }
-        $prompt = 'Write my ' . $period . ' trading review for the ' . $label . '. Structure: 1) Summary in 3 lines, 2) What worked, 3) What leaked money (discipline, emotions, sessions, instruments), 4) Three specific rules or focus points for the next ' . ($period === 'weekly' ? 'week' : 'month') . '. If there were no trades in this period, say so and give a short plan for getting quality data.';
+        $key = array_key_exists((string) $req->post('period'), self::PERIODS) ? (string) $req->post('period') : 'last_week';
+        [$from, $to, $pl] = Edge::periodRange($key, $this->tz);
+        $period = str_contains($key, 'month') ? 'monthly' : 'weekly';
+        $label = strtolower($pl) . ' (' . $from . ' to ' . $to . ')';
+        $prompt = 'Write my ' . $period . ' trading review for ' . $label . '. Use language like "based on your historical journal and trading data". Structure: 1) Summary in 3 lines, 2) Behaviours associated with my strongest performance (setups, sessions, instruments, hours), 3) What leaked money (discipline, emotions, repeated mistakes, weak windows), 4) My key lessons from the journal and how they connect to the numbers, 5) Three specific focus points for the next ' . ($period === 'weekly' ? 'week' : 'month') . '. Never promise results. If there were no trades in this period, say so and give a short plan for getting quality data.';
         // The review prompt is fixed server-side; it counts toward the daily limit like a chat message.
         $res = AiCoach::complete($this->context((string) $req->post('lang', $this->m['language']), $from, $to, $label), [['role' => 'user', 'content' => $prompt]]);
         if (!$res['ok']) {

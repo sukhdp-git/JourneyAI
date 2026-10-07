@@ -15,7 +15,7 @@ use App\Core\Session;
 header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: SAMEORIGIN');
 header('Referrer-Policy: strict-origin-when-cross-origin');
-header('Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()');
+header('Permissions-Policy: camera=(), microphone=(self), geolocation=(), payment=()');
 header_remove('X-Powered-By');
 if (is_https()) {
     header('Strict-Transport-Security: max-age=31536000');
@@ -27,6 +27,10 @@ $request = new Request();
 $installed = APP_CONFIGURED && is_file(INSTALL_LOCK);
 if (!$installed && !str_starts_with($request->path, '/setup')) {
     Response::redirect('/setup');
+}
+if ($installed) {
+    // One-time, non-destructive schema update after deploying a new version.
+    App\Core\Migrator::ensure();
 }
 
 if ($request->isAdmin()) {

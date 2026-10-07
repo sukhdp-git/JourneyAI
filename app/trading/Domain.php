@@ -9,20 +9,38 @@ final class Domain
     public const ASSET_CLASSES = ['METALS' => 'Gold & metals', 'FOREX' => 'Forex', 'INDICES' => 'Indices', 'CRYPTO' => 'Crypto', 'COMMODITIES' => 'Commodities'];
     public const SIDES = ['LONG', 'SHORT'];
     public const SESSIONS = ['ASIA' => 'Asia', 'LONDON' => 'London', 'LONDON_NY_OVERLAP' => 'London/NY overlap', 'NEW_YORK' => 'New York', 'OFF_HOURS' => 'Off-hours'];
-    public const EMOTIONS = ['CALM', 'FOCUSED', 'CONFIDENT', 'NEUTRAL', 'ANXIOUS', 'FEARFUL', 'GREEDY', 'FOMO', 'REVENGE', 'FRUSTRATED', 'BORED', 'TIRED', 'EUPHORIC'];
-    public const NEGATIVE_EMOTIONS = ['ANXIOUS', 'FEARFUL', 'GREEDY', 'FOMO', 'REVENGE', 'FRUSTRATED', 'BORED', 'TIRED', 'EUPHORIC'];
+    public const EMOTIONS = ['CALM', 'FOCUSED', 'CONFIDENT', 'NEUTRAL', 'PATIENT', 'DISCIPLINED', 'ANXIOUS', 'FEARFUL', 'GREEDY', 'FOMO', 'REVENGE', 'FRUSTRATED', 'BORED', 'TIRED', 'EUPHORIC', 'OVERCONFIDENT', 'IMPULSIVE'];
+    public const NEGATIVE_EMOTIONS = ['ANXIOUS', 'FEARFUL', 'GREEDY', 'FOMO', 'REVENGE', 'FRUSTRATED', 'BORED', 'TIRED', 'EUPHORIC', 'OVERCONFIDENT', 'IMPULSIVE'];
     public const MISTAKES = [
         'NONE' => 'None', 'FOMO_ENTRY' => 'FOMO entry', 'REVENGE_TRADE' => 'Revenge trade', 'MOVED_STOP' => 'Moved stop', 'NO_STOP' => 'No stop',
         'OVERSIZED' => 'Oversized', 'EARLY_EXIT' => 'Early exit', 'LATE_ENTRY' => 'Late entry', 'CHASING' => 'Chasing', 'IGNORED_PLAN' => 'Ignored plan',
-        'OVERTRADING' => 'Overtrading', 'NEWS_GAMBLE' => 'News gamble',
+        'OVERTRADING' => 'Overtrading', 'NEWS_GAMBLE' => 'News gamble', 'IMPULSIVE_ENTRY' => 'Impulsive entry',
     ];
     /** How the Discipline Leak Mirror re-scores each violation (never invents upside). */
     public const LEAK_TREATMENT = [
         'NONE' => 'ACTUAL', 'FOMO_ENTRY' => 'SKIP', 'REVENGE_TRADE' => 'SKIP', 'CHASING' => 'SKIP', 'IGNORED_PLAN' => 'SKIP', 'OVERTRADING' => 'SKIP',
-        'NEWS_GAMBLE' => 'SKIP', 'MOVED_STOP' => 'CAP_LOSS', 'NO_STOP' => 'CAP_LOSS', 'OVERSIZED' => 'CAP_LOSS', 'EARLY_EXIT' => 'ACTUAL', 'LATE_ENTRY' => 'ACTUAL',
+        'NEWS_GAMBLE' => 'SKIP', 'IMPULSIVE_ENTRY' => 'SKIP', 'MOVED_STOP' => 'CAP_LOSS', 'NO_STOP' => 'CAP_LOSS', 'OVERSIZED' => 'CAP_LOSS', 'EARLY_EXIT' => 'ACTUAL', 'LATE_ENTRY' => 'ACTUAL',
     ];
     public const SOURCES = ['MANUAL', 'QUICK_COMMAND', 'CSV_IMPORT', 'WEBHOOK', 'DEMO'];
-    public const ACCOUNT_TYPES = ['PERSONAL' => 'Personal', 'PROP_CHALLENGE' => 'Prop challenge', 'PROP_FUNDED' => 'Prop funded', 'OTHER' => 'Other'];
+    public const ACCOUNT_TYPES = ['PERSONAL' => 'Live equity account', 'PROP_CHALLENGE' => 'Prop firm — challenge', 'PROP_FUNDED' => 'Prop firm — funded', 'OTHER' => 'Other / custom account'];
+    /** Behaviour groups used by the Discipline Leak counter and negative-trap analysis. */
+    public const BEHAVIOURS = [
+        'FOMO' => ['FOMO', ['FOMO_ENTRY'], ['FOMO']],
+        'REVENGE' => ['Revenge trading', ['REVENGE_TRADE'], ['REVENGE']],
+        'OVERTRADING' => ['Overtrading', ['OVERTRADING'], []],
+        'RULES' => ['Rule breaking', ['IGNORED_PLAN'], []],
+        'CHASING' => ['Chasing', ['CHASING'], []],
+        'MOVED_STOP' => ['Moving stop loss', ['MOVED_STOP', 'NO_STOP'], []],
+        'IMPULSIVE' => ['Impulsive entry', ['IMPULSIVE_ENTRY', 'LATE_ENTRY', 'NEWS_GAMBLE'], ['IMPULSIVE']],
+    ];
+    /** Daily psychology journal emotional states. */
+    public const JOURNAL_EMOTIONS = ['DISCIPLINED' => 'Disciplined', 'FOCUSED' => 'Focused', 'CALM' => 'Calm', 'PATIENT' => 'Patient', 'ANXIOUS' => 'Anxious',
+        'FOMO' => 'FOMO', 'REVENGE' => 'Revenge', 'OVERCONFIDENT' => 'Overconfident', 'FRUSTRATED' => 'Frustrated', 'IMPULSIVE' => 'Impulsive'];
+    public const NEGATIVE_JOURNAL_EMOTIONS = ['ANXIOUS', 'FOMO', 'REVENGE', 'OVERCONFIDENT', 'FRUSTRATED', 'IMPULSIVE'];
+    public const STRATEGY_STYLES = ['SMC' => 'SMC', 'ICT' => 'ICT', 'ORDER_FLOW' => 'Order Flow', 'PRICE_ACTION' => 'Price Action', 'SUPPLY_DEMAND' => 'Supply & Demand',
+        'VOLUME_PROFILE' => 'Volume Profile', 'SCALPING' => 'Scalping', 'BREAKOUT' => 'Breakout', 'TREND_FOLLOWING' => 'Trend Following', 'MEAN_REVERSION' => 'Mean Reversion', 'CUSTOM' => 'Custom'];
+    /** Analytics session buckets (DST-aware, see Sessions::bucket). */
+    public const SESSION_BUCKETS = ['ASIAN' => 'Asian', 'LONDON' => 'London', 'NEW_YORK' => 'New York'];
     public const CURRENCIES = ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'INR', 'SGD', 'AED', 'BRL', 'CNY', 'RUB'];
     public const THEMES = ['dark-terminal' => 'Dark Terminal', 'clean-light' => 'Clean Light', 'cyberpunk-slate' => 'Cyberpunk Slate', 'midnight-navy' => 'Midnight Navy'];
     public const LANGUAGES = ['en' => 'English', 'ru' => 'Русский', 'zh' => '简体中文', 'pt' => 'Português'];
@@ -43,15 +61,24 @@ final class Domain
         ['Liquidity Sweep', 'Fade the stop-run beyond obvious highs/lows after reclaim.', '3.00', ['Clear liquidity pool', 'Sweep and reclaim', 'Market structure shift']],
         ['Trend Following', 'Pullback continuation entries in the direction of the higher-timeframe trend.', '2.00', ['HTF trend defined', 'Pullback to dynamic support', 'Continuation trigger']],
     ];
+    /** [quote, attribution, theme]. Unattributed sayings are labelled as trading proverbs. */
     public const QUOTES = [
-        ['The goal of a successful trader is to make the best trades. Money is secondary.', 'Alexander Elder'],
-        ['Risk comes from not knowing what you are doing.', 'Warren Buffett'],
-        ['The market can stay irrational longer than you can stay solvent.', 'Attributed to J. M. Keynes'],
-        ['Cut your losses short and let your winners run.', 'Trading proverb'],
-        ['Plan the trade, trade the plan.', 'Trading proverb'],
-        ['Amateurs think about how much they can make. Professionals think about how much they can lose.', 'Trading proverb'],
-        ['Discipline is choosing between what you want now and what you want most.', 'Attributed to Abraham Lincoln'],
-        ['A losing trade that followed your rules is a good trade.', 'Trading proverb'],
+        ['The goal of a successful trader is to make the best trades. Money is secondary.', 'Alexander Elder', 'Execution'],
+        ['Risk comes from not knowing what you are doing.', 'Warren Buffett', 'Risk Management'],
+        ['The market can stay irrational longer than you can stay solvent.', 'Attributed to J. M. Keynes', 'Risk Management'],
+        ['Cut your losses short and let your winners run.', 'Trading proverb', 'Execution'],
+        ['Plan the trade, trade the plan.', 'Trading proverb', 'Discipline'],
+        ['Amateurs think about how much they can make. Professionals think about how much they can lose.', 'Trading proverb', 'Risk Management'],
+        ['A losing trade that followed your rules is a good trade.', 'Trading proverb', 'Discipline'],
+        ['No setup is also a position. Waiting is part of the job.', 'Trading proverb', 'Patience'],
+        ['Protect your capital first. Opportunity returns; lost capital may not.', 'Trading proverb', 'Risk Management'],
+        ['Your edge only shows up over many trades. Judge the process, not one result.', 'Trading proverb', 'Consistency'],
+        ['The urge to win it back is the most expensive emotion in trading.', 'Trading proverb', 'Psychology'],
+        ['Small, repeatable risk beats occasional heroics.', 'Trading proverb', 'Consistency'],
+        ['Let price come to your level. Chasing is paying for impatience.', 'Trading proverb', 'Patience'],
+        ['Write the stop before you enter. Decide the loss while you are calm.', 'Trading proverb', 'Execution'],
+        ['Boredom is not a signal. Neither is fear of missing out.', 'Trading proverb', 'Psychology'],
+        ['Consistency is a hundred ordinary days, not one extraordinary one.', 'Trading proverb', 'Consistency'],
     ];
 
     public static function label(string $code): string

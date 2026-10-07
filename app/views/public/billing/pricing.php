@@ -13,7 +13,7 @@
           <tr><td>40-trade demo journal (marked DEMO DATA)</td><td>✓</td><td>✓</td></tr>
           <tr><td>Dashboard, calendar, strategy analysis, Edge Matrix</td><td>✓ on demo accounts</td><td>✓ on demo and live accounts</td></tr>
           <tr><td>Live trading accounts</td><td>—</td><td>✓ (limit per plan)</td></tr>
-          <tr><td>CSV statement import &amp; signed webhooks into live accounts</td><td>—</td><td>✓</td></tr>
+          <tr><td>CSV statement import into live accounts</td><td>—</td><td>✓</td></tr>
           <tr><td>AI Coach messages per day</td><td><?= (int) (setting('free_ai_daily_limit') ?: 3) ?></td><td>Per plan</td></tr>
           <tr><td>Export my data (JSON/CSV)</td><td>✓</td><td>✓</td></tr>
         </tbody>

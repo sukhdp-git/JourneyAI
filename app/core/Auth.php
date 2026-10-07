@@ -35,6 +35,7 @@ final class Auth
             'members' => 'Manage members (suspend, grant plans, delete)',
             'billing' => 'Plans & payments',
             'integrations' => 'Integrations & API keys (Google, payments, AI, market data)',
+            'instruments' => 'Trading instruments & contract specifications',
             'messages' => 'Contact messages',
         ],
         'Website settings' => [

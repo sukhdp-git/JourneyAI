@@ -2,7 +2,7 @@
 // Terminal UI strings (English is the complete default locale).
 return [
     'nav.home' => 'Home Hub', 'nav.dashboard' => 'Dashboard', 'nav.calendar' => 'Calendar', 'nav.trades' => 'Trade Log', 'nav.strategies' => 'Strategy Analysis',
-    'nav.edge' => 'Edge Matrix', 'nav.notepad' => 'Daily Notepad', 'nav.coach' => 'AI Coach', 'nav.accounts' => 'Accounts & Sync', 'nav.settings' => 'Settings',
+    'nav.edge' => 'Edge Matrix', 'nav.notepad' => 'Daily Notepad', 'nav.coach' => 'AI Coach', 'nav.accounts' => 'Accounts', 'nav.calculator' => 'Risk Calculator', 'nav.settings' => 'Settings',
     'nav.billing' => 'Plan & Billing', 'nav.signout' => 'Sign out', 'nav.quick' => 'Quick trade', 'nav.more' => 'More',
     'hud.equity' => 'NAV equity', 'hud.pnl' => 'Net P&L', 'hud.demo' => 'DEMO', 'hud.live' => 'LIVE', 'hud.feed' => 'Broker feed',
     'feed.manual' => 'Manual journal', 'feed.webhook' => 'Webhook connected',

@@ -90,7 +90,7 @@ $u = $m['users'] ?? null;
   <section class="card">
     <h2 class="card-title">Integrations</h2>
     <ul class="mini-list">
-      <?php foreach ([['Google sign-in', $m['google']], ['Payments', $m['gateway'] !== 'none', $m['gateway'] !== 'none' ? ucfirst($m['gateway']) : null], ['AI Coach', $m['ai']], ['Market data', $m['market'], $m['market'] ? null : 'Ticker shows DEMO DATA'], ['SMTP email', $m['smtp_enabled']]] as $row): ?>
+      <?php foreach ([['Google sign-in', $m['google']], ['Payments', $m['gateway'] !== 'none', $m['gateway'] !== 'none' ? ucfirst($m['gateway']) : null], ['AI Coach', $m['ai']], ['Market data (Runner Auditor)', $m['market'], $m['market'] ? null : 'Optional'], ['SMTP email', $m['smtp_enabled']]] as $row): ?>
       <li><div><strong><?= e($row[0]) ?></strong> <?= $row[1] ? '<span class="badge st-published">Connected</span>' : '<span class="badge st-draft">Not configured</span>' ?><?php if (!empty($row[2])): ?><small><?= e($row[2]) ?></small><?php endif; ?></div></li>
       <?php endforeach; ?>
     </ul>

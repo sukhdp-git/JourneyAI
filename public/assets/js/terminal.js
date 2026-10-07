@@ -88,64 +88,11 @@
     });
   });
 
-  // World clocks
-  var clocks = $$('[data-clock]');
-  function tick() {
-    var now = new Date();
-    clocks.forEach(function (c) {
-      var tz = c.dataset.clock, parts = new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', second: '2-digit', weekday: 'short', hourCycle: 'h23' }).formatToParts(now);
-      var g = function (t) { return (parts.find(function (p) { return p.type === t; }) || {}).value; };
-      var mins = +g('hour') * 60 + +g('minute'), wd = g('weekday'), open = wd !== 'Sat' && wd !== 'Sun' && mins >= +c.dataset.open && mins < +c.dataset.close;
-      $('strong', c).textContent = g('hour') + ':' + g('minute') + ':' + g('second');
-      var st = $('.st', c); st.textContent = open ? 'OPEN' : 'CLOSED'; st.className = 'st ' + (open ? 'open' : 'closed');
-    });
-  }
-  if (clocks.length) { tick(); setInterval(tick, 1000); }
-
-  // Market ticker refresh
-  var ticker = $('[data-ticker]');
-  if (ticker && ticker.dataset.live === '1') setInterval(function () {
-    fetch(base + '/ticker', { credentials: 'same-origin', headers: { Accept: 'application/json' } }).then(function (r) { return r.json(); }).then(function (j) {
-      (j.quotes || []).forEach(function (q) { var it = ticker.querySelector('[data-sym="' + q.symbol + '"]'); if (!it) return; $('strong', it).textContent = q.price; var em = $('em', it); em.textContent = q.change; em.className = q.up ? 'up' : 'down'; });
-    }).catch(function () {});
-  }, 60000);
-
-  // Lot size calculator
-  $$('[data-lot-form]').forEach(function (f) {
-    f.addEventListener('submit', function (e) {
-      e.preventDefault();
-      post(base + '/lot-size', new FormData(f)).then(function (r) { var out = $('[data-lot-out]', f); out.textContent = r.ok ? r.lots + ' lots · risk ' + r.risk_amount + ' · ' + r.per_lot_risk + ' per lot' : (r.error || 'Cannot calculate.'); });
-    });
-  });
-
   // Tilt cooldown countdown
   $$('[data-countdown]').forEach(function (c) {
     var end = +c.dataset.countdown * 1000;
     (function upd() { var s = Math.max(0, Math.round((end - Date.now()) / 1000)); c.textContent = Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); if (s > 0) setTimeout(upd, 1000); else location.reload(); })();
   });
-
-  // Monte Carlo risk slider
-  var mc = $('[data-mc]');
-  if (mc) {
-    var slider = $('input[type=range]', mc), out = $('[data-mc-risk]', mc), t2;
-    var run = function () {
-      out.textContent = Number(slider.value).toFixed(2) + '%';
-      clearTimeout(t2);
-      t2 = setTimeout(function () {
-        mc.classList.add('busy');
-        post(base + '/edge/monte-carlo', { risk: slider.value }).then(function (r) {
-          mc.classList.remove('busy');
-          if (!r.ok) { toast(r.error, 'error'); return; }
-          r.prob.forEach(function (p) { var e = mc.querySelector('[data-p="' + p.dd + '"]'); if (e) e.textContent = (p.p * 100).toFixed(1) + '%'; });
-          $('[data-mc-median]', mc).textContent = (r.median_return * 100).toFixed(1) + '%';
-          $('[data-mc-range]', mc).textContent = (r.p5_return * 100).toFixed(1) + '% to ' + (r.p95_return * 100).toFixed(1) + '%';
-          $('[data-mc-dd]', mc).textContent = (r.median_max_dd * 100).toFixed(1) + '%';
-          var ch = $('.chart', mc); ch.dataset.json = JSON.stringify(r.bands); window.jzChart(ch);
-        });
-      }, 250);
-    };
-    slider.addEventListener('input', run);
-  }
 
   // AI Coach chat
   var chat = $('[data-chat-form]');
@@ -169,7 +116,7 @@
   }
   $$('[data-review]').forEach(function (b) {
     b.addEventListener('click', function () {
-      var out = $('[data-review-out]'); b.classList.add('busy'); out.textContent = 'Generating ' + b.dataset.review + ' review…';
+      var out = $('[data-review-out]'); out.hidden = false; b.classList.add('busy'); out.textContent = 'Writing your AI review narrative…';
       post(base + '/coach/review', { period: b.dataset.review }).then(function (r) {
         b.classList.remove('busy'); out.textContent = r.ok ? r.text : (r.error || 'Could not generate the review.');
         $$('[data-review-actions]').forEach(function (a) { a.hidden = !r.ok; });
@@ -179,20 +126,6 @@
   $$('[data-copy-target]').forEach(function (b) { b.addEventListener('click', function () { var t = $(b.dataset.copyTarget); if (t && navigator.clipboard) navigator.clipboard.writeText(t.textContent).then(function () { toast('Copied to clipboard.', 'success'); }); }); });
   $$('[data-print]').forEach(function (b) { b.addEventListener('click', function () { window.print(); }); });
 
-  // Voice dictation (Web Speech API) for the Daily Notepad
-  $$('[data-dictate]').forEach(function (b) {
-    var SR = window.SpeechRecognition || window.webkitSpeechRecognition, target = $(b.dataset.dictate);
-    if (!SR) { b.disabled = true; b.title = 'Voice dictation is not supported in this browser (try Chrome or Edge).'; var n = $('[data-dictate-note]'); if (n) n.hidden = false; return; }
-    var rec = null;
-    b.addEventListener('click', function () {
-      if (rec) { rec.stop(); return; }
-      rec = new SR(); rec.lang = ($('[data-voice-lang]') || {}).value || 'en-US'; rec.continuous = true; rec.interimResults = false;
-      rec.onresult = function (ev) { for (var i = ev.resultIndex; i < ev.results.length; i++) if (ev.results[i].isFinal) target.value += (target.value && !/\s$/.test(target.value) ? ' ' : '') + ev.results[i][0].transcript.trim(); target.dispatchEvent(new Event('input')); };
-      rec.onerror = function (ev) { toast('Dictation error: ' + ev.error, 'error'); };
-      rec.onend = function () { rec = null; b.classList.remove('rec'); b.textContent = '🎙 Dictate'; };
-      rec.start(); b.classList.add('rec'); b.textContent = '■ Stop';
-    });
-  });
   // Local draft cache for the notepad (prevents accidental loss; the server copy is authoritative)
   $$('[data-draft-key]').forEach(function (ta) {
     var k = 'jz-draft-' + ta.dataset.draftKey;
@@ -215,37 +148,6 @@
     f.addEventListener('drop', function (e) { send(e.dataTransfer.files[0]); });
     d.addEventListener('paste', function (e) { var it = Array.prototype.find.call((e.clipboardData || {}).items || [], function (i) { return i.type.indexOf('image') === 0; }); if (it) send(it.getAsFile()); });
   });
-
-  // Share cards (canvas → PNG). No account identifiers are drawn.
-  var THEMES = { neon: ['#03121a', '#22d3ee', '#a5f3fc'], matrix: ['#020d06', '#22c55e', '#bbf7d0'], amethyst: ['#12061f', '#a855f7', '#e9d5ff'], gold: ['#120d02', '#f0b429', '#fde68a'] };
-  var card = $('[data-share]');
-  if (card) {
-    var data = JSON.parse(card.dataset.share), canvas = $('canvas', card), cx = canvas.getContext('2d');
-    var draw = function (theme) {
-      var c = THEMES[theme] || THEMES.neon, W = canvas.width, H = canvas.height;
-      cx.fillStyle = c[0]; cx.fillRect(0, 0, W, H);
-      var g = cx.createLinearGradient(0, 0, W, H); g.addColorStop(0, c[1] + '33'); g.addColorStop(1, 'transparent'); cx.fillStyle = g; cx.fillRect(0, 0, W, H);
-      cx.strokeStyle = c[1] + '55'; cx.lineWidth = 1; for (var x = 0; x < W; x += 40) { cx.beginPath(); cx.moveTo(x, 0); cx.lineTo(x, H); cx.stroke(); } for (var y = 0; y < H; y += 40) { cx.beginPath(); cx.moveTo(0, y); cx.lineTo(W, y); cx.stroke(); }
-      cx.strokeStyle = c[1]; cx.lineWidth = 4; cx.strokeRect(14, 14, W - 28, H - 28);
-      cx.fillStyle = c[2]; cx.font = '600 28px "JetBrains Mono", monospace'; cx.fillText(data.symbol, 50, 86);
-      cx.fillStyle = data.side === 'LONG' ? '#22c55e' : '#f05252'; cx.fillText(data.side, 50 + cx.measureText(data.symbol + '  ').width, 86);
-      cx.fillStyle = '#ffffff'; cx.font = '700 84px "JetBrains Mono", monospace'; cx.fillText(data.pnl, 50, 200);
-      cx.fillStyle = c[1]; cx.font = '600 40px "JetBrains Mono", monospace'; cx.fillText(data.r, 50, 256);
-      cx.font = '400 22px "JetBrains Mono", monospace'; cx.fillStyle = c[2];
-      [['ENTRY', data.entry], ['EXIT', data.exit], ['STOP', data.stop], ['LOTS', data.lots], ['STRATEGY', data.strategy], ['SESSION', data.session]].forEach(function (row, i) {
-        var xx = 50 + (i % 3) * 330, yy = 330 + Math.floor(i / 3) * 70; cx.globalAlpha = .65; cx.fillText(row[0], xx, yy); cx.globalAlpha = 1; cx.fillText(String(row[1]).slice(0, 18), xx, yy + 30);
-      });
-      cx.fillStyle = c[1]; cx.font = '700 24px "Plus Jakarta Sans", sans-serif'; cx.fillText(data.brand, 50, H - 50);
-      if (data.demo) { cx.fillStyle = '#fab219'; cx.font = '700 20px "JetBrains Mono", monospace'; cx.fillText('DEMO DATA', W - 200, H - 50); }
-    };
-    var sel = $('[name=card_theme]:checked', card) ? $('[name=card_theme]:checked', card).value : 'neon';
-    draw(sel);
-    $$('[name=card_theme]', card).forEach(function (r) { r.addEventListener('change', function () { draw(r.value); }); });
-    $('[data-card-download]', card).addEventListener('click', function () { var a = d.createElement('a'); a.download = 'journzey-trade-' + data.symbol + '.png'; a.href = canvas.toDataURL('image/png'); a.click(); });
-    var cp = $('[data-card-copy]', card);
-    if (!window.ClipboardItem || !navigator.clipboard || !navigator.clipboard.write) cp.disabled = true;
-    else cp.addEventListener('click', function () { canvas.toBlob(function (b) { navigator.clipboard.write([new ClipboardItem({ 'image/png': b })]).then(function () { toast('Card copied to clipboard.', 'success'); }, function () { toast('Your browser blocked clipboard access.', 'error'); }); }); });
-  }
 
   $$('[data-runner]').forEach(function (b) {
     b.addEventListener('click', function () { var out = $('[data-runner-out]'); b.classList.add('busy'); out.textContent = 'Fetching price history…';

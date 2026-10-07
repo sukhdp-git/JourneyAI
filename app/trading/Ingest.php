@@ -6,28 +6,11 @@ namespace App\Trading;
 use App\Core\Database;
 
 /**
- * Broker data ingestion: CSV statement import (MT4/MT5, cTrader, NinjaTrader exports) and signed webhook pushes.
- * Both paths normalise into the same row shape and are idempotent per account via broker_trade_id.
+ * Manual CSV statement import (MT4/MT5, cTrader, NinjaTrader history exports). Rows are normalised and are
+ * idempotent per account via broker_trade_id. There is no live broker synchronisation.
  */
 final class Ingest
 {
-    /** Honest connector catalogue — only csv_import and webhook have working adapters. */
-    public const CATALOG = [
-        ['csv_import', 'Statement Import (CSV)', 'AVAILABLE', 'MT4/MT5, cTrader, NinjaTrader history export', 'Upload a trade-history CSV. Columns are auto-detected; duplicates are skipped by ticket number.'],
-        ['webhook', 'Signed Webhook', 'AVAILABLE', 'HMAC-SHA256 signed HTTPS push', 'Push closed trades from an MT5 EA, TradingView alert relay or your own script. Replay-protected and idempotent.'],
-        ['vantage', 'Vantage', 'VIA IMPORT', 'MT4/MT5 CSV import or signed webhook', 'Vantage does not offer a public trade-history API; use the MT4/MT5 history export.'],
-        ['exness', 'Exness', 'VIA IMPORT', 'MT4/MT5 CSV import or signed webhook', 'Use the MT4/MT5 account history export (Report → Save as CSV/Excel).'],
-        ['ftmo', 'FTMO', 'VIA IMPORT', 'MT4/MT5 or cTrader CSV import', 'Export history from the FTMO platform you trade on and import it here.'],
-        ['fundednext', 'FundedNext', 'VIA IMPORT', 'MT4/MT5 or cTrader CSV import', 'Export history from your FundedNext trading platform and import it here.'],
-        ['ninjatrader', 'NinjaTrader', 'VIA IMPORT', 'Trade Performance CSV export', 'Export trades from Trade Performance → Trades grid and import the CSV.'],
-        ['binance', 'Binance', 'COMING SOON', 'Read-only API key', 'Direct sync is not implemented yet. Export your trade history as CSV in the meantime.'],
-        ['ctrader', 'cTrader Open API', 'COMING SOON', 'OAuth (registered cTrader application)', 'Direct sync is not implemented yet. cTrader CSV history import works today.'],
-        ['tradovate', 'Tradovate', 'COMING SOON', 'REST API (vendor approval)', 'Direct sync is not implemented yet.'],
-        ['topstep', 'Topstep', 'COMING SOON', 'Depends on Tradovate/Rithmic access', 'No public journal API is available; direct sync is not implemented.'],
-        ['apex', 'Apex Trader Funding', 'COMING SOON', 'Depends on Rithmic/Tradovate access', 'No public journal API is available; direct sync is not implemented.'],
-        ['execution_lock', 'Broker Execution Lock', 'UNSUPPORTED', 'n/a', 'journzey.ai cannot block orders at any broker. The Tilt Circuit Breaker locks the journzey terminal only.'],
-    ];
-
     private const ALIASES = [
         'id' => ['ticket', 'position', 'position id', 'order', 'deal', 'trade id', 'id', 'trade #', 'trade number'],
         'symbol' => ['symbol', 'instrument', 'item', 'market', 'pair'],
@@ -197,38 +180,5 @@ final class Ingest
             return $e->getCode() === '23000' ? 'duplicate' : 'Could not save the trade';
         }
         return 'imported';
-    }
-
-    /** Validates one webhook trade object → normalised row or error string. */
-    public static function fromWebhook(array $t): array|string
-    {
-        $sym = Instruments::resolve((string) ($t['symbol'] ?? ''));
-        $sideRaw = strtolower((string) ($t['side'] ?? ''));
-        $side = in_array($sideRaw, ['buy', 'long'], true) ? 'LONG' : (in_array($sideRaw, ['sell', 'short'], true) ? 'SHORT' : null);
-        $id = trim((string) ($t['id'] ?? $t['ticket'] ?? ''));
-        $f = fn ($k) => isset($t[$k]) && is_numeric($t[$k]) ? (float) $t[$k] : null;
-        $open = self::date(isset($t['open_time']) ? (string) $t['open_time'] : null);
-        if (!$sym) {
-            return 'Unsupported instrument';
-        }
-        if (!$side) {
-            return 'side must be buy/sell or long/short';
-        }
-        if ($id === '' || mb_strlen($id) > 80) {
-            return 'id (broker ticket) is required';
-        }
-        if (!$open || strtotime($open . ' UTC') > time() + 3600) {
-            return 'open_time is missing or invalid';
-        }
-        if (!$f('entry_price') || $f('entry_price') <= 0 || !$f('volume') || $f('volume') <= 0) {
-            return 'entry_price and volume must be positive numbers';
-        }
-        return [
-            'broker_trade_id' => $id, 'symbol' => $sym, 'side' => $side, 'executed_at' => $open,
-            'closed_at' => self::date(isset($t['close_time']) ? (string) $t['close_time'] : null),
-            'entry' => $f('entry_price'), 'exit' => ($x = $f('exit_price')) && $x > 0 ? $x : null, 'sl' => ($x = $f('stop_loss')) && $x > 0 ? $x : null,
-            'tp' => ($x = $f('take_profit')) && $x > 0 ? $x : null, 'lots' => $f('volume'), 'pnl' => $f('profit'), 'fees' => max(0.0, (float) ($f('fees') ?? 0)),
-            'setup' => isset($t['setup']) ? mb_substr((string) $t['setup'], 0, 120) : null, 'notes' => isset($t['comment']) ? mb_substr((string) $t['comment'], 0, 2000) : null,
-        ];
     }
 }

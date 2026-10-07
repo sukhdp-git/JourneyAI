@@ -869,7 +869,7 @@ INSERT INTO `settings` (`key`, `value`, `group_name`) VALUES
 ('contact_send_confirmation', '1', 'pages');
 
 INSERT INTO `services` (`title`, `slug`, `icon`, `thumbnail`, `hero_image`, `short_description`, `full_description`, `benefits`, `process`, `faqs`, `cta_label`, `cta_url`, `meta_title`, `meta_description`, `og_image`, `status`, `is_featured`, `sort_order`) VALUES
-('Multi-Broker Trade Journal', 'multi-broker-trade-journal', 'journal', '', '', 'Bring trades from every broker account into a single, structured journal — with setups, tags, notes and screenshots attached to each trade.', '<p>Most traders keep their history scattered across broker statements, spreadsheets and memory. The journzey.ai journal gives every account a single home, so you can review your trading as one coherent record instead of disconnected fragments.</p><h2>What you can capture</h2><ul><li>Entries, exits, size, fees and outcome for every trade</li><li>The setup, timeframe and market conditions you traded</li><li>Your pre-trade plan and post-trade reflection</li><li>Chart screenshots and free-form notes</li></ul><p>Accounts stay separate where it matters and combined where it helps, so you can compare a funded account with a personal one without mixing up the numbers.</p>', '[{"title":"One record for all accounts","text":"Review every broker account side by side or combined."},{"title":"Structured, searchable history","text":"Filter by setup, tag, session, symbol or account."},{"title":"Context that survives","text":"Plans, notes and screenshots stay attached to the trade."}]', '[{"title":"Connect or import","text":"Add your accounts and bring in your trade history."},{"title":"Tag and annotate","text":"Label setups and add notes and screenshots."},{"title":"Review","text":"Use filters and analytics to study your record."}]', '[{"question":"Can I keep accounts separate?","answer":"Yes. Each account keeps its own history and you can choose to view them individually or combined."},{"question":"Which brokers are supported?","answer":"[Replace] List the broker connections and import formats your deployment supports."}]', 'Start free', '/signup', '', 'Bring trades from every broker account into a single, structured journal — with setups, tags, notes and screenshots attached to each trade.', '', 'published', 1, 10),
+('Multi-Broker Trade Journal', 'multi-broker-trade-journal', 'journal', '', '', 'Bring trades from every broker account into a single, structured journal — with setups, tags, notes and screenshots attached to each trade.', '<p>Most traders keep their history scattered across broker statements, spreadsheets and memory. The journzey.ai journal gives every account a single home, so you can review your trading as one coherent record instead of disconnected fragments.</p><h2>What you can capture</h2><ul><li>Entries, exits, size, fees and outcome for every trade</li><li>The setup, timeframe and market conditions you traded</li><li>Your pre-trade plan and post-trade reflection</li><li>Chart screenshots and free-form notes</li></ul><p>Accounts stay separate where it matters and combined where it helps, so you can compare a funded account with a personal one without mixing up the numbers.</p>', '[{"title":"One record for all accounts","text":"Review every broker account side by side or combined."},{"title":"Structured, searchable history","text":"Filter by setup, tag, session, symbol or account."},{"title":"Context that survives","text":"Plans, notes and screenshots stay attached to the trade."}]', '[{"title":"Add or import","text":"Add your accounts manually and bring in your trade history from a CSV export."},{"title":"Tag and annotate","text":"Label setups and add notes and screenshots."},{"title":"Review","text":"Use filters and analytics to study your record."}]', '[{"question":"Can I keep accounts separate?","answer":"Yes. Each account keeps its own history and you can choose to view them individually or combined."},{"question":"Which brokers are supported?","answer":"Any broker. You add accounts manually and log trades by hand, by quick command or by voice, or import a CSV history export (MT4/MT5, cTrader, NinjaTrader). There is no live broker synchronisation."}]', 'Start free', '/signup', '', 'Bring trades from every broker account into a single, structured journal — with setups, tags, notes and screenshots attached to each trade.', '', 'published', 1, 10),
 ('Performance Analytics', 'performance-analytics', 'chart', '', '', 'Measure what actually drives your results: expectancy, R-multiples, drawdown and performance by setup, session and instrument.', '<p>P&amp;L alone hides more than it reveals. journzey.ai breaks your results down into the measurements that explain them, so you can see which setups carry your performance and which quietly drain it.</p><h2>Key views</h2><ul><li>Expectancy and average R per trade</li><li>Win rate alongside average win and loss size</li><li>Equity curve and drawdown</li><li>Breakdowns by setup, tag, weekday, session and symbol</li></ul>', '[{"title":"Expectancy, not just P&L","text":"Understand the edge behind each strategy."},{"title":"Drill into any slice","text":"Compare setups, sessions and instruments."},{"title":"Spot leaks early","text":"See where losses concentrate before they compound."}]', '[{"title":"Collect","text":"Your journal feeds analytics automatically."},{"title":"Slice","text":"Filter by any dimension you track."},{"title":"Act","text":"Turn findings into rules for the next session."}]', '[{"question":"Do I need to calculate R-multiples myself?","answer":"No. When a trade includes its planned stop, the R-multiple is derived from it."}]', 'Start free', '/signup', '', 'Measure what actually drives your results: expectancy, R-multiples, drawdown and performance by setup, session and instrument.', '', 'published', 1, 20),
 ('Risk & Rules Engine', 'risk-and-rules-engine', 'shield', '', '', 'Write down the rules you trade by — daily loss limits, maximum trades, position sizing — and see every time a trade breaks them.', '<p>Every trader has rules. Few have a record of how often they follow them. The rules engine lets you define your own limits and highlights the trades and days that breached them, so discipline becomes something you can measure.</p><h2>Typical rules</h2><ul><li>Maximum daily or weekly loss</li><li>Maximum number of trades per session</li><li>Risk per trade as a percentage of the account</li><li>Allowed sessions, instruments or setups</li></ul>', '[{"title":"Your rules, written down","text":"Turn your trading plan into explicit, checkable limits."},{"title":"Breaches made visible","text":"See exactly which trades or days broke a rule."},{"title":"Discipline over time","text":"Track how consistently you follow your plan."}]', '[{"title":"Define","text":"Set limits that match your plan."},{"title":"Trade","text":"Each trade is checked against your rules."},{"title":"Review","text":"Study breaches and adjust your process."}]', '[]', 'Start free', '/signup', '', 'Write down the rules you trade by — daily loss limits, maximum trades, position sizing — and see every time a trade breaks them.', '', 'published', 1, 30),
 ('AI Discipline Coach', 'ai-discipline-coach', 'brain', '', '', 'Objective, unemotional feedback on your execution — patterns in your behaviour surfaced from your own journal data.', '<p>It is hard to judge your own trading objectively. The AI discipline coach reviews your journal and highlights behavioural patterns — for example trading more after a loss, cutting winners early or drifting from your planned setups.</p><p>The coach works only from your own records and rules. It does not generate trade signals or financial advice; its job is to help you see your process clearly.</p>', '[{"title":"Pattern detection","text":"Surfaces recurring behaviours across many trades."},{"title":"Grounded in your data","text":"Feedback is based on your journal and your rules."},{"title":"No signals, no hype","text":"A review tool, not a prediction engine."}]', '[{"title":"Journal","text":"Log trades with plans and reflections."},{"title":"Analyse","text":"The coach reviews patterns in your history."},{"title":"Adjust","text":"Apply the feedback to your next sessions."}]', '[{"question":"Does the AI tell me what to trade?","answer":"No. It reviews your behaviour and process. It does not provide trade signals or investment advice."}]', 'Start free', '/signup', '', 'Objective, unemotional feedback on your execution — patterns in your behaviour surfaced from your own journal data.', '', 'published', 1, 40),
@@ -925,7 +925,7 @@ INSERT INTO `process_steps` (`step_number`, `title`, `description`, `icon`, `ima
 INSERT INTO `faqs` (`question`, `answer`, `category`, `status`, `sort_order`) VALUES
 ('What is journzey.ai?', 'journzey.ai is a trading journal and discipline terminal. It brings your trades from multiple broker accounts into one place, measures your performance and rule adherence, and provides objective feedback on your execution.', 'general', 'published', 10),
 ('Does journzey.ai give trading signals or advice?', 'No. journzey.ai is a journaling and analytics tool. It helps you review your own decisions; it does not provide signals, recommendations or investment advice.', 'general', 'published', 20),
-('Can I use it with more than one broker?', 'Yes — the journal is designed for traders with several accounts. [Replace] List the specific broker connections and import formats available in your plan.', 'general', 'published', 30),
+('Can I use it with more than one broker?', 'Yes — the journal is designed for traders with several accounts. Accounts are added manually; trades are logged by hand, by quick command or by voice, or imported from a CSV history export. There is no live broker synchronisation.', 'general', 'published', 30),
 ('Who is it for?', 'Active traders who want to treat their trading like a professional process — including traders working towards or managing funded accounts and those running several personal accounts.', 'general', 'published', 40),
 ('How is my data handled?', '[Replace] Describe where data is stored, who can access it and how it is protected. Link to your Privacy Policy for full details.', 'general', 'published', 50),
 ('How do I get started?', 'Sign up free with Google or email. You can load a demo journal or log test trades in a demo account straight away. Upgrade to a paid plan to add live accounts.', 'general', 'published', 60);
@@ -973,12 +973,158 @@ INSERT INTO `email_templates` (`template_key`, `name`, `description`, `subject`,
 ('contact_user', 'Contact confirmation', 'Sent to the visitor after using the contact form.', 'Thanks for contacting {site_name}', '<p>Hi {name},</p><p>Thanks for getting in touch. We have received your message and will reply as soon as we can.</p><p><strong>Your message:</strong><br>{message}</p><p>— The {site_name} team</p>', 1);
 
 INSERT INTO `plans` (`id`, `name`, `slug`, `tagline`, `price`, `currency`, `interval_days`, `interval_label`, `features`, `allow_live`, `max_live_accounts`, `ai_daily_limit`, `is_featured`, `is_active`, `sort_order`) VALUES
-(1, 'Pro', 'pro-monthly', 'For active traders journaling live accounts.', '19.00', 'USD', 30, 'month', 'Everything in Free\nUp to 3 live trading accounts\nFull analytics on live data\nCSV import and signed webhooks\nAI Coach: 50 messages per day\nWeekly and monthly AI reviews', 1, 3, 50, 1, 1, 10),
+(1, 'Pro', 'pro-monthly', 'For active traders journaling live accounts.', '19.00', 'USD', 30, 'month', 'Everything in Free\nUp to 3 live trading accounts\nFull analytics on live data\nCSV statement import\nAI Coach: 50 messages per day\nWeekly and monthly AI reviews', 1, 3, 50, 1, 1, 10),
 (2, 'Pro Annual', 'pro-annual', 'Pro, billed once a year.', '190.00', 'USD', 365, 'year', 'Everything in Pro\nUp to 3 live trading accounts\nAI Coach: 50 messages per day\nTwo months free compared with monthly', 1, 3, 50, 0, 1, 20),
 (3, 'Desk', 'desk-monthly', 'For prop traders running many accounts.', '49.00', 'USD', 30, 'month', 'Everything in Pro\nUp to 15 live trading accounts\nAI Coach: 200 messages per day\nPriority support', 1, 15, 200, 0, 1, 30);
 
 INSERT INTO `pages` (`title`, `slug`, `template`, `hero_eyebrow`, `hero_title`, `hero_subtitle`, `featured_image`, `content`, `blocks`, `status`, `in_sitemap`, `meta_title`, `meta_description`, `og_image`, `canonical_url`, `noindex`, `is_system`, `sort_order`) VALUES
 ('Risk Disclaimer', 'disclaimer', 'legal', 'Legal', 'Risk Disclaimer', 'Please read this before using journzey.ai.', '', '<p class="notice"><strong>Template text.</strong> Have this page reviewed by a qualified professional before launch.</p><h2>Journal and analytics software only</h2><p>journzey.ai is trading journal and performance-analytics software. It does not execute trades, hold funds or act as a broker.</p><h2>No guaranteed outcomes</h2><p>journzey.ai does not guarantee profits or any investment outcome. Analytics are based on the historical data you enter or import, and past performance does not predict future results.</p><h2>Hypothetical and statistical results</h2><p>Features such as the Monte Carlo risk simulation, the discipline leak mirror and the runner auditor produce hypothetical or statistical estimates. They are not predictions and not recommendations.</p><h2>AI Coach</h2><p>AI-generated analysis can be incomplete or wrong. It is educational feedback on your own data, not personalised financial advice.</p><h2>Not financial advice</h2><p>Nothing in journzey.ai replaces advice from a licensed financial professional. Trading involves substantial risk of loss.</p>', '[]', 'published', 1, 'Risk Disclaimer', 'journzey.ai is trading journal software and does not guarantee outcomes.', '', '', 0, 1, 40),
-('Security', 'security', 'legal', 'Legal', 'Security', 'How we protect your account and trading data.', '', '<p class="notice"><strong>Template text.</strong> Have this page reviewed by a qualified professional before launch.</p><h2>Your data is private to your account</h2><p>Every trade, journal entry, strategy and AI conversation is linked to your account and checked on the server on every request. Other members can never see your data.</p><h2>Sign-in</h2><p>Sign in with Google (OpenID Connect) or with an email and password. Passwords are stored only as salted one-way hashes. Sign-in attempts are rate-limited.</p><h2>Sessions and transport</h2><p>The site runs over HTTPS. Session cookies are HttpOnly and Secure, and every form is protected against cross-site request forgery.</p><h2>Secrets</h2><p>Webhook secrets and API keys are encrypted at rest and never shown in the browser after creation.</p><h2>Payments</h2><p>Card and UPI details are entered on the payment provider&#39;s secure checkout and never reach our servers.</p><h2>Report a vulnerability</h2><p>[Replace] Add the email address for security reports.</p>', '[]', 'published', 1, 'Security', 'How journzey.ai protects member accounts and trading data.', '', '', 0, 1, 50);
+('Security', 'security', 'legal', 'Legal', 'Security', 'How we protect your account and trading data.', '', '<p class="notice"><strong>Template text.</strong> Have this page reviewed by a qualified professional before launch.</p><h2>Your data is private to your account</h2><p>Every trade, journal entry, strategy and AI conversation is linked to your account and checked on the server on every request. Other members can never see your data.</p><h2>Sign-in</h2><p>Sign in with Google (OpenID Connect) or with an email and password. Passwords are stored only as salted one-way hashes. Sign-in attempts are rate-limited.</p><h2>Sessions and transport</h2><p>The site runs over HTTPS. Session cookies are HttpOnly and Secure, and every form is protected against cross-site request forgery.</p><h2>Secrets</h2><p>API keys are encrypted at rest and never shown in the browser after creation.</p><h2>Payments</h2><p>Card and UPI details are entered on the payment provider&#39;s secure checkout and never reach our servers.</p><h2>Report a vulnerability</h2><p>[Replace] Add the email address for security reports.</p>', '[]', 'published', 1, 'Security', 'How journzey.ai protects member accounts and trading data.', '', '', 0, 1, 50);
 
 INSERT INTO `smtp_settings` (`id`, `host`, `port`, `username`, `password_enc`, `encryption`, `from_email`, `from_name`, `reply_to`, `is_enabled`) VALUES (1, '', 587, '', NULL, 'tls', '', 'journzey.ai', '', 0);
+
+-- ---------------------------------------------------------------------------------------------
+-- journzey.ai — database update (schema version 2)
+-- Safe to run on an existing database: it only ADDS columns, tables and rows. Nothing is dropped,
+-- reset or overwritten, and running it twice is harmless. Import it with phpMyAdmin → Import.
+-- (The website also applies these changes automatically on the first request after updating.)
+-- ---------------------------------------------------------------------------------------------
+
+SET NAMES utf8mb4;
+
+-- Daily / weekly risk limits: % of account capital or a fixed amount; optional A+ risk tier
+SET @s := (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `user_settings` ADD COLUMN `daily_limit_type` ENUM(''amount'',''percent'') NOT NULL DEFAULT ''amount'' AFTER `max_weekly_loss`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'user_settings' AND COLUMN_NAME = 'daily_limit_type');
+PREPARE jz_stmt FROM @s;
+EXECUTE jz_stmt;
+DEALLOCATE PREPARE jz_stmt;
+SET @s := (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `user_settings` ADD COLUMN `weekly_limit_type` ENUM(''amount'',''percent'') NOT NULL DEFAULT ''amount'' AFTER `daily_limit_type`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'user_settings' AND COLUMN_NAME = 'weekly_limit_type');
+PREPARE jz_stmt FROM @s;
+EXECUTE jz_stmt;
+DEALLOCATE PREPARE jz_stmt;
+SET @s := (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `user_settings` ADD COLUMN `a_plus_risk_pct` DECIMAL(5,2) NULL AFTER `weekly_limit_type`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'user_settings' AND COLUMN_NAME = 'a_plus_risk_pct');
+PREPARE jz_stmt FROM @s;
+EXECUTE jz_stmt;
+DEALLOCATE PREPARE jz_stmt;
+
+-- Personal strategy builder: trading style, edge/thesis and sub-setups (rules stay in `checklist`, one per line)
+SET @s := (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `strategies` ADD COLUMN `style` VARCHAR(30) NULL AFTER `description`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'strategies' AND COLUMN_NAME = 'style');
+PREPARE jz_stmt FROM @s;
+EXECUTE jz_stmt;
+DEALLOCATE PREPARE jz_stmt;
+SET @s := (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `strategies` ADD COLUMN `thesis` TEXT NULL AFTER `style`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'strategies' AND COLUMN_NAME = 'thesis');
+PREPARE jz_stmt FROM @s;
+EXECUTE jz_stmt;
+DEALLOCATE PREPARE jz_stmt;
+SET @s := (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `strategies` ADD COLUMN `setups` TEXT NULL AFTER `checklist`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'strategies' AND COLUMN_NAME = 'setups');
+PREPARE jz_stmt FROM @s;
+EXECUTE jz_stmt;
+DEALLOCATE PREPARE jz_stmt;
+
+-- Daily psychology journal: "Did you follow your trading rules?"
+SET @s := (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `journal_entries` ADD COLUMN `rules_answer` ENUM(''yes'',''partial'',''no'') NULL AFTER `compliance`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'journal_entries' AND COLUMN_NAME = 'rules_answer');
+PREPARE jz_stmt FROM @s;
+EXECUTE jz_stmt;
+DEALLOCATE PREPARE jz_stmt;
+
+-- Editable instrument specifications (overrides the built-in defaults)
+CREATE TABLE IF NOT EXISTS `instruments` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `symbol` VARCHAR(20) NOT NULL,
+  `name` VARCHAR(80) NOT NULL,
+  `asset_class` ENUM('METALS','FOREX','INDICES','CRYPTO','COMMODITIES') NOT NULL,
+  `base_currency` VARCHAR(10) NOT NULL,
+  `quote_currency` CHAR(3) NOT NULL,
+  `contract_size` DECIMAL(20,6) NOT NULL,
+  `tick_size` DECIMAL(20,10) NOT NULL,
+  `pip_size` DECIMAL(20,10) NOT NULL,
+  `price_decimals` TINYINT UNSIGNED NOT NULL DEFAULT 2,
+  `min_lot` DECIMAL(12,4) NOT NULL DEFAULT 0.0100,
+  `lot_step` DECIMAL(12,4) NOT NULL DEFAULT 0.0100,
+  `aliases` VARCHAR(255) NULL,
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `sort_order` INT NOT NULL DEFAULT 0,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_instruments_symbol` (`symbol`),
+  KEY `idx_instruments_active` (`is_active`, `sort_order`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT IGNORE INTO `instruments` (`symbol`, `name`, `asset_class`, `base_currency`, `quote_currency`, `contract_size`, `tick_size`, `pip_size`, `price_decimals`, `min_lot`, `lot_step`, `aliases`, `is_active`, `sort_order`) VALUES
+('XAUUSD', 'Gold', 'METALS', 'XAU', 'USD', 100, 0.01, 0.1, 2, 0.01, 0.01, 'gold,xau,gc', 1, 10),
+('XAGUSD', 'Silver', 'METALS', 'XAG', 'USD', 5000, 0.001, 0.01, 3, 0.01, 0.01, 'silver,xag,si', 1, 20),
+('EURUSD', 'EUR/USD', 'FOREX', 'EUR', 'USD', 100000, 0.00001, 0.0001, 5, 0.01, 0.01, 'eu,fiber,euro dollar,euro', 1, 30),
+('GBPUSD', 'GBP/USD', 'FOREX', 'GBP', 'USD', 100000, 0.00001, 0.0001, 5, 0.01, 0.01, 'gu,cable,pound dollar,pound', 1, 40),
+('USDJPY', 'USD/JPY', 'FOREX', 'USD', 'JPY', 100000, 0.001, 0.01, 3, 0.01, 0.01, 'uj,yen,dollar yen', 1, 50),
+('AUDUSD', 'AUD/USD', 'FOREX', 'AUD', 'USD', 100000, 0.00001, 0.0001, 5, 0.01, 0.01, 'au,aussie,aussie dollar', 1, 60),
+('NZDUSD', 'NZD/USD', 'FOREX', 'NZD', 'USD', 100000, 0.00001, 0.0001, 5, 0.01, 0.01, 'nu,kiwi,kiwi dollar', 1, 70),
+('USDCAD', 'USD/CAD', 'FOREX', 'USD', 'CAD', 100000, 0.00001, 0.0001, 5, 0.01, 0.01, 'uc,loonie,dollar cad', 1, 80),
+('USDCHF', 'USD/CHF', 'FOREX', 'USD', 'CHF', 100000, 0.00001, 0.0001, 5, 0.01, 0.01, 'swissy,dollar swiss', 1, 90),
+('EURJPY', 'EUR/JPY', 'FOREX', 'EUR', 'JPY', 100000, 0.001, 0.01, 3, 0.01, 0.01, 'ej,euro yen', 1, 100),
+('GBPJPY', 'GBP/JPY', 'FOREX', 'GBP', 'JPY', 100000, 0.001, 0.01, 3, 0.01, 0.01, 'gj,guppy,pound yen', 1, 110),
+('EURGBP', 'EUR/GBP', 'FOREX', 'EUR', 'GBP', 100000, 0.00001, 0.0001, 5, 0.01, 0.01, 'eg,euro pound', 1, 120),
+('EURAUD', 'EUR/AUD', 'FOREX', 'EUR', 'AUD', 100000, 0.00001, 0.0001, 5, 0.01, 0.01, '', 1, 130),
+('EURCAD', 'EUR/CAD', 'FOREX', 'EUR', 'CAD', 100000, 0.00001, 0.0001, 5, 0.01, 0.01, '', 1, 140),
+('EURCHF', 'EUR/CHF', 'FOREX', 'EUR', 'CHF', 100000, 0.00001, 0.0001, 5, 0.01, 0.01, '', 1, 150),
+('GBPAUD', 'GBP/AUD', 'FOREX', 'GBP', 'AUD', 100000, 0.00001, 0.0001, 5, 0.01, 0.01, '', 1, 160),
+('GBPCHF', 'GBP/CHF', 'FOREX', 'GBP', 'CHF', 100000, 0.00001, 0.0001, 5, 0.01, 0.01, '', 1, 170),
+('AUDJPY', 'AUD/JPY', 'FOREX', 'AUD', 'JPY', 100000, 0.001, 0.01, 3, 0.01, 0.01, 'aussie yen', 1, 180),
+('CADJPY', 'CAD/JPY', 'FOREX', 'CAD', 'JPY', 100000, 0.001, 0.01, 3, 0.01, 0.01, '', 1, 190),
+('CHFJPY', 'CHF/JPY', 'FOREX', 'CHF', 'JPY', 100000, 0.001, 0.01, 3, 0.01, 0.01, '', 1, 200),
+('NZDJPY', 'NZD/JPY', 'FOREX', 'NZD', 'JPY', 100000, 0.001, 0.01, 3, 0.01, 0.01, '', 1, 210),
+('AUDNZD', 'AUD/NZD', 'FOREX', 'AUD', 'NZD', 100000, 0.00001, 0.0001, 5, 0.01, 0.01, '', 1, 220),
+('US30', 'Dow Jones 30', 'INDICES', 'DJI', 'USD', 1, 0.01, 1, 2, 0.01, 0.01, 'dow,dji,ym,dj30,dow jones,wall street', 1, 230),
+('US500', 'S&P 500', 'INDICES', 'SPX', 'USD', 1, 0.01, 0.1, 2, 0.01, 0.01, 'spx,sp500,es,spx500,s&p,s&p 500,s and p', 1, 240),
+('NAS100', 'Nasdaq 100', 'INDICES', 'NDX', 'USD', 1, 0.01, 0.1, 2, 0.01, 0.01, 'nas,nq,ustec,us100,ndx,nasdaq', 1, 250),
+('US2000', 'Russell 2000', 'INDICES', 'RUT', 'USD', 1, 0.01, 0.1, 2, 0.01, 0.01, 'russell,rty,rut', 1, 260),
+('GER40', 'DAX 40', 'INDICES', 'DAX', 'EUR', 1, 0.01, 1, 2, 0.01, 0.01, 'dax,de40,ger30,germany 40', 1, 270),
+('UK100', 'FTSE 100', 'INDICES', 'FTSE', 'GBP', 1, 0.01, 1, 2, 0.01, 0.01, 'ftse,ftse100', 1, 280),
+('FRA40', 'CAC 40', 'INDICES', 'CAC', 'EUR', 1, 0.01, 1, 2, 0.01, 0.01, 'cac,cac40,france 40', 1, 290),
+('EU50', 'Euro Stoxx 50', 'INDICES', 'SX5E', 'EUR', 1, 0.01, 1, 2, 0.01, 0.01, 'stoxx,eustx50,stoxx50', 1, 300),
+('JPN225', 'Nikkei 225 (JP225)', 'INDICES', 'NKY', 'JPY', 1, 1, 1, 0, 0.01, 0.01, 'nikkei,nk225,jp225,japan 225', 1, 310),
+('HK50', 'Hang Seng 50', 'INDICES', 'HSI', 'HKD', 1, 1, 1, 0, 0.01, 0.01, 'hang seng,hsi,hk33', 1, 320),
+('AUS200', 'ASX 200', 'INDICES', 'ASX', 'AUD', 1, 0.1, 1, 1, 0.01, 0.01, 'asx,asx200,aus 200', 1, 330),
+('USOIL', 'WTI Crude', 'COMMODITIES', 'WTI', 'USD', 1000, 0.01, 0.01, 2, 0.01, 0.01, 'wti,oil,cl,crude,crude oil', 1, 340),
+('UKOIL', 'Brent Crude', 'COMMODITIES', 'BRENT', 'USD', 1000, 0.01, 0.01, 2, 0.01, 0.01, 'brent,bz', 1, 350),
+('NATGAS', 'Natural Gas', 'COMMODITIES', 'NG', 'USD', 10000, 0.001, 0.001, 3, 0.01, 0.01, 'ng,gas,xngusd,natural gas', 1, 360),
+('COPPER', 'Copper', 'COMMODITIES', 'HG', 'USD', 25000, 0.0005, 0.0005, 4, 0.01, 0.01, 'hg,xcuusd', 1, 370),
+('BTCUSDT', 'Bitcoin', 'CRYPTO', 'BTC', 'USD', 1, 0.01, 1, 2, 0.01, 0.01, 'btc,bitcoin,btcusd,xbt', 1, 380),
+('ETHUSDT', 'Ethereum', 'CRYPTO', 'ETH', 'USD', 1, 0.01, 0.1, 2, 0.01, 0.01, 'eth,ethereum,ethusd,ether', 1, 390),
+('SOLUSDT', 'Solana', 'CRYPTO', 'SOL', 'USD', 1, 0.001, 0.01, 3, 0.01, 0.01, 'sol,solana,solusd', 1, 400),
+('XRPUSDT', 'XRP', 'CRYPTO', 'XRP', 'USD', 1, 0.0001, 0.001, 4, 0.01, 0.01, 'xrp,ripple,xrpusd', 1, 410),
+('BNBUSDT', 'BNB', 'CRYPTO', 'BNB', 'USD', 1, 0.01, 0.1, 2, 0.01, 0.01, 'bnb,binance coin,bnbusd', 1, 420),
+('ADAUSDT', 'Cardano', 'CRYPTO', 'ADA', 'USD', 1, 0.0001, 0.001, 4, 0.01, 0.01, 'ada,cardano,adausd', 1, 430),
+('DOGEUSDT', 'Dogecoin', 'CRYPTO', 'DOGE', 'USD', 1, 0.00001, 0.0001, 5, 0.01, 0.01, 'doge,dogecoin,dogeusd', 1, 440),
+('LTCUSDT', 'Litecoin', 'CRYPTO', 'LTC', 'USD', 1, 0.01, 0.1, 2, 0.01, 0.01, 'ltc,litecoin,ltcusd', 1, 450);
+
+-- Mistake tag for impulsive entries is stored in trades.mistake_tag (VARCHAR) — no change needed.
+
+-- Copy updates: broker sync / signed trade webhooks are no longer offered (only exact old phrases are replaced)
+UPDATE `services` SET `faqs` = REPLACE(`faqs`, '{"title":"Connect or import","text":"Add your accounts and bring in your trade history."}', '{"title":"Add or import","text":"Add your accounts manually and bring in your trade history from a CSV export."}') WHERE `faqs` LIKE '%{"title":"Connect or import","text":"Add%';
+UPDATE `services` SET `process` = REPLACE(`process`, '{"title":"Connect or import","text":"Add your accounts and bring in your trade history."}', '{"title":"Add or import","text":"Add your accounts manually and bring in your trade history from a CSV export."}') WHERE `process` LIKE '%{"title":"Connect or import","text":"Add%';
+UPDATE `faqs` SET `answer` = REPLACE(`answer`, '{"title":"Connect or import","text":"Add your accounts and bring in your trade history."}', '{"title":"Add or import","text":"Add your accounts manually and bring in your trade history from a CSV export."}') WHERE `answer` LIKE '%{"title":"Connect or import","text":"Add%';
+UPDATE `pages` SET `content` = REPLACE(`content`, '{"title":"Connect or import","text":"Add your accounts and bring in your trade history."}', '{"title":"Add or import","text":"Add your accounts manually and bring in your trade history from a CSV export."}') WHERE `content` LIKE '%{"title":"Connect or import","text":"Add%';
+UPDATE `plans` SET `features` = REPLACE(`features`, '{"title":"Connect or import","text":"Add your accounts and bring in your trade history."}', '{"title":"Add or import","text":"Add your accounts manually and bring in your trade history from a CSV export."}') WHERE `features` LIKE '%{"title":"Connect or import","text":"Add%';
+UPDATE `services` SET `faqs` = REPLACE(`faqs`, '"answer":"[Replace] List the broker connections and import formats your deployment supports."', '"answer":"Any broker. You add accounts manually and log trades by hand, by quick command or by voice, or import a CSV history export (MT4/MT5, cTrader, NinjaTrader). There is no live broker synchronisation."') WHERE `faqs` LIKE '%"answer":"[Replace] List the broker conn%';
+UPDATE `services` SET `process` = REPLACE(`process`, '"answer":"[Replace] List the broker connections and import formats your deployment supports."', '"answer":"Any broker. You add accounts manually and log trades by hand, by quick command or by voice, or import a CSV history export (MT4/MT5, cTrader, NinjaTrader). There is no live broker synchronisation."') WHERE `process` LIKE '%"answer":"[Replace] List the broker conn%';
+UPDATE `faqs` SET `answer` = REPLACE(`answer`, '"answer":"[Replace] List the broker connections and import formats your deployment supports."', '"answer":"Any broker. You add accounts manually and log trades by hand, by quick command or by voice, or import a CSV history export (MT4/MT5, cTrader, NinjaTrader). There is no live broker synchronisation."') WHERE `answer` LIKE '%"answer":"[Replace] List the broker conn%';
+UPDATE `pages` SET `content` = REPLACE(`content`, '"answer":"[Replace] List the broker connections and import formats your deployment supports."', '"answer":"Any broker. You add accounts manually and log trades by hand, by quick command or by voice, or import a CSV history export (MT4/MT5, cTrader, NinjaTrader). There is no live broker synchronisation."') WHERE `content` LIKE '%"answer":"[Replace] List the broker conn%';
+UPDATE `plans` SET `features` = REPLACE(`features`, '"answer":"[Replace] List the broker connections and import formats your deployment supports."', '"answer":"Any broker. You add accounts manually and log trades by hand, by quick command or by voice, or import a CSV history export (MT4/MT5, cTrader, NinjaTrader). There is no live broker synchronisation."') WHERE `features` LIKE '%"answer":"[Replace] List the broker conn%';
+UPDATE `services` SET `faqs` = REPLACE(`faqs`, '[Replace] List the specific broker connections and import formats available in your plan.', 'Accounts are added manually; trades are logged by hand, by quick command or by voice, or imported from a CSV history export. There is no live broker synchronisation.') WHERE `faqs` LIKE '%[Replace] List the specific broker conne%';
+UPDATE `services` SET `process` = REPLACE(`process`, '[Replace] List the specific broker connections and import formats available in your plan.', 'Accounts are added manually; trades are logged by hand, by quick command or by voice, or imported from a CSV history export. There is no live broker synchronisation.') WHERE `process` LIKE '%[Replace] List the specific broker conne%';
+UPDATE `faqs` SET `answer` = REPLACE(`answer`, '[Replace] List the specific broker connections and import formats available in your plan.', 'Accounts are added manually; trades are logged by hand, by quick command or by voice, or imported from a CSV history export. There is no live broker synchronisation.') WHERE `answer` LIKE '%[Replace] List the specific broker conne%';
+UPDATE `pages` SET `content` = REPLACE(`content`, '[Replace] List the specific broker connections and import formats available in your plan.', 'Accounts are added manually; trades are logged by hand, by quick command or by voice, or imported from a CSV history export. There is no live broker synchronisation.') WHERE `content` LIKE '%[Replace] List the specific broker conne%';
+UPDATE `plans` SET `features` = REPLACE(`features`, '[Replace] List the specific broker connections and import formats available in your plan.', 'Accounts are added manually; trades are logged by hand, by quick command or by voice, or imported from a CSV history export. There is no live broker synchronisation.') WHERE `features` LIKE '%[Replace] List the specific broker conne%';
+UPDATE `services` SET `faqs` = REPLACE(`faqs`, 'Webhook secrets and API keys are encrypted at rest', 'API keys are encrypted at rest') WHERE `faqs` LIKE '%Webhook secrets and API keys are encrypt%';
+UPDATE `services` SET `process` = REPLACE(`process`, 'Webhook secrets and API keys are encrypted at rest', 'API keys are encrypted at rest') WHERE `process` LIKE '%Webhook secrets and API keys are encrypt%';
+UPDATE `faqs` SET `answer` = REPLACE(`answer`, 'Webhook secrets and API keys are encrypted at rest', 'API keys are encrypted at rest') WHERE `answer` LIKE '%Webhook secrets and API keys are encrypt%';
+UPDATE `pages` SET `content` = REPLACE(`content`, 'Webhook secrets and API keys are encrypted at rest', 'API keys are encrypted at rest') WHERE `content` LIKE '%Webhook secrets and API keys are encrypt%';
+UPDATE `plans` SET `features` = REPLACE(`features`, 'Webhook secrets and API keys are encrypted at rest', 'API keys are encrypted at rest') WHERE `features` LIKE '%Webhook secrets and API keys are encrypt%';
+UPDATE `services` SET `faqs` = REPLACE(`faqs`, 'CSV import and signed webhooks', 'CSV statement import') WHERE `faqs` LIKE '%CSV import and signed webhooks%';
+UPDATE `services` SET `process` = REPLACE(`process`, 'CSV import and signed webhooks', 'CSV statement import') WHERE `process` LIKE '%CSV import and signed webhooks%';
+UPDATE `faqs` SET `answer` = REPLACE(`answer`, 'CSV import and signed webhooks', 'CSV statement import') WHERE `answer` LIKE '%CSV import and signed webhooks%';
+UPDATE `pages` SET `content` = REPLACE(`content`, 'CSV import and signed webhooks', 'CSV statement import') WHERE `content` LIKE '%CSV import and signed webhooks%';
+UPDATE `plans` SET `features` = REPLACE(`features`, 'CSV import and signed webhooks', 'CSV statement import') WHERE `features` LIKE '%CSV import and signed webhooks%';
+
+-- Record the schema version
+INSERT INTO `settings` (`key`, `value`, `group_name`) VALUES ('schema_version', '2', 'system') ON DUPLICATE KEY UPDATE `value` = IF(CAST(`value` AS UNSIGNED) < 2, '2', `value`);

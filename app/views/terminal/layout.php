@@ -6,13 +6,12 @@ use App\Trading\Domain;
 $theme = isset(Domain::THEMES[$m['theme']]) ? $m['theme'] : 'dark-terminal';
 $links = [
     ['home', '/terminal', 'nav.home', 'home'], ['dashboard', '/terminal/dashboard', 'nav.dashboard', 'dashboard'], ['calendar', '/terminal/calendar', 'nav.calendar', 'calendar'],
-    ['trades', '/terminal/trades', 'nav.trades', 'list'], ['strategies', '/terminal/strategies', 'nav.strategies', 'target'], ['edge', '/terminal/edge', 'nav.edge', 'grid'],
+    ['trades', '/terminal/trades', 'nav.trades', 'list'], ['calculator', '/terminal/calculator', 'nav.calculator', 'scale'], ['strategies', '/terminal/strategies', 'nav.strategies', 'target'], ['edge', '/terminal/edge', 'nav.edge', 'grid'],
     ['notepad', '/terminal/notepad', 'nav.notepad', 'journal'], ['coach', '/terminal/coach', 'nav.coach', 'sparkles'],
 ];
-$webhook = (int) Database::value("SELECT COUNT(*) FROM broker_connections WHERE user_id = :u AND account_id = :a AND status = 'active'", ['u' => $m['id'], 'a' => $acc['id']]);
 $initials = mb_strtoupper(mb_substr($m['name'], 0, 1));
 ?><!doctype html>
-<html lang="<?= e($m['language'] ?: 'en') ?>" data-theme="<?= e($theme) ?>">
+<html lang="<?= e($m['language'] ?: 'en') ?>" data-theme="<?= e($theme) ?>" data-voice-lang="<?= e(Domain::VOICE_LANGUAGES[$m['language'] ?: 'en'] ?? 'en-US') ?>">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -33,7 +32,6 @@ $initials = mb_strtoupper(mb_substr($m['name'], 0, 1));
       <a href="<?= e(url('/')) ?>" class="tm-logo"><span class="tm-mark" aria-hidden="true">j</span><span><?= e(setting('site_name', 'journzey.ai')) ?></span></a>
       <button class="tm-icon-btn tm-side-close" type="button" data-side-close aria-label="Close menu"><?= icon('x', 'icon') ?></button>
     </div>
-    <div class="tm-feed" title="<?= e(t('hud.feed')) ?>"><span class="dot<?= $webhook ? ' on' : '' ?>" aria-hidden="true"></span><?= e($webhook ? t('feed.webhook') : t('feed.manual')) ?></div>
     <section class="tm-hud" aria-label="Account equity">
       <form method="post" action="<?= e(url('/terminal/account/switch')) ?>" class="tm-acc-switch">
         <?= csrf_field() ?>
@@ -50,6 +48,7 @@ $initials = mb_strtoupper(mb_substr($m['name'], 0, 1));
       <small><?= e(t('hud.equity')) ?></small>
       <strong class="num"><?= e(money($balance['equity'], $acc['currency'])) ?></strong>
       <span class="num <?= $balance['pnl'] >= 0 ? 'up' : 'down' ?>"><?= $balance['pnl'] >= 0 ? '▲' : '▼' ?> <?= e(money($balance['pnl'], $acc['currency'], true)) ?><?= $balance['return'] !== null ? ' · ' . e(($balance['return'] >= 0 ? '+' : '') . number_format($balance['return'] * 100, 2)) . '%' : '' ?></span>
+      <?php if ($acc['writable']): ?><button type="button" class="tm-hud-edit" data-open-modal="#tm-equity"><?= icon('edit', 'icon icon-sm') ?> Edit / adjust equity</button><?php endif; ?>
     </section>
     <button type="button" class="tm-quick-btn" data-open-quick><?= icon('zap', 'icon icon-sm') ?> <?= e(t('nav.quick')) ?> <kbd>/</kbd></button>
     <nav class="tm-nav">
@@ -93,6 +92,11 @@ $initials = mb_strtoupper(mb_substr($m['name'], 0, 1));
       </div>
     </header>
     <main class="tm-main" id="tm-main" tabindex="-1">
+      <?php foreach (['daily' => 'DAILY', 'weekly' => 'WEEKLY'] as $lk => $lname): $L = $limits[$lk]; if ($L['reached']): ?>
+      <div class="tm-alert tm-alert-error limit-alert" role="alert"><?= icon('alert', 'icon') ?><p><strong><?= $lname ?> RISK LIMIT REACHED</strong> — You have reached your configured <?= strtolower($lname) ?> trading loss limit (<?= e(money(-$L['loss'], $acc['currency'])) ?> of <?= e(money($L['limit'], $acc['currency'])) ?><?= $L['type'] === 'percent' ? ' = ' . e(rtrim(rtrim(number_format((float) $L['value'], 2), '0'), '.')) . '%' : '' ?>). Consider stopping trading for <?= $lk === 'daily' ? 'today' : 'the rest of the week' ?>. <span class="muted">This is a journal warning — journzey.ai cannot block orders at your broker.</span></p></div>
+      <?php elseif ($L['warning']): ?>
+      <div class="tm-alert tm-alert-warn" role="status"><?= icon('alert', 'icon icon-sm') ?><p><strong><?= ucfirst($lk) ?> limit almost used:</strong> <?= e(money(-$L['loss'], $acc['currency'])) ?> of <?= e(money($L['limit'], $acc['currency'])) ?> (<?= (int) round($L['used'] * 100) ?>%). <?= e(money($L['remaining'], $acc['currency'])) ?> left.</p></div>
+      <?php endif; endforeach; ?>
       <?php foreach ($flash as $f): ?><div class="tm-alert tm-alert-<?= e($f['type']) ?>" role="<?= $f['type'] === 'error' ? 'alert' : 'status' ?>"><?= icon($f['type'] === 'error' ? 'alert' : 'check-circle', 'icon icon-sm') ?><p><?= e($f['message']) ?></p></div><?php endforeach; ?>
       <?= $content ?>
     </main>
@@ -110,8 +114,11 @@ $initials = mb_strtoupper(mb_substr($m['name'], 0, 1));
   <div class="tm-modal-bg" data-close></div>
   <div class="tm-modal-card sm"><h2 id="tm-confirm-title">Are you sure?</h2><p data-confirm-text></p><div class="tm-modal-actions"><button type="button" class="tm-btn" data-close>Cancel</button><button type="button" class="tm-btn tm-btn-danger" data-confirm-ok>Delete</button></div></div>
 </div>
+<?= App\Core\View::partial('terminal/partials/equity-modal', ['acc' => $acc, 'balance' => $balance, 'history' => $capitalHistory]) ?>
+<?= App\Core\View::partial('terminal/partials/share-modal') ?>
 <div class="tm-toasts" aria-live="polite" data-toasts></div>
 <script src="<?= e(asset('js/charts.js')) ?>" defer></script>
 <script src="<?= e(asset('js/terminal.js')) ?>" defer></script>
+<script src="<?= e(asset('js/tools.js')) ?>" defer></script>
 </body>
 </html>

@@ -23,27 +23,27 @@ $sortLink = function (string $col, string $label) use ($f, $qs) { $on = ($f['sor
 <section class="panel">
   <div class="panel-head"><h2>Execution ledger · <?= e($acc['name']) ?></h2><span class="muted small"><?= number_format($pager->total) ?> trades<?= (int) $acc['has_demo_data'] ? ' · DEMO DATA' : '' ?></span></div>
   <?php if ($rows): ?>
-  <div class="table-wrap"><table class="tbl cards">
-    <thead><tr><th><?= $sortLink('executed_at', 'Date') ?></th><th>Time</th><th><?= $sortLink('symbol', 'Symbol') ?></th><th>Side</th><th class="r">Entry</th><th class="r">Exit</th><th class="r">Stop</th><th class="r">Lots</th><th class="r"><?= $sortLink('pnl', 'P&L') ?></th><th class="r"><?= $sortLink('rr', 'R') ?></th><th>Strategy</th><th>Setup</th><th>Session</th><th>Emotion</th><th class="r">Actions</th></tr></thead>
+  <div class="table-wrap"><table class="tbl trades">
+    <thead><tr><th><?= $sortLink('executed_at', 'Date / time') ?></th><th><?= $sortLink('symbol', 'Instrument') ?></th><th>Side</th><th class="r">Entry</th><th class="r">Exit</th><th class="r">Stop</th><th class="r">Lot</th><th class="r"><?= $sortLink('pnl', 'P&L') ?></th><th class="r"><?= $sortLink('rr', 'R') ?></th><th>Strategy</th><th class="r"><span class="sr-only">Actions</span></th></tr></thead>
     <tbody>
-    <?php foreach ($rows as $t): $pnl = $t['pnl']; ?>
+    <?php foreach ($rows as $t): $pnl = $t['pnl']; $fmt = fn ($x) => App\Trading\Instruments::format($t['symbol'], $x); $lots = rtrim(rtrim(number_format((float) $t['lot_size'], 4, '.', ''), '0'), '.');
+      $rTxt = $t['rr'] === null ? '' : ((float) $t['rr'] > 0 ? '+' : '') . number_format((float) $t['rr'], 2) . 'R';
+      $share = ['symbol' => $t['symbol'], 'side' => $t['side'], 'pnl' => $pnl === null ? 'OPEN' : money($pnl, $cur, true), 'positive' => $pnl === null || (float) $pnl >= 0, 'r' => $rTxt,
+        'entry' => $fmt($t['entry_price']), 'exit' => $fmt($t['exit_price']), 'lots' => $lots, 'strategy' => $t['strategy_name'] ?: ($t['setup_tag'] ?: '—'), 'brand' => setting('site_name', 'journzey.ai'), 'demo' => (bool) $acc['has_demo_data']]; ?>
       <tr>
-        <td data-label="Date"><?= e(fmt_date($t['executed_at'], 'Y-m-d')) ?></td>
-        <td data-label="Time" class="num"><?= e(fmt_date($t['executed_at'], 'H:i')) ?></td>
-        <td data-label="Symbol" class="strong"><?= e($t['symbol']) ?></td>
-        <td data-label="Side"><span class="badge <?= strtolower($t['side']) ?>"><?= $t['side'] === 'LONG' ? '▲' : '▼' ?> <?= e($t['side']) ?></span></td>
-        <td data-label="Entry" class="r num"><?= e(App\Trading\Instruments::format($t['symbol'], $t['entry_price'])) ?></td>
-        <td data-label="Exit" class="r num"><?= e(App\Trading\Instruments::format($t['symbol'], $t['exit_price'])) ?></td>
-        <td data-label="Stop" class="r num"><?= e(App\Trading\Instruments::format($t['symbol'], $t['stop_loss'])) ?></td>
-        <td data-label="Lots" class="r num"><?= e(rtrim(rtrim(number_format((float) $t['lot_size'], 4, '.', ''), '0'), '.')) ?></td>
-        <td data-label="P&amp;L" class="r num <?= $pnl === null ? '' : ((float) $pnl >= 0 ? 'up' : 'down') ?>"><?= $pnl === null ? '<span class="badge">OPEN</span>' : e(money($pnl, $cur, true)) ?></td>
-        <td data-label="R" class="r num"><?= $t['rr'] === null ? '—' : e(((float) $t['rr'] > 0 ? '+' : '') . number_format((float) $t['rr'], 2)) . 'R' ?></td>
+        <td class="dt hide-m" data-label="Date"><?= e(fmt_date($t['executed_at'], 'Y-m-d')) ?><small class="num"><?= e(fmt_date($t['executed_at'], 'H:i')) ?></small></td>
+        <td class="head" data-label="Instrument"><a href="<?= e(url('/terminal/trades/' . $t['id'])) ?>"><strong><?= e($t['symbol']) ?></strong></a> <span class="badge <?= strtolower($t['side']) ?> show-m-inline"><?= $t['side'] === 'LONG' ? 'BUY' : 'SELL' ?></span><small class="muted show-m-block"><?= e(fmt_date($t['executed_at'], 'M j, H:i')) ?></small></td>
+        <td class="hide-m" data-label="Side"><span class="badge <?= strtolower($t['side']) ?>"><?= $t['side'] === 'LONG' ? '▲ BUY' : '▼ SELL' ?></span></td>
+        <td data-label="Entry" class="r num"><?= e($fmt($t['entry_price'])) ?></td>
+        <td data-label="Exit" class="r num"><?= e($fmt($t['exit_price'])) ?></td>
+        <td data-label="Stop" class="r num"><?= e($fmt($t['stop_loss'])) ?></td>
+        <td data-label="Lot" class="r num"><?= e($lots) ?></td>
+        <td data-label="P&amp;L" class="pnl r num <?= $pnl === null ? '' : ((float) $pnl >= 0 ? 'up' : 'down') ?>"><?= $pnl === null ? '<span class="badge">OPEN</span>' : e(money($pnl, $cur, true)) ?></td>
+        <td data-label="R" class="r num <?= $t['rr'] === null ? '' : ((float) $t['rr'] >= 0 ? 'up' : 'down') ?>"><?= $rTxt ?: '—' ?></td>
         <td data-label="Strategy"><?= e($t['strategy_name'] ?: '—') ?></td>
-        <td data-label="Setup"><?= e($t['setup_tag'] ?: '—') ?></td>
-        <td data-label="Session"><?= e(Domain::SESSIONS[$t['session']] ?? '—') ?></td>
-        <td data-label="Emotion"><?= e($t['emotion'] ? ucfirst(strtolower($t['emotion'])) : '—') ?><?= $t['mistake_tag'] !== 'NONE' ? ' <span class="badge warn">' . e(Domain::MISTAKES[$t['mistake_tag']] ?? $t['mistake_tag']) . '</span>' : '' ?></td>
-        <td class="r nowrap" data-label="Actions">
-          <a class="tm-icon-btn" href="<?= e(url('/terminal/trades/' . $t['id'])) ?>" title="View &amp; share card" aria-label="View trade"><?= icon('eye', 'icon icon-sm') ?></a>
+        <td class="act" data-label="Actions">
+          <a class="tm-icon-btn" href="<?= e(url('/terminal/trades/' . $t['id'])) ?>" title="View details (setup, emotion, notes)" aria-label="View trade"><?= icon('eye', 'icon icon-sm') ?></a>
+          <button type="button" class="tm-icon-btn" data-share-trade="<?= e(json_encode($share)) ?>" title="Share image" aria-label="Share <?= e($t['symbol']) ?> trade"<?= $pnl === null ? ' disabled' : '' ?>><?= icon('share', 'icon icon-sm') ?></button>
           <?php if ($acc['writable']): ?>
           <a class="tm-icon-btn" href="<?= e(url('/terminal/trades/' . $t['id'] . '/edit')) ?>" title="Edit" aria-label="Edit trade"><?= icon('edit', 'icon icon-sm') ?></a>
           <form method="post" action="<?= e(url('/terminal/trades/' . $t['id'] . '/delete')) ?>" style="display:inline" data-confirm="Delete this <?= e($t['symbol']) ?> trade permanently?"><?= csrf_field() ?><button class="tm-icon-btn danger" type="submit" title="Delete" aria-label="Delete trade"><?= icon('trash', 'icon icon-sm') ?></button></form>
@@ -53,6 +53,7 @@ $sortLink = function (string $col, string $label) use ($f, $qs) { $on = ($f['sor
     <?php endforeach; ?>
     </tbody>
   </table></div>
+  <p class="muted small" style="margin-top:8px">Setup, session, emotion, mistakes, notes and screenshots are on each trade's detail page.</p>
   <?php if ($pager->pages > 1): ?><div class="pager"><span>Page <?= $pager->page ?> of <?= $pager->pages ?></span><span><?php if ($pager->page > 1): ?><a class="tm-btn tm-btn-sm" href="<?= e($pager->url($pager->page - 1)) ?>">← Prev</a><?php endif; ?> <?php if ($pager->page < $pager->pages): ?><a class="tm-btn tm-btn-sm" href="<?= e($pager->url($pager->page + 1)) ?>">Next →</a><?php endif; ?></span></div><?php endif; ?>
   <?php else: ?><div class="empty"><?= icon('list', 'icon') ?><p><?= $f ? 'No trades match these filters.' : e(t('empty.trades')) ?></p><?php if ($acc['writable']): ?><a class="tm-btn tm-btn-primary" href="<?= e(url('/terminal/trades/new')) ?>">Log your first trade</a><?php endif; ?></div><?php endif; ?>
 </section>

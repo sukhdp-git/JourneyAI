@@ -30,7 +30,7 @@ final class Members
             return null;
         }
         $u = Database::one('SELECT u.*, s.theme, s.language, s.timezone, s.base_currency, s.default_risk_pct, s.max_daily_loss, s.max_weekly_loss, s.default_target_rr,
-                s.tilt_loss_count, s.tilt_window_minutes, s.tilt_cooldown_minutes, s.active_account_id
+                s.tilt_loss_count, s.tilt_window_minutes, s.tilt_cooldown_minutes, s.active_account_id, s.daily_limit_type, s.weekly_limit_type, s.a_plus_risk_pct
             FROM users u LEFT JOIN user_settings s ON s.user_id = u.id WHERE u.id = :id', ['id' => (int) $_SESSION['member_id']]);
         if (!$u || $u['status'] !== 'active' || (int) ($_SESSION['member_ver'] ?? 0) !== self::version($u)) {
             unset($_SESSION['member_id'], $_SESSION['member_ver']);
