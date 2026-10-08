@@ -10,7 +10,7 @@ use App\Models\Content;
 final class PageController extends Controller
 {
     /** Slugs that can never be used for CMS pages because a system route owns them. */
-    public const RESERVED = ['services', 'blog', 'contact', 'pricing', 'signup', 'logout', 'onboarding', 'forgot-password', 'reset-password', 'checkout', 'webhooks', 'auth', 'terminal', 'control-panel', 'setup', 'sitemap.xml', 'robots.txt', 'uploads', 'public', 'app', 'config', 'storage', 'vendor', 'routes', 'index', 'index.php', 'admin', 'api', 'pages', 'search', 'login', 'assets'];
+    public const RESERVED = ['services', 'learn', 'blog', 'contact', 'pricing', 'signup', 'logout', 'onboarding', 'forgot-password', 'reset-password', 'checkout', 'webhooks', 'auth', 'terminal', 'control-panel', 'setup', 'sitemap.xml', 'robots.txt', 'uploads', 'public', 'app', 'config', 'storage', 'vendor', 'routes', 'index', 'index.php', 'admin', 'api', 'pages', 'search', 'login', 'assets'];
 
     public function show(Request $req): never
     {

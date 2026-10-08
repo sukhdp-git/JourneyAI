@@ -100,7 +100,7 @@ $dis = $locked ? ' disabled' : '';
       <input type="text" id="<?= e($id) ?>" name="<?= e($name) ?>" value="<?= e($value) ?>" placeholder="e.g. Journaling, Discipline"<?= $desc . $inv ?>>
       <?php break; default:
         $htmlType = ['email' => 'email', 'number' => 'number', 'date' => 'date', 'datetime' => 'datetime-local', 'link' => 'text'][$type] ?? 'text'; ?>
-      <input type="<?= $htmlType ?>" id="<?= e($id) ?>" name="<?= e($name) ?>" value="<?= e($value) ?>"<?= $required ? ' required' : '' ?><?= $type === 'link' ? ' placeholder="/page or https://…"' : '' ?><?= $dis . $desc . $inv ?>>
+      <input type="<?= $htmlType ?>" id="<?= e($id) ?>" name="<?= e($name) ?>" value="<?= e($value) ?>"<?= $required ? ' required' : '' ?><?= $type === 'link' ? ' placeholder="/page or https://…"' : '' ?><?= $type === 'number' ? ' step="any"' : '' ?><?= $dis . $desc . $inv ?>>
     <?php endswitch; ?>
   <?php endif; ?>
   <?php if (($f['help'] ?? '') !== ''): ?><small class="help" id="<?= e($id) ?>-help"><?= e($f['help']) ?></small><?php endif; ?>

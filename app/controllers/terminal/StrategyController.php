@@ -7,6 +7,7 @@ use App\Core\Database;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\Session;
+use App\Models\Learn;
 use App\Trading\Analytics;
 use App\Trading\Domain;
 use App\Trading\Edge;
@@ -108,6 +109,37 @@ final class StrategyController extends TerminalController
         $this->validate($d, (int) $s['id'], '/terminal/strategies/' . $s['id'] . '/edit');
         Database::update('strategies', $d, 'id = :id AND user_id = :u', ['id' => $s['id'], 'u' => $this->uid]);
         $this->back('/terminal/strategies#s' . $s['id'], 'success', 'Strategy saved.');
+    }
+
+    /** Copies a strategy from the public Learning playbook into the member's personal strategies. */
+    public function import(Request $req): never
+    {
+        $p = Learn::find((string) ($req->params['slug'] ?? '')) ?? Response::abort(404);
+        $existing = Database::one('SELECT id FROM strategies WHERE user_id = :u AND name = :n', ['u' => $this->uid, 'n' => mb_substr($p['title'], 0, 80)]);
+        if ($existing) {
+            $this->back('/terminal/strategies/' . $existing['id'] . '/edit', 'info', '“' . $p['title'] . '” is already in your strategies.');
+        }
+        $checklist = Learn::lines($p['setup_rules']);
+        foreach (['Entry' => $p['entry_trigger'], 'Stop' => $p['stop_loss']] as $k => $v) {
+            if (trim((string) $v) !== '') {
+                $checklist[] = $k . ': ' . trim((string) $v);
+            }
+        }
+        foreach (Learn::lines($p['take_profit']) as $t) {
+            $checklist[] = 'Target: ' . $t;
+        }
+        $id = Database::insert('strategies', [
+            'user_id' => $this->uid,
+            'name' => mb_substr($p['title'], 0, 80),
+            'target_rr' => $p['rr_value'] !== null && (float) $p['rr_value'] > 0 ? (float) $p['rr_value'] : null,
+            'style' => isset(Domain::STRATEGY_STYLES[$p['style'] ?? '']) ? $p['style'] : null,
+            'thesis' => mb_substr((string) $p['logic'], 0, 5000) ?: null,
+            'description' => mb_substr((string) $p['summary'], 0, 500) ?: null,
+            'checklist' => implode("\n", array_slice(array_map(fn ($l) => mb_substr($l, 0, 200), $checklist), 0, 40)) ?: null,
+            'setups' => null,
+            'active' => 1,
+        ]);
+        $this->back('/terminal/strategies/' . $id . '/edit', 'success', '“' . $p['title'] . '” was added to your strategies. Adjust the rules to fit your own plan, then tag trades with it.');
     }
 
     public function delete(Request $req): never

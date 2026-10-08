@@ -4,6 +4,7 @@
 use App\Controllers\BlogController;
 use App\Controllers\FormController;
 use App\Controllers\HomeController;
+use App\Controllers\LearnController;
 use App\Controllers\PageController;
 use App\Controllers\SeoController;
 use App\Controllers\ServiceController;
@@ -15,6 +16,9 @@ $router->post('/setup', [SetupController::class, 'install']);
 $router->get('/', [HomeController::class, 'index']);
 $router->get('/services', [ServiceController::class, 'index']);
 $router->get('/services/{slug}', [ServiceController::class, 'show']);
+
+$router->get('/learn', [LearnController::class, 'index']);
+$router->get('/learn/{slug}', [LearnController::class, 'show']);
 
 $router->get('/blog', [BlogController::class, 'index']);
 $router->get('/blog/page/{n}', [BlogController::class, 'index']);

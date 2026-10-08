@@ -13,9 +13,15 @@ final class SeoController
     public function sitemap(Request $req): never
     {
         $base = rtrim(Settings::get('seo_canonical_base') ?: BASE_URL, '/');
-        $urls = [['/', null, '1.0'], ['/services', null, '0.8'], ['/blog', null, '0.8'], ['/contact', null, '0.6'], ['/pricing', null, '0.8'], ['/login', null, '0.3'], ['/signup', null, '0.5']];
+        $urls = [['/', null, '1.0'], ['/services', null, '0.8'], ['/learn', null, '0.8'], ['/blog', null, '0.8'], ['/contact', null, '0.6'], ['/pricing', null, '0.8'], ['/login', null, '0.3'], ['/signup', null, '0.5']];
         foreach (Database::all("SELECT slug, updated_at FROM services WHERE status = 'published' ORDER BY sort_order") as $r) {
             $urls[] = ['/services/' . $r['slug'], $r['updated_at'], '0.8'];
+        }
+        try {
+            foreach (Database::all("SELECT slug, updated_at FROM learn_strategies WHERE status = 'published' ORDER BY sort_order") as $r) {
+                $urls[] = ['/learn/' . $r['slug'], $r['updated_at'], '0.7'];
+            }
+        } catch (\PDOException) {
         }
         foreach (Database::all("SELECT slug, updated_at FROM pages WHERE status = 'published' AND in_sitemap = 1 AND noindex = 0 ORDER BY sort_order") as $r) {
             $urls[] = ['/' . $r['slug'], $r['updated_at'], '0.5'];

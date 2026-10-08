@@ -9,6 +9,7 @@ $bars = array_map(fn ($r) => ['label' => $r['key'], 'value' => $r['s']['net'], '
 ?>
 <div class="toolbar">
   <a class="tm-btn tm-btn-primary" href="<?= e(url('/terminal/strategies/new')) ?>"><?= icon('plus', 'icon icon-sm') ?> Add personal strategy</a>
+  <a class="tm-btn" href="<?= e(url('/learn')) ?>"><?= icon('book', 'icon icon-sm') ?> Strategy playbook</a>
   <span class="muted small">Account <?= e($acc['name']) ?><?= (int) $acc['has_demo_data'] ? ' · DEMO DATA' : '' ?> · <?= (int) $sum['trades'] ?> closed trades</span>
 </div>
 
@@ -66,4 +67,5 @@ $bars = array_map(fn ($r) => ['label' => $r['key'], 'value' => $r['s']['net'], '
   </section>
   <?php endforeach; ?>
   <a class="panel calc-link" href="<?= e(url('/terminal/strategies/new')) ?>"><?= icon('plus', 'icon') ?><div><strong>Add personal strategy</strong><small class="muted">Name, style, edge, rules and sub-setups</small></div></a>
+  <a class="panel calc-link" href="<?= e(url('/learn')) ?>"><?= icon('book', 'icon') ?><div><strong>Copy from the playbook</strong><small class="muted">10 intraday strategies with rules, entries, stops and targets</small></div></a>
 </div>

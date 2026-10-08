@@ -15,7 +15,7 @@ $nav = [
         ['whatsapp', 'WhatsApp', 'whatsapp', 'settings.whatsapp'], ['analytics', 'Analytics', 'bars', 'settings.analytics'],
     ],
     'Content' => [
-        ['pages', 'Pages', 'file', 'pages'], ['services', 'Services', 'layers', 'services'], ['blog', 'Blog', 'book', 'blog'],
+        ['pages', 'Pages', 'file', 'pages'], ['services', 'Services', 'layers', 'services'], ['learn', 'Learning playbook', 'compass', 'pages'], ['blog', 'Blog', 'book', 'blog'],
         ['testimonials', 'Testimonials', 'quote', 'testimonials'], ['faqs', 'FAQs', 'help', 'faqs'], ['process-steps', 'Process steps', 'activity', 'process'],
         ['sections', 'Custom sections', 'section', 'sections'],
     ],

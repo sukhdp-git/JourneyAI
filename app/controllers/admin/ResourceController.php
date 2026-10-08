@@ -294,7 +294,11 @@ final class ResourceController extends AdminController
             case 'checkbox':
                 return [in_array($s, ['1', 'on'], true) ? 1 : 0, null];
             case 'number':
-                return [$s === '' ? '' : (string) (int) $s, ($s !== '' && !is_numeric($s)) ? 'Enter a number.' : null];
+                if ($s === '') {
+                    return [!empty($f['nullable']) ? null : '', null];
+                }
+                // Keep decimals (instrument tick/pip sizes, R:R values); whole numbers stay whole.
+                return is_numeric($s) ? [(string) ($s + 0), null] : ['', 'Enter a number.'];
             case 'datetime':
                 if ($s === '') {
                     return [null, null];

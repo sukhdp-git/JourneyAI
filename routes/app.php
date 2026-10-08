@@ -60,6 +60,7 @@ $router->get('/terminal/strategies', [StrategyController::class, 'index']);
 $router->get('/terminal/strategies/new', [StrategyController::class, 'create']);
 $router->get('/terminal/strategies/{id}/edit', [StrategyController::class, 'edit']);
 $router->post('/terminal/strategies', [StrategyController::class, 'store']);
+$router->post('/terminal/strategies/import/{slug}', [StrategyController::class, 'import']);
 $router->post('/terminal/strategies/{id}', [StrategyController::class, 'update']);
 $router->post('/terminal/strategies/{id}/delete', [StrategyController::class, 'delete']);
 

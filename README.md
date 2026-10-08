@@ -40,6 +40,7 @@ All URLs are clean and never end in `.php`.
 | `/` | Homepage. Its 12 sections are CMS-managed, reorderable and can be switched on or off. |
 | `/about` | About page: hero plus content blocks. |
 | `/services`, `/services/{slug}` | Platform capabilities, each with benefits, process, FAQ and SEO. |
+| `/learn`, `/learn/{slug}` | Learning section: the 10-strategy intraday playbook (logic, setup rules, entry, stop, target), a summary matrix and a glossary. Signed-in members can copy any strategy into their personal strategies. |
 | `/blog`, `/blog/{slug}` | Blog with featured post, search, pagination, related posts and sharing. |
 | `/blog/category/{slug}`, `/blog/tag/{slug}`, `/blog/page/2` | Blog archives and pagination. |
 | `/contact` | Contact details, map and contact form (saved to MySQL). |
@@ -175,7 +176,7 @@ You can install in one of two ways.
 ### 4.3a Updating an existing installation
 1. Back up the database (phpMyAdmin → Export) and `config/config.php`.
 2. Upload the new ZIP and extract it over the existing files (your `config/config.php`, `uploads/` and `storage/` are not in the ZIP and are kept).
-3. Open the website once. The site applies `database-updated.sql` automatically (it only adds columns, tables and instruments — nothing is deleted). If you prefer, import **database-updated.sql** yourself in phpMyAdmin → Import first; running it twice is harmless.
+3. Open the website once. The site applies `database-updated.sql` automatically (it only adds columns, tables, instruments and the learning playbook — nothing is deleted). If you prefer, import **database-updated.sql** yourself in phpMyAdmin → Import first; running it twice is harmless.
 
 ### 4.4 Folder permissions
 On cPanel the defaults are usually right: folders `755`, files `644`.
@@ -294,6 +295,9 @@ Go to **Content → Services**. Each service has:
 - SEO and OG image, status, and whether it appears on the homepage.
 
 You can search, filter and sort. Drag rows to reorder, and use the switch to publish or unpublish. A service's FAQs produce `FAQPage` structured data.
+
+### Learning playbook management
+Go to **Content → Learning playbook** (needs the *Pages* permission). Each strategy has a name, short name for the summary matrix, style, summary, institutional logic, assets, session, timeframes, setup rules (one per line), entry trigger, stop loss, take-profit targets (one per line), target R:R and SEO fields. Drag rows to reorder; use the switch to publish or hide. The content is educational — keep the "not financial advice" wording and avoid promising results.
 
 ### Blog management
 Go to **Content → Blog** to manage posts. **Categories** and **Tags** buttons are at the top of the list. Each post has:
