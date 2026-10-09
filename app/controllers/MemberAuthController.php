@@ -264,10 +264,9 @@ final class MemberAuthController
         Database::transaction(function () use ($m, $markets, $currency, $tz, $capital, $risk, $name, $dec, $req) {
             $uid = (int) $m['id'];
             Ledger::ensureTemplates($uid);
-            $accId = Database::insert('trading_accounts', ['user_id' => $uid, 'name' => $name, 'broker_name' => mb_substr((string) $req->post('broker_name', ''), 0, 80) ?: null, 'currency' => $currency, 'starting_capital' => round($capital, 2), 'is_demo' => 1]);
+            $accId = Database::insert('trading_accounts', ['user_id' => $uid, 'name' => $name, 'broker_name' => mb_substr((string) $req->post('broker_name', ''), 0, 80) ?: null, 'currency' => $currency, 'starting_capital' => round($capital, 2), 'is_demo' => 1, 'max_daily_loss' => $dec('max_daily_loss'), 'max_weekly_loss' => $dec('max_weekly_loss')]);
             Database::update('user_settings', [
-                'timezone' => $tz, 'base_currency' => $currency, 'default_risk_pct' => round($risk, 2), 'max_daily_loss' => $dec('max_daily_loss'),
-                'max_weekly_loss' => $dec('max_weekly_loss'), 'default_target_rr' => $dec('target_rr') ?? 2, 'active_account_id' => $accId,
+                'timezone' => $tz, 'base_currency' => $currency, 'default_risk_pct' => round($risk, 2), 'default_target_rr' => $dec('target_rr') ?? 2, 'active_account_id' => $accId,
             ], 'user_id = :u', ['u' => $uid]);
             Database::update('users', ['onboarded' => 1, 'primary_markets' => implode(',', $markets)], 'id = :id', ['id' => $uid]);
         });

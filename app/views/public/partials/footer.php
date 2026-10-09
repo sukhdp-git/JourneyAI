@@ -6,10 +6,10 @@ $socials = ['social_x' => ['x-social', 'X'], 'social_linkedin' => ['linkedin', '
 $col1 = setting_on('footer_show_services', true) ? array_map(fn ($s) => ['label' => $s['title'], 'url' => '/services/' . $s['slug'], 'target' => '_self'], Content::services(8)) : Navigation::tree('footer_1');
 $cols = [[setting('footer_col1_title', 'Platform'), $col1], [setting('footer_col2_title', 'Company'), Navigation::tree('footer_2')], [setting('footer_col3_title', 'Legal'), Navigation::tree('footer_3')]];
 $phone = setting('contact_phone');
-$email = setting('contact_email');
+$email = setting('contact_email'); $support = setting('support_email');
 $address = setting('contact_address');
 $hours = setting('business_hours');
-$hasContact = setting_on('footer_show_contact', true) && ($phone || $email || $address || $hours);
+$hasContact = setting_on('footer_show_contact', true) && ($phone || $email || $support || $address || $hours);
 $copyright = str_replace('{year}', gmdate('Y'), setting('copyright_text', '© {year} ' . setting('site_name')));
 ?>
 <footer class="site-footer">
@@ -50,6 +50,7 @@ $copyright = str_replace('{year}', gmdate('Y'), setting('copyright_text', '© {y
     <div class="footer-col">
       <h3>Contact</h3>
       <ul class="contact-list">
+        <?php if ($support && $support !== $email): ?><li><?= icon('help', 'icon icon-sm') ?><a href="mailto:<?= e($support) ?>">Support: <?= e($support) ?></a></li><?php endif; ?>
         <?php if ($email): ?><li><?= icon('mail', 'icon icon-sm') ?><a href="mailto:<?= e($email) ?>"><?= e($email) ?></a></li><?php endif; ?>
         <?php if ($phone): ?><li><?= icon('phone', 'icon icon-sm') ?><a href="tel:<?= e(preg_replace('/[^0-9+]/', '', $phone)) ?>"><?= e($phone) ?></a></li><?php endif; ?>
         <?php if ($address): ?><li><?= icon('map-pin', 'icon icon-sm') ?><span><?= nl2br(e($address)) ?></span></li><?php endif; ?>

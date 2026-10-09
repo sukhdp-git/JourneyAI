@@ -4,7 +4,10 @@ $cur = $acc['currency'];
 $qs = function (array $over) { $q = array_merge($_GET, $over); unset($q['page']); return '?' . http_build_query(array_filter($q, fn ($v) => $v !== '' && $v !== null)); };
 $sortLink = function (string $col, string $label) use ($f, $qs) { $on = ($f['sort'] ?? 'executed_at') === $col; $dir = $on && ($f['dir'] ?? 'desc') === 'desc' ? 'asc' : 'desc'; return '<a href="' . e($qs(['sort' => $col, 'dir' => $dir])) . '">' . e($label) . ($on ? (($f['dir'] ?? 'desc') === 'desc' ? ' ↓' : ' ↑') : '') . '</a>'; };
 ?>
+<?php $shots = ($f['view'] ?? '') === 'shots'; ?>
+<nav class="seg view-seg" aria-label="Trade log view"><a href="<?= e(url('/terminal/trades') . $qs(['view' => null])) ?>"<?= $shots ? '' : ' class="on" aria-current="page"' ?>><?= icon('list', 'icon icon-sm') ?> Table</a><a href="<?= e(url('/terminal/trades') . $qs(['view' => 'shots'])) ?>"<?= $shots ? ' class="on" aria-current="page"' : '' ?>><?= icon('camera', 'icon icon-sm') ?> Screenshot journal</a></nav>
 <form class="toolbar" method="get" action="<?= e(url('/terminal/trades')) ?>">
+  <?php if ($shots): ?><input type="hidden" name="view" value="shots"><?php endif; ?>
   <label class="sr-only" for="tq">Search</label><input id="tq" class="grow" type="search" name="q" value="<?= e($f['q'] ?? '') ?>" placeholder="Search symbol, setup or notes">
   <label class="sr-only" for="tsym">Instrument</label><select id="tsym" name="symbol" data-autosubmit><option value="">All instruments</option><?php foreach ($symbols as $s): ?><option<?= ($f['symbol'] ?? '') === $s ? ' selected' : '' ?>><?= e($s) ?></option><?php endforeach; ?></select>
   <label class="sr-only" for="tstr">Strategy</label><select id="tstr" name="strategy" data-autosubmit><option value="">All strategies</option><?php foreach ($strategies as $s): ?><option value="<?= (int) $s['id'] ?>"<?= ($f['strategy'] ?? '') == $s['id'] ? ' selected' : '' ?>><?= e($s['name']) ?></option><?php endforeach; ?></select>
@@ -20,6 +23,23 @@ $sortLink = function (string $col, string $label) use ($f, $qs) { $on = ($f['sor
     <?php if ($acc['writable']): ?><a class="tm-btn tm-btn-sm tm-btn-primary" href="<?= e(url('/terminal/trades/new')) ?>"><?= icon('plus', 'icon icon-sm') ?> <?= e(t('common.new_trade')) ?></a><?php endif; ?>
   </span>
 </form>
+<?php if ($shots): ?>
+<section class="panel">
+  <div class="panel-head"><h2><?= icon('camera', 'icon icon-sm') ?> Screenshot journal · <?= e($acc['name']) ?></h2><span class="muted small"><?= number_format($pager->total) ?> charts</span></div>
+  <?php if ($rows): ?>
+  <div class="shot-grid">
+    <?php foreach ($rows as $t): $p = $t['pnl']; ?>
+    <a class="shot-card <?= $p === null ? '' : ((float) $p >= 0 ? 'is-up' : 'is-down') ?>" href="<?= e(url('/terminal/trades/' . $t['id'])) ?>">
+      <img src="<?= e(url('/terminal/trades/' . $t['id'] . '/screenshot')) ?>" alt="<?= e($t['symbol'] . ' chart, ' . fmt_date($t['executed_at'], 'M j')) ?>" loading="lazy">
+      <span class="shot-meta"><b><?= e($t['symbol']) ?></b> <span class="badge <?= strtolower($t['side']) ?>"><?= $t['side'] === 'LONG' ? 'BUY' : 'SELL' ?></span><span class="shot-pnl <?= $p === null ? '' : ((float) $p >= 0 ? 'up' : 'down') ?>"><?= $p === null ? 'OPEN' : e(money($p, $cur, true)) ?></span></span>
+      <span class="shot-sub"><?= e(fmt_date($t['executed_at'], 'M j, H:i')) ?><?= $t['strategy_name'] || $t['setup_tag'] ? ' · ' . e($t['strategy_name'] ?: $t['setup_tag']) : '' ?><?= $t['rr'] !== null ? ' · ' . e(((float) $t['rr'] > 0 ? '+' : '') . number_format((float) $t['rr'], 2)) . 'R' : '' ?></span>
+    </a>
+    <?php endforeach; ?>
+  </div>
+  <?php if ($pager->pages > 1): ?><div class="pager"><span>Page <?= $pager->page ?> of <?= $pager->pages ?></span><span><?php if ($pager->page > 1): ?><a class="tm-btn tm-btn-sm" href="<?= e($pager->url($pager->page - 1)) ?>">← Prev</a><?php endif; ?> <?php if ($pager->page < $pager->pages): ?><a class="tm-btn tm-btn-sm" href="<?= e($pager->url($pager->page + 1)) ?>">Next →</a><?php endif; ?></span></div><?php endif; ?>
+  <?php else: ?><div class="empty"><?= icon('camera', 'icon') ?><p>No chart screenshots yet. Add one when you <a href="<?= e(url('/terminal/trades/new')) ?>">log a trade</a> or from any trade’s page.</p></div><?php endif; ?>
+</section>
+<?php else: ?>
 <section class="panel">
   <div class="panel-head"><h2>Execution ledger · <?= e($acc['name']) ?></h2><span class="muted small"><?= number_format($pager->total) ?> trades<?= (int) $acc['has_demo_data'] ? ' · DEMO DATA' : '' ?></span></div>
   <?php if ($rows): ?>
@@ -57,3 +77,4 @@ $sortLink = function (string $col, string $label) use ($f, $qs) { $on = ($f['sor
   <?php if ($pager->pages > 1): ?><div class="pager"><span>Page <?= $pager->page ?> of <?= $pager->pages ?></span><span><?php if ($pager->page > 1): ?><a class="tm-btn tm-btn-sm" href="<?= e($pager->url($pager->page - 1)) ?>">← Prev</a><?php endif; ?> <?php if ($pager->page < $pager->pages): ?><a class="tm-btn tm-btn-sm" href="<?= e($pager->url($pager->page + 1)) ?>">Next →</a><?php endif; ?></span></div><?php endif; ?>
   <?php else: ?><div class="empty"><?= icon('list', 'icon') ?><p><?= $f ? 'No trades match these filters.' : e(t('empty.trades')) ?></p><?php if ($acc['writable']): ?><a class="tm-btn tm-btn-primary" href="<?= e(url('/terminal/trades/new')) ?>">Log your first trade</a><?php endif; ?></div><?php endif; ?>
 </section>
+<?php endif; ?>

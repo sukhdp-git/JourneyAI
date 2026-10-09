@@ -8,9 +8,12 @@ use App\Core\Paginator;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\Session;
+use App\Trading\AiCoach;
 use App\Trading\Domain;
+use App\Trading\Instruments;
 use App\Trading\Ledger;
 use App\Trading\Members;
+use App\Trading\Runner;
 
 /** Trade log: filtered ledger, CRUD, CSV export, screenshots (private storage) and share cards. */
 final class TradeController extends TerminalController
@@ -18,7 +21,7 @@ final class TradeController extends TerminalController
     private function filters(Request $req): array
     {
         $f = [];
-        foreach (['q', 'symbol', 'side', 'session', 'strategy', 'result', 'from', 'to', 'emotion', 'mistake', 'sort', 'dir'] as $k) {
+        foreach (['q', 'symbol', 'side', 'session', 'strategy', 'result', 'from', 'to', 'emotion', 'mistake', 'sort', 'dir', 'view'] as $k) {
             $v = mb_substr(trim((string) $req->query($k, '')), 0, 60);
             if ($v !== '') {
                 $f[$k] = $v;
@@ -31,8 +34,9 @@ final class TradeController extends TerminalController
     {
         $f = $this->filters($req);
         [, $total] = Ledger::trades($this->uid, (int) $this->acc['id'], $f, $this->tz, 1);
-        $pg = new Paginator($total, 50, $req->int('page', 1));
-        [$rows] = Ledger::trades($this->uid, (int) $this->acc['id'], $f, $this->tz, 50, $pg->offset);
+        $per = ($f['view'] ?? '') === 'shots' ? 24 : 50;
+        $pg = new Paginator($total, $per, $req->int('page', 1));
+        [$rows] = Ledger::trades($this->uid, (int) $this->acc['id'], $f, $this->tz, $per, $pg->offset);
         $symbols = array_column(Database::all('SELECT DISTINCT symbol FROM trades WHERE user_id = :u AND account_id = :a ORDER BY symbol', ['u' => $this->uid, 'a' => $this->acc['id']]), 'symbol');
         $this->render('trades/index', ['rows' => $rows, 'pager' => $pg, 'f' => $f, 'symbols' => $symbols, 'strategies' => Ledger::strategies($this->uid)], 'Trade Log', 'trades');
     }
@@ -91,7 +95,8 @@ final class TradeController extends TerminalController
             Response::redirect('/terminal/trades/new');
         }
         $id = Database::insert('trades', $row + ['user_id' => $this->uid, 'account_id' => $this->acc['id'], 'source' => 'MANUAL']);
-        $this->back('/terminal/trades/' . $id, 'success', 'Trade saved' . ($row['pnl'] !== null ? ': ' . money($row['pnl'], $this->acc['currency'], true) : ' as OPEN') . '.');
+        $shotErr = $this->formShot($id);
+        $this->back('/terminal/trades/' . $id, $shotErr ? 'info' : 'success', 'Trade saved' . ($row['pnl'] !== null ? ': ' . money($row['pnl'], $this->acc['currency'], true) : ' as OPEN') . '.' . ($shotErr ? ' Screenshot not attached: ' . $shotErr : ''));
     }
 
     public function update(Request $req): never
@@ -105,7 +110,9 @@ final class TradeController extends TerminalController
             Response::redirect('/terminal/trades/' . $t['id'] . '/edit');
         }
         Database::update('trades', $row, 'id = :id AND user_id = :u', ['id' => $t['id'], 'u' => $this->uid]);
-        $this->back('/terminal/trades/' . $t['id'], 'success', 'Trade updated.');
+        Database::delete('trade_runner_audits', 'trade_id = :id AND user_id = :u', ['id' => $t['id'], 'u' => $this->uid]);
+        $shotErr = $this->formShot((int) $t['id']);
+        $this->back('/terminal/trades/' . $t['id'], $shotErr ? 'info' : 'success', 'Trade updated.' . ($shotErr ? ' Screenshot not attached: ' . $shotErr : ''));
     }
 
     public function delete(Request $req): never
@@ -118,41 +125,25 @@ final class TradeController extends TerminalController
         $this->back('/terminal/trades', 'success', 'Trade deleted.');
     }
 
-    /**
-     * Post-trade runner audit (hypothetical): what if 20% of the position had been kept after the exit with a
-     * breakeven stop, for up to 4 hours? Uses real 1-minute history; returns an error instead of inventing prices.
-     */
+    /** Runner audit for one trade (hypothetical 20% runner held 2 hours with a breakeven stop). */
     public function runner(Request $req): never
     {
         $t = $this->find($req);
-        if ($t['status'] !== 'CLOSED' || $t['stop_loss'] === null || $t['exit_price'] === null) {
-            Response::json(['ok' => false, 'error' => 'The runner audit needs a closed trade with a stop loss.'], 422);
+        if (($why = Runner::ineligible($t)) !== null) {
+            Response::json(['ok' => false, 'error' => $why], 422);
         }
-        $from = $t['closed_at'] ?: $t['executed_at'];
-        try {
-            $candles = \App\Trading\MarketData::candles($t['symbol'], $from, gmdate('Y-m-d H:i:s', strtotime($from . ' UTC') + 4 * 3600));
-        } catch (\RuntimeException $e) {
-            Response::json(['ok' => false, 'error' => $e->getMessage()], 503);
+        $acc = Ledger::account($this->uid, (int) $t['account_id']);
+        $demo = (int) $acc['has_demo_data'] === 1;
+        if (!$demo && !\App\Trading\MarketData::configured()) {
+            Response::json(['ok' => false, 'error' => 'The runner audit needs market data, which has not been set up on this site yet.'], 503);
         }
-        $dir = $t['side'] === 'LONG' ? 1 : -1;
-        $entry = (float) $t['entry_price'];
-        $exit = (float) $t['exit_price'];
-        $risk = abs($entry - (float) $t['stop_loss']);
-        $best = $exit;
-        $out = null;
-        foreach ($candles as $c) {
-            if (($dir === 1 && $c['l'] <= $entry) || ($dir === -1 && $c['h'] >= $entry)) {
-                $out = $entry;
-                break;
-            }
-            $best = $dir === 1 ? max($best, $c['h']) : min($best, $c['l']);
+        $r = Runner::audit($t, $demo);
+        if ($r['status'] !== 'ok') {
+            Response::json(['ok' => false, 'error' => $r['message']], 503);
         }
-        $runnerExit = $out ?? end($candles)['c'];
-        $extraR = $risk > 0 ? 0.2 * ($runnerExit - $exit) * $dir / $risk : 0;
-        $extraPnl = $t['risk_amount'] ? $extraR * (float) $t['risk_amount'] : null;
-        Response::json(['ok' => true, 'text' => sprintf('Hypothetical 20%% runner: exit %s (%s), %s%.2fR%s. Maximum favourable price after your exit within 4 h: %s. Historical, hypothetical result — not a recommendation.',
-            \App\Trading\Instruments::format($t['symbol'], $runnerExit), $out !== null ? 'breakeven stop hit' : 'held 4 hours', $extraR >= 0 ? '+' : '', $extraR,
-            $extraPnl !== null ? ' (' . money($extraPnl, Ledger::account($this->uid, (int) $t['account_id'])['currency'], true) . ')' : '', \App\Trading\Instruments::format($t['symbol'], $best))]);
+        Response::json(['ok' => true, 'text' => sprintf('%sIf 20%% had stayed open for %d more hours (stop at breakeven): runner exit %s (%s), %s%.2fR%s. Hypothetical, historical result — not a recommendation.',
+            $demo ? 'DEMO DATA (simulated prices). ' : '', Runner::HOURS, \App\Trading\Instruments::format($t['symbol'], $r['runner_exit']), $r['stopped'] ? 'breakeven stop hit' : 'held ' . Runner::HOURS . ' hours',
+            $r['extra_r'] >= 0 ? '+' : '', $r['extra_r'], $r['extra_pnl'] !== null ? ' (' . money($r['extra_pnl'], $acc['currency'], true) . ')' : '')]);
     }
 
     // --------------------------------------------------------------- screenshots (private, owner-only)
@@ -175,30 +166,33 @@ final class TradeController extends TerminalController
         exit;
     }
 
-    public function uploadScreenshot(Request $req): never
+    /** Validates an uploaded image and returns it re-encoded (strips metadata and any embedded payload). */
+    private static function readImage(?array $f): array
     {
-        $t = $this->find($req);
-        $this->requireWritable(Ledger::account($this->uid, (int) $t['account_id']));
-        $f = $_FILES['screenshot'] ?? null;
-        $fail = fn (string $m) => Response::json(['ok' => false, 'error' => $m], 422);
-        if (!$f || $f['error'] !== UPLOAD_ERR_OK || !is_uploaded_file($f['tmp_name'])) {
-            $fail('Choose a PNG, JPEG or WebP image up to 5 MB.');
+        if (!$f || ($f['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK || !is_uploaded_file($f['tmp_name'])) {
+            return [null, 'Choose a PNG, JPEG or WebP image up to 5 MB.'];
         }
         if ($f['size'] > 5 * 1024 * 1024) {
-            $fail('Screenshots must be 5 MB or smaller.');
+            return [null, 'Screenshots must be 5 MB or smaller.'];
         }
         $mime = (new \finfo(FILEINFO_MIME_TYPE))->file($f['tmp_name']);
         $ext = strtolower(pathinfo((string) $f['name'], PATHINFO_EXTENSION));
         if (!in_array($mime, ['image/png', 'image/jpeg', 'image/webp'], true) || ($ext !== '' && !in_array($ext, ['png', 'jpg', 'jpeg', 'webp'], true))) {
-            $fail('Only PNG, JPEG and WebP images are allowed.');
+            return [null, 'Only PNG, JPEG and WebP images are allowed.'];
         }
         $img = @imagecreatefromstring((string) file_get_contents($f['tmp_name']));
         if (!$img) {
-            $fail('The image could not be read.');
+            return [null, 'The image could not be read.'];
         }
         if (imagesx($img) > 2400) {
             $img = imagescale($img, 2400);
         }
+        return [$img, null];
+    }
+
+    /** Stores the image for the trade (replacing any previous one). */
+    private function saveShot(array $t, \GdImage $img): void
+    {
         if (!is_dir($this->dir())) {
             mkdir($this->dir(), 0750, true);
         }
@@ -207,7 +201,60 @@ final class TradeController extends TerminalController
         imagedestroy($img);
         $this->removeShot($t);
         Database::update('trades', ['screenshot_path' => $name], 'id = :id AND user_id = :u', ['id' => $t['id'], 'u' => $this->uid]);
+    }
+
+    /** Screenshot chosen in the log/edit form (optional). Returns a message when it could not be saved. */
+    private function formShot(int $tradeId): ?string
+    {
+        $f = $_FILES['screenshot'] ?? null;
+        if (!$f || ($f['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+            return null;
+        }
+        [$img, $err] = self::readImage($f);
+        if ($err) {
+            return $err;
+        }
+        $this->saveShot(Ledger::trade($this->uid, $tradeId), $img);
+        return null;
+    }
+
+    public function uploadScreenshot(Request $req): never
+    {
+        $t = $this->find($req);
+        $this->requireWritable(Ledger::account($this->uid, (int) $t['account_id']));
+        [$img, $err] = self::readImage($_FILES['screenshot'] ?? null);
+        if ($err) {
+            Response::json(['ok' => false, 'error' => $err], 422);
+        }
+        $this->saveShot($t, $img);
         Response::json(['ok' => true, 'message' => 'Screenshot attached.']);
+    }
+
+    /**
+     * Reads a chart screenshot with the configured AI provider and returns the values it can see (instrument,
+     * side, entry, stop, target). Nothing is stored; the member checks the filled form before saving.
+     */
+    public function readChart(Request $req): never
+    {
+        if (!AiCoach::configured()) {
+            Response::json(['ok' => false, 'error' => 'Automatic chart reading is not set up on this site — please type the values.'], 503);
+        }
+        [$img, $err] = self::readImage($_FILES['screenshot'] ?? null);
+        if ($err) {
+            Response::json(['ok' => false, 'error' => $err], 422);
+        }
+        if (imagesx($img) > 1600) {
+            $img = imagescale($img, 1600);
+        }
+        ob_start();
+        imagejpeg($img, null, 85);
+        $jpeg = (string) ob_get_clean();
+        imagedestroy($img);
+        $r = AiCoach::readChart($jpeg, 'image/jpeg', array_keys(Instruments::all()));
+        if (!$r['ok']) {
+            Response::json(['ok' => false, 'error' => $r['error']], 502);
+        }
+        Response::json(['ok' => true, 'fields' => $r['fields'], 'note' => $r['note']]);
     }
 
     public function deleteScreenshot(Request $req): never

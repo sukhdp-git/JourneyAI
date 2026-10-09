@@ -49,6 +49,8 @@
       el('path', { d: d + ' L' + X(pts.length - 1).toFixed(1) + ' ' + by + ' L' + X(0).toFixed(1) + ' ' + by + ' Z', class: 'area' + (root.dataset.area === 'neg' ? ' neg' : '') }, svg);
     }
     el('path', { d: d, class: 'line', style: root.dataset.area === 'neg' ? 'stroke: var(--bar-neg)' : '' }, svg);
+    // Capital events (deposits / withdrawals) as dots on the curve.
+    pts.forEach(function (p, i) { if (p.mark) el('circle', { cx: X(i), cy: Y(p.y), r: 5.5, class: 'mark ' + p.mark }, svg); });
     var nx = Math.min(pts.length, Math.max(2, Math.floor((w - pl) / 110)));
     for (var k = 0; k < nx; k++) { var i = Math.round(k * (pts.length - 1) / Math.max(1, nx - 1)); var lx = el('text', { x: X(i), y: h - 6, 'text-anchor': k === 0 ? 'start' : k === nx - 1 ? 'end' : 'middle', class: 'axis-t' }, svg); lx.textContent = pts[i].x; }
     var cross = el('line', { y1: pt, y2: h - pb, class: 'cross', visibility: 'hidden' }, svg), dot = el('circle', { r: 4.5, class: 'dot', visibility: 'hidden' }, svg);

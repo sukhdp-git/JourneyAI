@@ -57,17 +57,17 @@ All URLs are clean and never end in `.php`.
 
 | Page | What it does |
 |---|---|
-| **Home Hub** | Trading-psychology quotes, a clock in the member's chosen timezone with the London / New York / Tokyo session indicator (daylight saving handled), daily & weekly risk-limit status, 9-step checklist, quick trade command (`/` hotkey). |
-| **Dashboard** | Date presets, KPIs (net P&L, win rate, profit factor, payoff, expectancy…), equity, cumulative P&L and drawdown charts, breakdowns by weekday, session, instrument and strategy. |
-| **Calendar** | Monthly P&L calendar with weekly summaries and day drill-down. |
-| **Trade Log** | Compact table (cards on mobile), voice/sentence trade entry, filters, add/edit/delete, CSV export, private screenshots, **Share** image per trade (green/red, dark/light), runner audit. |
-| **Risk Calculator** | Position size from % or fixed risk per account, and P&L / R:R for any instrument. |
+| **Home Hub** | “Hi [name],” greeting, trading-psychology quotes, a clock in the member's chosen timezone with the London / New York / Tokyo session indicator (daylight saving handled), daily & weekly risk-limit status, 9-step checklist, quick trade command (`/` hotkey). |
+| **Dashboard** | Date presets, four headline numbers plus a compact stats strip, account-equity curve that includes deposits/withdrawals (shown as green/red dots), cumulative P&L and drawdown charts, breakdowns by weekday, session, instrument and strategy. |
+| **Calendar** | Highlighted monthly P&L box (green/red days, best/worst day), daily P&L calendar with weekly summaries, day drill-down and the daily **flex card**. |
+| **Trade Log** | Compact table (cards on mobile) and a **Screenshot journal** gallery. The log form defaults to the current date/time, has **guided voice entry** (answer one question at a time — “entry 4000”, “stop 3990”… — and it moves to the next box automatically), and a chart screenshot that is saved with the trade; when AI is configured, **Read chart** fills instrument, side, entry, stop and target from a long/short position tool on the screenshot. Filters, CSV export, **Share** image per trade, runner audit. |
+| **Risk Calculator** | Position size from % or fixed risk per account, and P&L / R:R for any instrument — both with **voice mode**. |
 | **Strategy Analysis** | Personal strategy builder (style, edge/thesis, reorderable rules, sub-setups), scoreboard, win-rate rings, win rate by Asian/London/New York session. |
-| **Edge Matrix** | Last month audit (positive edges and negative traps), best trading window with cautious A+ setup detection, anti-window detector, Ruin Probability Radar (2,000-path simulation at 0.5–4% risk), discipline-leak counter with actual vs rule-compliant curve, tilt rule. |
+| **Edge Matrix** | Colour-coded cards, each with a **?** help explanation: compact last-month audit (keep doing / cut out), best trading window with cautious A+ detection, anti-window, **Blow-up probability radar** (last 30 days of win rate, reward:risk, drawdown and position size → chance the account falls by −5/−10/−20/−50% in the next 14 days, with what-if risk buttons), **20% runner audit** (what 20% left open for 2 more hours with a breakeven stop would have done; needs market data, simulated for DEMO DATA), discipline leak and tilt rule. |
 | **Daily Notepad** | “How was your trading day?”, rules followed (yes/partially/no), emotional state, own discipline rating plus a separate system discipline score, key lessons library; voice dictation in English, Russian, Chinese and Portuguese. |
 | **AI Coach** | Automatic strengths & critical-leaks summary, weekly/monthly reviews (with optional AI narrative), and chat with voice input, grounded in the member's trades, journals, lessons and limits (Anthropic Claude or Google Gemini). |
-| **Accounts** | Manual demo, live equity, prop-firm and custom accounts; deposits, withdrawals, equity adjustments and capital history; **CSV statement import**. |
-| **Settings / Plan & Billing** | Profile, timezone, language, theme (4 themes), risk rules, daily/weekly loss limits (% or fixed), A+ risk tier, tilt rule, password, **Export my data** (JSON/CSV), **Delete account**, plan status and payment history. |
+| **Accounts** | Manual demo, live equity, prop-firm and custom accounts, each with **its own daily and weekly loss limit** (% or amount); deposits, withdrawals, equity adjustments and capital history; **CSV statement import**. |
+| **Settings / Plan & Billing** | Profile, timezone, language, theme (Obsidian Pro default + 4 more), risk rules, A+ risk tier, tilt rule, password, **Export my data** (JSON/CSV), **Delete account**, plan status and payment history. |
 
 **Free vs paid.** Every member can create unlimited **demo** accounts and load the 42-trade demo journal (marked DEMO DATA, kept in its own account). **Live** accounts can be created and written to only while a paid plan is active; when a plan ends, live data stays visible but read-only.
 
@@ -176,7 +176,7 @@ You can install in one of two ways.
 ### 4.3a Updating an existing installation
 1. Back up the database (phpMyAdmin → Export) and `config/config.php`.
 2. Upload the new ZIP and extract it over the existing files (your `config/config.php`, `uploads/` and `storage/` are not in the ZIP and are kept).
-3. Open the website once. The site applies `database-updated.sql` automatically (it only adds columns, tables, instruments and the learning playbook — nothing is deleted). If you prefer, import **database-updated.sql** yourself in phpMyAdmin → Import first; running it twice is harmless.
+3. Open the website once. The site applies `database-updated.sql` automatically (it only adds columns, tables and rows — nothing is deleted; schema version 4 also copies each member's old global loss limits onto each of their accounts and switches members on the old Dark Terminal / Clean Light themes to the new Obsidian Pro theme, which they can change back from the user menu). If you prefer, import **database-updated.sql** yourself in phpMyAdmin → Import first; running it twice is harmless.
 
 ### 4.4 Folder permissions
 On cPanel the defaults are usually right: folders `755`, files `644`.
@@ -369,6 +369,12 @@ Use **Test connection** after saving. Plans are activated only after a verified 
 - **Members → Instruments** holds every instrument's contract size, tick size, pip/point size, price decimals, minimum lot, lot step and aliases (45 metals, forex, indices, commodities and crypto instruments are pre-loaded). Edit them to match your broker; all P&L, R and lot-size maths reads from this table.
 - *Terminal → Risk Calculator* has two modes: **Trade P&L / R** (P&L and risk-to-reward for any entry, stop and exit/take profit) and **Risk-based lot size** (pick an account, % risk or a fixed amount → recommended lots, rounded down to the lot step). Instruments quoted in another currency (e.g. GER40 in a USD account) ask for a conversion rate — journzey.ai does not fetch live prices.
 - `php tests/calculations.php` (SSH/terminal only) runs the deterministic calculation and voice-parsing checks.
+
+### Customer support email
+Set **Control Panel → Settings → Contact details → Customer support email**. It appears as “Customer support” on the contact page, in the footer and as **Help & support** in the member terminal's user menu. Nothing is shown while it is empty.
+
+### Daily flex card & “Verified by journzey.ai”
+Members can create a shareable card for any trading day (Home, Calendar day view, Daily Notepad). The QR code on the card opens `/verify/{code}`, which confirms the card was generated from that member's journal and shows the same figures (no balances or account names). The page states clearly that trades are recorded by the trader and not confirmed with a broker.
 
 ### Contact messages
 **Members → Contact messages** lists messages from `/contact` with the statuses New, Read, Replied and Archived.

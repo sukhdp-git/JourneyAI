@@ -6,7 +6,7 @@ namespace App\Trading;
 use App\Core\Database;
 
 /**
- * Daily and weekly loss limits for the active account, configured as a fixed amount or as a % of the
+ * Daily and weekly loss limits — set separately on each trading account — configured as a fixed amount or as a % of the
  * account capital at the start of the day/week. Journal-level warnings only — nothing here can block
  * orders at a broker.
  */
@@ -23,8 +23,8 @@ final class RiskLimits
             $net = round(array_sum(array_map(fn ($t) => (float) $t['pnl'], $trades)), 2);
             $loss = max(0.0, -$net);
             $base = (float) $balance['equity'] - $net;
-            $value = $m[$col] ?? null;
-            $type = ($m[$typeCol] ?? 'amount') === 'percent' ? 'percent' : 'amount';
+            $value = $acc[$col] ?? null;
+            $type = ($acc[$typeCol] ?? 'amount') === 'percent' ? 'percent' : 'amount';
             $limit = null;
             if ($value !== null && $value !== '' && (float) $value > 0) {
                 $limit = $type === 'percent' ? round($base * (float) $value / 100, 2) : round((float) $value, 2);

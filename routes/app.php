@@ -7,6 +7,7 @@ use App\Controllers\Terminal\AccountsController;
 use App\Controllers\Terminal\CalculatorController;
 use App\Controllers\Terminal\CoachController;
 use App\Controllers\Terminal\EdgeController;
+use App\Controllers\Terminal\FlexController;
 use App\Controllers\Terminal\HomeController as Hub;
 use App\Controllers\Terminal\InsightsController;
 use App\Controllers\Terminal\NotepadController;
@@ -47,6 +48,7 @@ $router->get('/terminal/trades', [TradeController::class, 'index']);
 $router->get('/terminal/trades/export', [TradeController::class, 'export']);
 $router->get('/terminal/trades/new', [TradeController::class, 'create']);
 $router->post('/terminal/trades', [TradeController::class, 'store']);
+$router->post('/terminal/trades/read-chart', [TradeController::class, 'readChart']);
 $router->get('/terminal/trades/{id}', [TradeController::class, 'show']);
 $router->get('/terminal/trades/{id}/edit', [TradeController::class, 'edit']);
 $router->post('/terminal/trades/{id}', [TradeController::class, 'update']);
@@ -65,6 +67,8 @@ $router->post('/terminal/strategies/{id}', [StrategyController::class, 'update']
 $router->post('/terminal/strategies/{id}/delete', [StrategyController::class, 'delete']);
 
 $router->get('/terminal/edge', [EdgeController::class, 'index']);
+$router->post('/terminal/flex', [FlexController::class, 'day']);
+$router->post('/terminal/edge/runner', [EdgeController::class, 'runner']);
 
 $router->get('/terminal/notepad', [NotepadController::class, 'index']);
 $router->post('/terminal/notepad', [NotepadController::class, 'save']);

@@ -19,6 +19,7 @@ return [
     ]],
     'contact-details' => ['Contact details', 'settings.general', 'phone', 'Shown in the footer, contact page and structured data. Leave empty anything you do not want to publish.', [
         ['name' => 'contact_email', 'label' => 'Email', 'type' => 'email', 'rules' => 'email|max:190', 'width' => 'half'],
+        ['name' => 'support_email', 'label' => 'Customer support email', 'type' => 'email', 'rules' => 'email|max:190', 'width' => 'half', 'help' => 'Shown as “Customer support” on the contact page, in the footer and in the member terminal (Help & support).'],
         ['name' => 'contact_phone', 'label' => 'Phone', 'type' => 'text', 'rules' => 'phone|max:40', 'width' => 'half'],
         ['name' => 'contact_whatsapp', 'label' => 'WhatsApp number', 'type' => 'text', 'rules' => 'phone|max:40', 'width' => 'half', 'help' => 'International format, e.g. +44 7700 900000'],
         ['name' => 'notify_email', 'label' => 'Send form notifications to', 'type' => 'email', 'rules' => 'email|max:190', 'width' => 'half', 'help' => 'Defaults to the contact email.'],

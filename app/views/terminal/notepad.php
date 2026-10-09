@@ -16,7 +16,7 @@ $emoLabel = fn ($k) => Domain::JOURNAL_EMOTIONS[$k] ?? ucfirst(strtolower((strin
 <div class="grid g-main">
   <form method="post" action="<?= e(url('/terminal/notepad')) ?>" class="panel stack"><?= csrf_field() ?>
     <input type="hidden" name="journal_date" value="<?= e($date) ?>">
-    <div class="panel-head"><h2><?= e($d->format('l j F Y')) ?></h2><?= (int) $acc['has_demo_data'] ? '<span class="mode demo-data">DEMO DATA</span>' : '' ?></div>
+    <div class="panel-head"><h2><?= e($d->format('l j F Y')) ?></h2><span class="head-actions"><?= (int) $acc['has_demo_data'] ? '<span class="mode demo-data">DEMO DATA</span>' : '' ?><?php if ($daySum['trades']): ?><button type="button" class="tm-btn tm-btn-sm flex-btn" data-flex-day="<?= e($date) ?>"><?= icon('share', 'icon icon-sm') ?> Flex card</button><?php endif; ?></span></div>
 
     <div class="f big-q"><label for="n-r">How was your trading day?</label>
       <textarea id="n-r" name="reflection" rows="7" data-draft-key="<?= e($date . '-' . $acc['id']) ?>" placeholder="e.g. High-conviction day. I waited patiently for my setup and only entered after confirmation. The trade had clean invalidation and strong risk-to-reward."><?= e($v('reflection')) ?></textarea>

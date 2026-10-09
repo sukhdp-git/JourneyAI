@@ -43,7 +43,16 @@ final class AccountsController extends TerminalController
     private function input(Request $req): array
     {
         $cap = $req->post('starting_capital');
+        $limit = function (string $k, string $typeKey) use ($req): array {
+            $type = $req->post($typeKey) === 'percent' ? 'percent' : 'amount';
+            $v = trim((string) $req->post($k, ''));
+            $ok = is_numeric($v) && (float) $v > 0 && (float) $v <= ($type === 'percent' ? 100 : 1e12);
+            return [$ok ? round((float) $v, 2) : null, $type];
+        };
+        [$dl, $dt] = $limit('max_daily_loss', 'daily_limit_type');
+        [$wl, $wt] = $limit('max_weekly_loss', 'weekly_limit_type');
         return [
+            'max_daily_loss' => $dl, 'daily_limit_type' => $dt, 'max_weekly_loss' => $wl, 'weekly_limit_type' => $wt,
             'name' => mb_substr(trim((string) $req->post('name', '')), 0, 80),
             'broker_name' => mb_substr(trim((string) $req->post('broker_name', '')), 0, 80) ?: null,
             'account_type' => isset(Domain::ACCOUNT_TYPES[$req->post('account_type')]) ? $req->post('account_type') : 'PERSONAL',

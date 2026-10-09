@@ -4,6 +4,9 @@ declare(strict_types=1);
 namespace App\Controllers\Terminal;
 
 use App\Core\Request;
+use App\Core\Response;
+use App\Trading\MarketData;
+use App\Trading\Runner;
 use App\Trading\Analytics;
 use App\Trading\Edge;
 use App\Trading\Ledger;
@@ -14,7 +17,8 @@ use App\Trading\Ledger;
  */
 final class EdgeController extends TerminalController
 {
-    public const THRESHOLDS = ['5' => '5% (prop daily limit)', '10' => '10% (prop max loss)', '20' => '20%', '50' => '50% (ruin)'];
+    /** "Blown" = the account falls this far from its peak. */
+    public const THRESHOLDS = ['5' => '−5% (prop daily limit)', '10' => '−10% (prop max loss)', '20' => '−20%', '50' => '−50% (account ruined)'];
 
     public function index(Request $req): never
     {
@@ -40,7 +44,9 @@ final class EdgeController extends TerminalController
             $month = $period($last->format('Y-m-01'), $last->format('Y-m-t'));
             $leakLabel = 'in ' . $last->format('F Y');
         }
-        $th = array_key_exists((string) $req->query('dd'), self::THRESHOLDS) ? (string) $req->query('dd') : '10';
+        $defaultTh = str_starts_with((string) $this->acc['account_type'], 'PROP') ? '10' : '20';
+        $th = array_key_exists((string) $req->query('dd'), self::THRESHOLDS) ? (string) $req->query('dd') : $defaultTh;
+        $last30 = array_values(array_filter($all, fn ($t) => strtotime($t['executed_at'] . ' UTC') >= time() - 30 * 86400));
         $best = Edge::bestWindow($all);
         $balance = Ledger::balance($this->acc);
         $this->render('edge', [
@@ -48,7 +54,30 @@ final class EdgeController extends TerminalController
             'best' => $best, 'aplus' => Edge::aPlus($best), 'dims' => Edge::bestDimensions($all, $this->tz), 'anti' => Edge::antiWindow($all),
             'radar' => Edge::ruinRadar($all, (float) $balance['equity'], (float) $this->m['default_risk_pct'], (int) $th / 100), 'th' => $th,
             'leak' => Edge::leak($month, $this->tz), 'leakLabel' => $leakLabel,
+            'last30' => Analytics::summarize($last30),
+            'runner' => Runner::summary($this->uid, (int) $this->acc['id']), 'runnerPending' => Runner::pendingCount($this->uid, (int) $this->acc['id']),
+            'runnerReady' => (int) $this->acc['has_demo_data'] === 1 || MarketData::configured(),
             'tiltRule' => [(int) $this->m['tilt_loss_count'], (int) $this->m['tilt_window_minutes'], (int) $this->m['tilt_cooldown_minutes']],
         ], 'Edge Matrix', 'edge');
+    }
+
+    /** Audits the next batch of eligible trades for the 20% runner analysis (JSON). */
+    public function runner(Request $req): never
+    {
+        $demo = (int) $this->acc['has_demo_data'] === 1;
+        if (!$demo && !MarketData::configured()) {
+            Response::json(['ok' => false, 'error' => 'The runner audit needs market data. The site owner can add a Twelve Data key in Control Panel → Integrations.'], 503);
+        }
+        $done = 0;
+        $failed = null;
+        foreach (Runner::pending($this->uid, (int) $this->acc['id']) as $t) {
+            $r = Runner::audit($t, $demo);
+            if ($r['status'] === 'ok') {
+                $done++;
+            } else {
+                $failed = $r['message'];
+            }
+        }
+        Response::json(['ok' => $done > 0 || $failed === null, 'done' => $done, 'remaining' => Runner::pendingCount($this->uid, (int) $this->acc['id']), 'error' => $done === 0 ? $failed : null]);
     }
 }

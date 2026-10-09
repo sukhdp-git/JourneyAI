@@ -9,6 +9,7 @@ use App\Controllers\PageController;
 use App\Controllers\SeoController;
 use App\Controllers\ServiceController;
 use App\Controllers\SetupController;
+use App\Controllers\VerifyController;
 
 $router->get('/setup', [SetupController::class, 'show']);
 $router->post('/setup', [SetupController::class, 'install']);
@@ -30,6 +31,8 @@ $router->get('/blog/{slug}', [BlogController::class, 'show']);
 
 $router->get('/contact', [FormController::class, 'contact']);
 $router->post('/contact', [FormController::class, 'contactSubmit']);
+
+$router->get('/verify/{code}', [VerifyController::class, 'show']);
 
 $router->get('/sitemap.xml', [SeoController::class, 'sitemap']);
 $router->get('/robots.txt', [SeoController::class, 'robots']);

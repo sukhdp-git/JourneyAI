@@ -55,7 +55,7 @@ final class TradeMath
     }
 
     /** @return array{pnl:?string, rr:?string, risk:?string} */
-    public static function compute(string $symbol, string $side, float $entry, ?float $exit, ?float $stop, float $lots, float $fees, string $accountCurrency): array
+    public static function compute(string $symbol, string $side, float $entry, ?float $exit, ?float $stop, float $lots, float $fees, string $accountCurrency, ?float $rate = null): array
     {
         $inst = Instruments::get($symbol);
         $out = ['pnl' => null, 'rr' => null, 'risk' => null];
@@ -64,7 +64,7 @@ final class TradeMath
         }
         if ($exit !== null) {
             $gross = ($exit - $entry) * self::dir($side) * $lots * $inst['contract'];
-            $conv = self::toAccount($inst, $gross, $exit, $accountCurrency);
+            $conv = self::toAccount($inst, $gross, $exit, $accountCurrency, $rate);
             if ($conv !== null) {
                 $out['pnl'] = self::money($conv - $fees);
             }
@@ -75,7 +75,7 @@ final class TradeMath
                 $out['rr'] = $r === null ? null : number_format($r, 4, '.', '');
             }
             $riskQ = abs($entry - $stop) * $lots * $inst['contract'];
-            $riskA = self::toAccount($inst, $riskQ, $stop, $accountCurrency);
+            $riskA = self::toAccount($inst, $riskQ, $stop, $accountCurrency, $rate);
             if ($riskA !== null && $riskA > 0) {
                 $out['risk'] = self::money($riskA);
             }

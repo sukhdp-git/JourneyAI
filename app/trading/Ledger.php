@@ -106,6 +106,9 @@ final class Ledger
             $like = '%' . addcslashes((string) $f['q'], '%_\\') . '%';
             $p += ['q1' => $like, 'q2' => $like, 'q3' => $like];
         }
+        if (($f['view'] ?? '') === 'shots') {
+            $w[] = 't.screenshot_path IS NOT NULL';
+        }
         foreach (['symbol' => 't.symbol', 'side' => 't.side', 'session' => 't.session', 'emotion' => 't.emotion', 'mistake' => 't.mistake_tag'] as $k => $col) {
             if (!empty($f[$k])) {
                 $w[] = "$col = :f_$k";
@@ -213,10 +216,12 @@ final class Ledger
         if ($e) {
             return [$e, []];
         }
-        $calc = TradeMath::compute($sym, $side, $entry, $exit, $stop, $lots, $fees, $acc['currency']);
+        $rate = is_numeric($in['rate'] ?? null) && (float) $in['rate'] > 0 ? (float) $in['rate'] : null;
+        $calc = TradeMath::compute($sym, $side, $entry, $exit, $stop, $lots, $fees, $acc['currency'], $rate);
         $pnl = $override ? TradeMath::money($pnlIn) : $calc['pnl'];
         if ($exit !== null && $pnl === null) {
-            return [['pnl' => 'This instrument is not quoted in ' . $acc['currency'] . '. Enter the P&L reported by your broker.'], []];
+            $q = Instruments::get($sym)['quote'] ?? '';
+            return [['rate' => $sym . ' is priced in ' . $q . '. Enter the ' . $q . ' → ' . $acc['currency'] . ' conversion rate so the P&L can be calculated.'], []];
         }
         $inst = Instruments::get($sym);
         return [[], [
@@ -255,6 +260,10 @@ final class Ledger
                     'pnl' => $calc['pnl'], 'rr' => $calc['rr'], 'risk_amount' => $calc['risk'], 'setup_tag' => $t['strategy'], 'session' => Sessions::classify($t['executed_at']),
                     'emotion' => $t['emotion'], 'mistake_tag' => $t['mistake'], 'rules_followed' => $t['rules'], 'notes' => $t['notes'], 'source' => 'DEMO',
                 ]);
+            }
+            Database::delete('capital_transactions', "account_id = :a AND user_id = :u AND note LIKE '[DEMO DATA]%'", ['a' => $accId, 'u' => $uid]);
+            foreach ([[38, 'DEPOSIT', '2000.00', '[DEMO DATA] Top-up deposit'], [12, 'WITHDRAWAL', '1500.00', '[DEMO DATA] Profit withdrawal']] as [$daysAgo, $type, $amt, $note]) {
+                Database::insert('capital_transactions', ['user_id' => $uid, 'account_id' => $accId, 'type' => $type, 'amount' => $amt, 'note' => $note, 'occurred_at' => gmdate('Y-m-d 06:00:00', time() - $daysAgo * 86400)]);
             }
             Database::delete('journal_entries', 'user_id = :u AND is_demo = 1', ['u' => $uid]);
             foreach (DemoData::JOURNALS as [$date, $comp, $emo, $disc, $refl, $lesson]) {

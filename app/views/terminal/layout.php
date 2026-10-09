@@ -3,7 +3,7 @@
 use App\Core\Database;
 use App\Trading\Domain;
 
-$theme = isset(Domain::THEMES[$m['theme']]) ? $m['theme'] : 'dark-terminal';
+$theme = isset(Domain::THEMES[$m['theme']]) ? $m['theme'] : Domain::DEFAULT_THEME;
 $links = [
     ['home', '/terminal', 'nav.home', 'home'], ['dashboard', '/terminal/dashboard', 'nav.dashboard', 'dashboard'], ['calendar', '/terminal/calendar', 'nav.calendar', 'calendar'],
     ['trades', '/terminal/trades', 'nav.trades', 'list'], ['calculator', '/terminal/calculator', 'nav.calculator', 'scale'], ['strategies', '/terminal/strategies', 'nav.strategies', 'target'], ['edge', '/terminal/edge', 'nav.edge', 'grid'],
@@ -73,6 +73,8 @@ $initials = mb_strtoupper(mb_substr($m['name'], 0, 1));
         <a role="menuitem" href="<?= e(url('/terminal/settings')) ?>"><?= icon('user', 'icon icon-sm') ?> Account settings</a>
         <a role="menuitem" href="<?= e(url('/terminal/billing')) ?>"><?= icon('star', 'icon icon-sm') ?> <?= e($m['ent']['plan_name']) ?></a>
         <a role="menuitem" href="<?= e(url('/')) ?>"><?= icon('globe', 'icon icon-sm') ?> Website</a>
+        <?php $supportMail = setting('support_email') ?: setting('contact_email'); ?>
+        <a role="menuitem" href="<?= e($supportMail ? 'mailto:' . $supportMail . '?subject=' . rawurlencode('Support request — ' . $m['email']) : url('/contact')) ?>"><?= icon('help', 'icon icon-sm') ?> Help &amp; support</a>
         <form method="post" action="<?= e(url('/terminal/theme')) ?>" style="padding:6px 10px"><?= csrf_field() ?><label class="small muted" for="tm-theme">Theme</label>
           <select id="tm-theme" name="theme" data-autosubmit style="margin-top:4px"><?php foreach (Domain::THEMES as $k => $l): ?><option value="<?= e($k) ?>"<?= $theme === $k ? ' selected' : '' ?>><?= e($l) ?></option><?php endforeach; ?></select></form>
         <form method="post" action="<?= e(url('/logout')) ?>"><?= csrf_field() ?><button role="menuitem" type="submit"><?= icon('logout', 'icon icon-sm') ?> <?= e(t('nav.signout')) ?></button></form>
@@ -116,9 +118,11 @@ $initials = mb_strtoupper(mb_substr($m['name'], 0, 1));
 </div>
 <?= App\Core\View::partial('terminal/partials/equity-modal', ['acc' => $acc, 'balance' => $balance, 'history' => $capitalHistory]) ?>
 <?= App\Core\View::partial('terminal/partials/share-modal') ?>
+<?= App\Core\View::partial('terminal/partials/flex-modal') ?>
 <div class="tm-toasts" aria-live="polite" data-toasts></div>
 <script src="<?= e(asset('js/charts.js')) ?>" defer></script>
 <script src="<?= e(asset('js/terminal.js')) ?>" defer></script>
+<script src="<?= e(asset('js/vendor/qrcode.js')) ?>" defer></script>
 <script src="<?= e(asset('js/tools.js')) ?>" defer></script>
 </body>
 </html>

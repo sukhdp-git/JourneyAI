@@ -2,13 +2,23 @@
 use App\Trading\Domain;
 $ent = $m['ent'];
 $sel = fn ($a, $b) => (string) $a === (string) $b ? ' selected' : '';
+$limTxt = fn ($v, $t, $c) => $v === null ? '—' : ($t === 'percent' ? rtrim(rtrim(number_format((float) $v, 2), '0'), '.') . '%' : money($v, $c));
+$limFields = function (?array $a) use ($sel): string {
+    $h = '<fieldset class="lim-fields"><legend>Loss limits for this account</legend><div class="grid-form">';
+    foreach (['daily' => 'Daily', 'weekly' => 'Weekly'] as $k => $l) {
+        $t = $a[$k . '_limit_type'] ?? 'percent';
+        $h .= '<div class="f"><label>' . $l . ' max loss</label><div class="lim-row"><input name="max_' . $k . '_loss" type="number" step="0.01" min="0" value="' . e((string) ($a['max_' . $k . '_loss'] ?? '')) . '" placeholder="' . ($k === 'daily' ? 'e.g. 2' : 'e.g. 5') . '">'
+            . '<select name="' . $k . '_limit_type" aria-label="' . $l . ' limit type"><option value="percent"' . $sel('percent', $t) . '>% of capital</option><option value="amount"' . $sel('amount', $t) . '>amount</option></select></div></div>';
+    }
+    return $h . '</div><p class="f-hint">Leave empty for no limit. The terminal warns you when this account reaches it.</p></fieldset>';
+};
 ?>
 
 
-<section class="panel" style="margin-bottom:12px">
+<section class="panel" id="limits" style="margin-bottom:12px">
   <div class="panel-head"><h2>Your accounts</h2><span class="muted small"><?= (int) $liveCount ?> / <?= $ent['live'] ? (int) $ent['max_live'] : 0 ?> live accounts on <?= e($ent['plan_name']) ?></span></div>
   <div class="table-wrap"><table class="tbl cards">
-    <thead><tr><th>Account</th><th>Mode</th><th>Broker</th><th>Type</th><th class="r">Start</th><th class="r">P&amp;L</th><th class="r">Equity</th><th class="r">Trades</th><th></th></tr></thead>
+    <thead><tr><th>Account</th><th>Mode</th><th>Broker</th><th>Type</th><th class="r">Start</th><th class="r">P&amp;L</th><th class="r">Equity</th><th class="r">Trades</th><th>Daily / weekly limit</th><th></th></tr></thead>
     <tbody>
     <?php foreach ($list as $a): ?>
       <tr<?= (int) $a['is_archived'] ? ' class="muted"' : '' ?>>
@@ -20,6 +30,7 @@ $sel = fn ($a, $b) => (string) $a === (string) $b ? ' selected' : '';
         <td data-label="P&amp;L" class="r num <?= $a['bal']['pnl'] >= 0 ? 'up' : 'down' ?>"><?= e(money($a['bal']['pnl'], $a['currency'], true)) ?></td>
         <td data-label="Equity" class="r num"><?= e(money($a['bal']['equity'], $a['currency'])) ?></td>
         <td data-label="Trades" class="r num"><?= (int) $a['trades'] ?></td>
+        <td data-label="Daily / weekly limit" class="num small"><?= e($limTxt($a['max_daily_loss'], $a['daily_limit_type'], $a['currency'])) ?> / <?= e($limTxt($a['max_weekly_loss'], $a['weekly_limit_type'], $a['currency'])) ?></td>
         <td data-label="" class="r">
           <details class="menu-details"><summary class="tm-btn tm-btn-sm">Manage</summary>
             <div class="panel stack" style="position:absolute;right:0;z-index:20;min-width:300px;text-align:left;white-space:normal">
@@ -32,6 +43,7 @@ $sel = fn ($a, $b) => (string) $a === (string) $b ? ' selected' : '';
                 <div class="f"><label>Type</label><select name="account_type"><?php foreach (Domain::ACCOUNT_TYPES as $k => $l): ?><option value="<?= e($k) ?>"<?= $sel($k, $a['account_type']) ?>><?= e($l) ?></option><?php endforeach; ?></select></div>
                 <div class="f"><label>Currency</label><select name="currency"<?= (int) $a['has_demo_data'] ? ' disabled' : '' ?>><?php foreach (Domain::CURRENCIES as $c): ?><option<?= $sel($c, $a['currency']) ?>><?= e($c) ?></option><?php endforeach; ?></select></div>
                 <div class="f"><label>Starting capital</label><input name="starting_capital" type="number" step="0.01" min="0" value="<?= e($a['starting_capital']) ?>" required></div>
+                <?= $limFields($a) ?>
                 <button class="tm-btn tm-btn-sm tm-btn-primary">Save</button>
               </form>
               <form method="post" action="<?= e(url('/terminal/accounts/' . $a['id'] . '/archive')) ?>"><?= csrf_field() ?><button class="tm-btn tm-btn-sm"><?= (int) $a['is_archived'] ? 'Restore' : 'Archive' ?></button></form>
@@ -63,6 +75,7 @@ $sel = fn ($a, $b) => (string) $a === (string) $b ? ' selected' : '';
         <div class="f"><label for="na-c">Currency</label><select id="na-c" name="currency"><?php foreach (Domain::CURRENCIES as $c): ?><option<?= $sel($c, $m['base_currency'] ?: 'USD') ?>><?= e($c) ?></option><?php endforeach; ?></select></div>
       </div>
       <div class="f"><label for="na-s">Starting capital</label><input id="na-s" name="starting_capital" type="number" step="0.01" min="0" value="10000" required></div>
+      <?= $limFields(null) ?>
       <button class="tm-btn tm-btn-primary">Create account</button>
       <?php if (!$ent['live']): ?><p class="muted small">Demo accounts are free and unlimited in features. <a href="<?= e(url('/pricing')) ?>">Upgrade</a> to journal live accounts.</p><?php endif; ?>
     </form>
@@ -75,7 +88,7 @@ $sel = fn ($a, $b) => (string) $a === (string) $b ? ' selected' : '';
       <dt>Starting capital</dt><dd class="num"><?= e(money($balance['start'], $acc['currency'])) ?></dd>
       <dt>Deposits</dt><dd class="num up"><?= e(money($dep, $acc['currency'], true)) ?></dd>
       <dt>Withdrawals</dt><dd class="num down"><?= e(money(-$wd, $acc['currency'])) ?></dd>
-      <?php if ($adj != 0.0): ?><dt>Adjustments</dt><dd class="num"><?= e(money($adj, $acc['currency'], true)) ?></dd><?php endif; ?>
+      <?php if ($adj != 0.0): ?><dt>Adjustments</dt><dd class="num <?= $adj >= 0 ? 'up' : 'down' ?>"><?= e(money($adj, $acc['currency'], true)) ?></dd><?php endif; ?>
       <dt>Closed trade P&amp;L</dt><dd class="num <?= $balance['pnl'] >= 0 ? 'up' : 'down' ?>"><?= e(money($balance['pnl'], $acc['currency'], true)) ?></dd>
       <dt><strong>Current equity</strong></dt><dd class="num strong"><?= e(money($balance['equity'], $acc['currency'])) ?></dd>
     </dl>

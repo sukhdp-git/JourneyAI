@@ -213,33 +213,45 @@ final class Edge
 
     // ------------------------------------------------------------------ Ruin Probability Radar
     /**
-     * Bootstraps the trader's recent R outcomes (7 days, widening to 30 days or the last 30 trades when the
-     * sample is small) over the next ~14 calendar days (10 trading days) at each risk level.
-     * "Ruin" = a peak-to-trough drawdown of at least $threshold. Seeded, so results are reproducible.
+     * Blow-up radar. Reads the last 30 days of closed trades (falling back to the last 30 trades when fewer than
+     * 8 have a measurable R): win rate, average reward-to-risk, drawdown and position sizing (risk % per trade).
+     * It then re-samples those actual trades — each one's % gain/loss of the account, so real position sizes are
+     * kept — over the number of trades expected in the next 14 calendar days. "Blown" = the account falls by
+     * $threshold from its peak at any point. Seeded, so the same journal always gives the same answer.
      */
     public static function ruinRadar(array $all, float $equity, float $defaultRiskPct, float $threshold = 0.10, int $paths = 2000): array
     {
         $closed = Analytics::closed($all);
-        $now = time();
-        $basis = null;
-        $sample = [];
-        foreach ([7 => 'last 7 days', 30 => 'last 30 days'] as $days => $label) {
-            $sample = array_values(array_filter($closed, fn ($t) => strtotime($t['executed_at'] . ' UTC') >= $now - $days * 86400));
-            if (count(self::rValues($sample)) >= 8) {
-                $basis = $label;
-                break;
-            }
-        }
-        if ($basis === null) {
+        $since = time() - 30 * 86400;
+        $sample = array_values(array_filter($closed, fn ($t) => strtotime($t['executed_at'] . ' UTC') >= $since));
+        $basis = 'last 30 days';
+        if (count(self::rValues($sample)) < 8) {
             $sample = array_slice($closed, -30);
-            $basis = 'your last ' . count($sample) . ' trades (not enough trades in the last 30 days)';
+            $basis = 'last ' . count($sample) . ' trades (fewer than 8 in the last 30 days)';
         }
         $rs = self::rValues($sample);
         if (count($rs) < 8) {
             return ['ok' => false, 'needed' => 8, 'have' => count($rs)];
         }
-        // Current risk per trade: median planned risk as % of today's equity, else the default setting.
-        $riskPcts = array_values(array_filter(array_map(fn ($t) => $t['risk_amount'] && $equity > 0 ? (float) $t['risk_amount'] / $equity * 100 : null, $sample)));
+        // Equity at the start of the sample (today's equity minus the sample's P&L), then each trade's % return.
+        $pnlSum = array_sum(array_map(fn ($t) => (float) $t['pnl'], $sample));
+        $startEq = max(1.0, $equity - $pnlSum);
+        $eq = $startEq;
+        $peak = $startEq;
+        $returns = $riskPcts = $dds = [];
+        $maxDd = 0.0;
+        foreach ($sample as $t) {
+            $before = max(1.0, $eq);
+            $returns[] = (float) $t['pnl'] / $before;
+            if ($t['risk_amount'] && (float) $t['risk_amount'] > 0) {
+                $riskPcts[] = (float) $t['risk_amount'] / $before * 100;
+            }
+            $eq += (float) $t['pnl'];
+            $peak = max($peak, $eq);
+            $dd = $peak > 0 ? max(0, 1 - $eq / $peak) : 0;
+            $dds[] = $dd;
+            $maxDd = max($maxDd, $dd);
+        }
         sort($riskPcts);
         $current = $riskPcts ? round($riskPcts[intdiv(count($riskPcts), 2)], 2) : $defaultRiskPct;
         $current = max(0.05, min(25, $current));
@@ -248,47 +260,57 @@ final class Edge
             $days[substr($t['executed_at'], 0, 10)] = ($days[substr($t['executed_at'], 0, 10)] ?? 0) + 1;
         }
         $perDay = count($sample) / max(1, count($days));
-        $horizon = (int) max(5, min(200, round($perDay * 10)));
-        $sim = function (float $riskPct) use ($rs, $horizon, $paths, $threshold) {
+        $horizon = (int) max(5, min(200, round($perDay * 10)));   // ~10 trading days in 14 calendar days
+        $run = function (callable $draw) use ($horizon, $paths, $threshold): array {
             mt_srand(20260707);
             $hits = 0;
-            $dds = [];
-            $n = count($rs);
+            $worst = [];
             for ($p = 0; $p < $paths; $p++) {
-                $eq = $peak = 1.0;
+                $e = $pk = 1.0;
                 $max = 0.0;
                 for ($k = 0; $k < $horizon; $k++) {
-                    $eq = max(0.0, $eq * (1 + $rs[mt_rand(0, $n - 1)] * $riskPct / 100));
-                    $peak = max($peak, $eq);
-                    $max = max($max, $peak > 0 ? 1 - $eq / $peak : 1);
+                    $e = max(0.0, $e * (1 + $draw()));
+                    $pk = max($pk, $e);
+                    $max = max($max, $pk > 0 ? 1 - $e / $pk : 1);
                 }
-                $dds[] = $max;
+                $worst[] = $max;
                 if ($max >= $threshold) {
                     $hits++;
                 }
             }
-            sort($dds);
-            return ['risk' => $riskPct, 'p' => round($hits / $paths, 4), 'median_dd' => round($dds[intdiv($paths, 2)], 4), 'p95_dd' => round($dds[(int) floor($paths * 0.95)], 4)];
+            sort($worst);
+            return ['p' => round($hits / $paths, 4), 'median_dd' => round($worst[intdiv($paths, 2)], 4), 'p95_dd' => round($worst[(int) floor($paths * 0.95)], 4)];
         };
+        $nRet = count($returns);
+        $nR = count($rs);
+        $headline = $run(fn () => $returns[mt_rand(0, $nRet - 1)]);
         $scen = [];
         foreach (array_unique(array_merge(self::RISK_SCENARIOS, [$current])) as $r) {
-            $scen[(string) $r] = $sim((float) $r);
+            $scen[(string) $r] = ['risk' => (float) $r] + $run(fn () => $rs[mt_rand(0, $nR - 1)] * (float) $r / 100);
         }
         ksort($scen, SORT_NUMERIC);
         $wins = array_filter($rs, fn ($r) => $r > 0);
         $losses = array_filter($rs, fn ($r) => $r <= 0);
+        $avgWin = $wins ? array_sum($wins) / count($wins) : 0;
+        $avgLoss = $losses ? abs(array_sum($losses) / count($losses)) : 0;
         $streak = $maxStreak = 0;
         foreach ($sample as $t) {
             $streak = (float) $t['pnl'] < 0 ? $streak + 1 : 0;
             $maxStreak = max($maxStreak, $streak);
         }
         $medDay = $days ? (function () use ($days) { $v = array_values($days); sort($v); return $v[intdiv(count($v), 2)]; })() : 0;
+        $p = $headline['p'];
         return [
             'ok' => true, 'basis' => $basis, 'threshold' => $threshold, 'paths' => $paths, 'horizon' => $horizon, 'current' => $current,
-            'current_p' => $scen[(string) $current]['p'], 'scenarios' => array_values($scen),
+            'current_p' => $p, 'median_dd' => $headline['median_dd'], 'p95_dd' => $headline['p95_dd'],
+            'level' => $p >= 0.5 ? ['Critical', 'down'] : ($p >= 0.2 ? ['High', 'down'] : ($p >= 0.05 ? ['Elevated', 'warn'] : ['Low', 'up'])),
+            'scenarios' => array_values($scen),
             'inputs' => [
-                'trades' => count($sample), 'win_rate' => count($wins) / count($rs), 'avg_win_r' => $wins ? round(array_sum($wins) / count($wins), 2) : 0,
-                'avg_loss_r' => $losses ? round(abs(array_sum($losses) / count($losses)), 2) : 0, 'per_day' => round($perDay, 1), 'max_loss_streak' => $maxStreak,
+                'trades' => count($sample), 'win_rate' => count($wins) / $nR, 'avg_win_r' => round($avgWin, 2), 'avg_loss_r' => round($avgLoss, 2),
+                'rr' => $avgLoss > 0 ? round($avgWin / $avgLoss, 2) : null,
+                'max_dd' => round($maxDd, 4), 'avg_dd' => round(array_sum($dds) / max(1, count($dds)), 4),
+                'risk_avg' => $riskPcts ? round(array_sum($riskPcts) / count($riskPcts), 2) : null, 'risk_max' => $riskPcts ? round(max($riskPcts), 2) : null,
+                'per_day' => round($perDay, 1), 'max_loss_streak' => $maxStreak,
                 'fomo' => count(array_filter($sample, fn ($t) => self::inBehaviour($t, 'FOMO'))), 'revenge' => count(array_filter($sample, fn ($t) => self::inBehaviour($t, 'REVENGE'))),
                 'overtrading' => count(array_filter($sample, fn ($t) => self::inBehaviour($t, 'OVERTRADING'))) + count(array_filter($days, fn ($c) => $medDay > 0 && $c > 2 * $medDay)),
             ],

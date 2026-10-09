@@ -25,26 +25,32 @@ $rateField = fn () => '<div class="f" data-rate-field hidden><label>Conversion r
 </div>
 
 <div class="grid g-main calc" data-calc="size">
-  <form class="panel stack" data-calc-form="size" novalidate>
+  <form class="panel stack" data-calc-form="size" novalidate data-voice-guide>
     <div class="panel-head"><h2>How much should I trade?</h2><span class="muted small">Based on how much you are willing to risk</span></div>
+    <div class="vg-bar">
+      <button type="button" class="tm-btn tm-btn-primary vg-start" data-vg-start><?= icon('mic', 'icon icon-sm') ?> <span data-vg-label>Voice mode</span></button>
+      <div class="vg-status" aria-live="polite"><strong data-vg-prompt>Speak instead of typing.</strong><span class="muted small" data-vg-heard>e.g. “gold”, “buy”, “entry 2645”, “stop 2639” — or all at once.</span></div>
+      <button type="button" class="tm-btn tm-btn-sm" data-vg-stop hidden>Stop</button>
+    </div>
+    <p class="muted small" data-vg-unsupported hidden>Voice needs Chrome, Edge or Safari with microphone access.</p>
     <div class="f"><label for="cs-acc">Account</label>
       <select id="cs-acc" name="account_id" data-calc-account>
         <?php foreach ($calcAccounts as $a): ?><option value="<?= $a['id'] ?>" data-equity="<?= e((string) $a['equity']) ?>" data-currency="<?= e($a['currency']) ?>"<?= $a['id'] === (int) $acc['id'] ? ' selected' : '' ?>><?= e($a['name'] . ' — ' . ($a['demo'] ? 'Demo account' : (Domain::ACCOUNT_TYPES[$a['type']] ?? $a['type'])) . ' · ' . money($a['equity'], $a['currency'])) ?></option><?php endforeach; ?>
       </select>
       <span class="f-hint">Capital is what you entered for the account plus deposits/withdrawals and closed P&amp;L. <a href="<?= e(url('/terminal/accounts')) ?>">Manage accounts</a></span>
     </div>
-    <div class="f"><label for="cs-sym">Instrument</label><?= $instSelect('cs-sym') ?></div>
-    <div class="f"><span class="lbl">Direction</span><?= $sideToggle('side') ?></div>
-    <div class="f"><span class="lbl">Risk</span>
+    <div class="f" data-vg-step="symbol" data-vg-ask="Which instrument?"><label for="cs-sym">Instrument</label><?= $instSelect('cs-sym') ?></div>
+    <div class="f" data-vg-step="side" data-vg-ask="Buy or sell?"><span class="lbl">Direction</span><?= $sideToggle('side') ?></div>
+    <div class="f" data-vg-step="number" data-vg-key="risk" data-vg-ask="How much risk? Say a percent, e.g. “1 percent”."><span class="lbl">Risk</span>
       <div class="seg" role="radiogroup" aria-label="Risk type"><label><input type="radio" name="risk_mode" value="percent" checked><span>% of capital</span></label><label><input type="radio" name="risk_mode" value="fixed"><span>Fixed amount</span></label></div>
       <div class="chips" data-risk-chips="percent"><?php foreach (C::RISK_PCTS as $p): ?><button type="button" class="chip-btn<?= (float) $p === (float) $m['default_risk_pct'] ? ' on' : '' ?>" data-risk="<?= $p ?>"><?= $p ?>%</button><?php endforeach; ?><button type="button" class="chip-btn" data-risk="custom">Custom</button></div>
       <div class="chips" data-risk-chips="fixed" hidden><?php foreach (C::RISK_FIXED as $p): ?><button type="button" class="chip-btn" data-risk="<?= $p ?>"><?= e(money($p, $acc['currency'])) ?></button><?php endforeach; ?><button type="button" class="chip-btn" data-risk="custom">Custom</button></div>
       <input name="risk_value" type="number" step="any" min="0" value="<?= e((string) (float) $m['default_risk_pct']) ?>" data-risk-value aria-label="Risk value">
     </div>
     <div class="grid-form">
-      <div class="f"><label for="cs-e">Entry</label><input id="cs-e" name="entry" type="number" step="any" inputmode="decimal"></div>
-      <div class="f"><label for="cs-s">Stop loss</label><input id="cs-s" name="stop" type="number" step="any" inputmode="decimal"></div>
-      <div class="f"><label for="cs-t">Take profit</label><input id="cs-t" name="target" type="number" step="any" inputmode="decimal"></div>
+      <div class="f" data-vg-step="number" data-vg-key="entry|enter|buy at|sell at" data-vg-ask="Entry price?"><label for="cs-e">Entry</label><input id="cs-e" name="entry" type="number" step="any" inputmode="decimal"></div>
+      <div class="f" data-vg-step="number" data-vg-key="stop loss|stop|sl" data-vg-ask="Stop loss?"><label for="cs-s">Stop loss</label><input id="cs-s" name="stop" type="number" step="any" inputmode="decimal"></div>
+      <div class="f" data-vg-step="number" data-vg-key="take profit|target|tp" data-vg-ask="Take profit? Say skip if none."><label for="cs-t">Take profit</label><input id="cs-t" name="target" type="number" step="any" inputmode="decimal"></div>
     </div>
     <?= $rateField() ?>
     <input type="hidden" name="mode" value="size">
@@ -65,16 +71,22 @@ $rateField = fn () => '<div class="f" data-rate-field hidden><label>Conversion r
 </div>
 
 <div class="grid g-main calc" data-calc="pnl" hidden>
-  <form class="panel stack" data-calc-form="pnl" novalidate>
+  <form class="panel stack" data-calc-form="pnl" novalidate data-voice-guide>
     <div class="panel-head"><h2>Trade P&amp;L and risk-to-reward</h2></div>
-    <div class="f"><label for="cp-sym">Instrument</label><?= $instSelect('cp-sym') ?></div>
-    <div class="f"><span class="lbl">Direction</span><?= $sideToggle('side') ?></div>
+    <div class="vg-bar">
+      <button type="button" class="tm-btn tm-btn-primary vg-start" data-vg-start><?= icon('mic', 'icon icon-sm') ?> <span data-vg-label>Voice mode</span></button>
+      <div class="vg-status" aria-live="polite"><strong data-vg-prompt>Speak instead of typing.</strong><span class="muted small" data-vg-heard>e.g. “gold”, “buy”, “entry 2645”, “stop 2639” — or all at once.</span></div>
+      <button type="button" class="tm-btn tm-btn-sm" data-vg-stop hidden>Stop</button>
+    </div>
+    <p class="muted small" data-vg-unsupported hidden>Voice needs Chrome, Edge or Safari with microphone access.</p>
+    <div class="f" data-vg-step="symbol" data-vg-ask="Which instrument?"><label for="cp-sym">Instrument</label><?= $instSelect('cp-sym') ?></div>
+    <div class="f" data-vg-step="side" data-vg-ask="Buy or sell?"><span class="lbl">Direction</span><?= $sideToggle('side') ?></div>
     <div class="grid-form">
-      <div class="f"><label for="cp-e">Entry</label><input id="cp-e" name="entry" type="number" step="any" inputmode="decimal"></div>
-      <div class="f"><label for="cp-s">Stop loss</label><input id="cp-s" name="stop" type="number" step="any" inputmode="decimal"></div>
+      <div class="f" data-vg-step="number" data-vg-key="entry|enter" data-vg-ask="Entry price?"><label for="cp-e">Entry</label><input id="cp-e" name="entry" type="number" step="any" inputmode="decimal"></div>
+      <div class="f" data-vg-step="number" data-vg-key="stop loss|stop|sl" data-vg-ask="Stop loss?"><label for="cp-s">Stop loss</label><input id="cp-s" name="stop" type="number" step="any" inputmode="decimal"></div>
       <div class="f"><label for="cp-k">Price type</label><select id="cp-k" name="target_kind"><option value="tp">Take profit (plan)</option><option value="exit">Exit (finished trade)</option></select></div>
-      <div class="f"><label for="cp-t">Exit / take profit</label><input id="cp-t" name="target" type="number" step="any" inputmode="decimal"></div>
-      <div class="f"><label for="cp-l">Lot size</label><input id="cp-l" name="lots" type="number" step="any" min="0" value="1"></div>
+      <div class="f" data-vg-step="number" data-vg-key="take profit|target|exit|tp" data-vg-ask="Exit or take-profit price?"><label for="cp-t">Exit / take profit</label><input id="cp-t" name="target" type="number" step="any" inputmode="decimal"></div>
+      <div class="f" data-vg-step="number" data-vg-key="lots|lot size|lot" data-vg-ask="Lot size?"><label for="cp-l">Lot size</label><input id="cp-l" name="lots" type="number" step="any" min="0" value="1"></div>
       <div class="f"><label for="cp-c">Currency</label><select id="cp-c" name="currency"><?php foreach (Domain::CURRENCIES as $c): ?><option<?= $c === $acc['currency'] ? ' selected' : '' ?>><?= e($c) ?></option><?php endforeach; ?></select></div>
     </div>
     <?= $rateField() ?>

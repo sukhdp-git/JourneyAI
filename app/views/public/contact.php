@@ -1,6 +1,6 @@
 <?php
 use App\Core\View;
-$email = setting('contact_email'); $phone = setting('contact_phone'); $address = setting('contact_address'); $hours = setting('business_hours');
+$email = setting('contact_email'); $support = setting('support_email'); $phone = setting('contact_phone'); $address = setting('contact_address'); $hours = setting('business_hours');
 $wa = preg_replace('/\D/', '', setting('contact_whatsapp'));
 $map = setting('map_embed_url');
 $mapOk = $map !== '' && preg_match('#^https://(www\.)?google\.[a-z.]+/maps/embed\?#i', $map);
@@ -29,8 +29,9 @@ $mapOk = $map !== '' && preg_match('#^https://(www\.)?google\.[a-z.]+/maps/embed
       </form>
     </div>
     <aside class="contact-aside reveal">
-      <?php if ($email || $phone || $address || $hours || $wa): ?>
+      <?php if ($email || $support || $phone || $address || $hours || $wa): ?>
       <ul class="contact-cards stacked">
+        <?php if ($support): ?><li class="support-card"><?= icon('help', 'icon') ?><div><small>Customer support</small><a href="mailto:<?= e($support) ?>?subject=<?= rawurlencode('Support request') ?>"><?= e($support) ?></a><span class="muted">Questions about your account, billing or the terminal.</span></div></li><?php endif; ?>
         <?php if ($email): ?><li><?= icon('mail', 'icon') ?><div><small>Email</small><a href="mailto:<?= e($email) ?>"><?= e($email) ?></a></div></li><?php endif; ?>
         <?php if ($phone): ?><li><?= icon('phone', 'icon') ?><div><small>Phone</small><a href="tel:<?= e(preg_replace('/[^0-9+]/', '', $phone)) ?>"><?= e($phone) ?></a></div></li><?php endif; ?>
         <?php if ($wa): ?><li><?= icon('whatsapp', 'icon') ?><div><small>WhatsApp</small><a href="https://wa.me/<?= e($wa) ?>" target="_blank" rel="noopener"><?= e(setting('contact_whatsapp')) ?></a></div></li><?php endif; ?>

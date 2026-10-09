@@ -2,7 +2,14 @@
 use App\Trading\Domain;
 $cur = $acc['currency'];
 $total = 9; $doneN = count($done);
+$first = trim(explode(' ', trim((string) $m['name']))[0] ?? '') ?: 'trader';
+$hour = (int) (new DateTimeImmutable('now', new DateTimeZone($m['timezone'] ?: 'UTC')))->format('G');
+$part = $hour < 5 ? 'Late session' : ($hour < 12 ? 'Good morning' : ($hour < 17 ? 'Good afternoon' : 'Good evening'));
 ?>
+<section class="hello" aria-label="Greeting">
+  <span class="hello-wave" aria-hidden="true">👋</span>
+  <div><h2>Hi <span><?= e($first) ?></span>,</h2><p><?= e($part) ?> — trade your plan, not your emotions.</p></div>
+</section>
 <section class="quote-hero" data-quotes="<?= e(json_encode(Domain::QUOTES)) ?>" data-start="<?= (int) $quoteStart ?>" aria-label="Trading psychology">
   <?php $q = Domain::QUOTES[$quoteStart]; ?>
   <div class="quote-hero-body">
@@ -51,11 +58,11 @@ $total = 9; $doneN = count($done);
       <?php endif; ?>
     </section>
     <section class="panel">
-      <div class="panel-head"><h2>Today</h2><a class="small" href="<?= e(url('/terminal/trades')) ?>">Trade log →</a></div>
+      <div class="panel-head"><h2>Today</h2><span class="head-actions"><?php if ($todaySum['trades']): ?><button type="button" class="tm-btn tm-btn-sm flex-btn" data-flex-day="<?= e($today) ?>"><?= icon('share', 'icon icon-sm') ?> Flex card</button><?php endif; ?><a class="small" href="<?= e(url('/terminal/trades')) ?>">Trade log →</a></span></div>
       <div class="kpis" style="margin:0 0 10px">
         <div class="kpi"><small>Net P&amp;L</small><strong class="<?= $todaySum['net'] >= 0 ? 'up' : 'down' ?>"><?= e(money($todaySum['net'], $cur, true)) ?></strong></div>
         <div class="kpi"><small>Trades</small><strong><?= (int) $todaySum['trades'] ?></strong><em><?= (int) $todaySum['wins'] ?>W · <?= (int) $todaySum['losses'] ?>L</em></div>
-        <?php $D = $limits['daily']; ?><div class="kpi"><small>Daily loss budget left</small><strong class="<?= $D['limit'] === null ? '' : ($D['reached'] ? 'down' : ($D['warning'] ? 'warn' : 'up')) ?>"><?= $D['limit'] === null ? '—' : e(money($D['remaining'], $cur)) ?></strong><em><?= $D['limit'] === null ? '<a href="' . e(url('/terminal/settings#risk')) . '">Set a daily limit</a>' : 'of ' . e(money($D['limit'], $cur)) ?></em></div>
+        <?php $D = $limits['daily']; ?><div class="kpi"><small>Daily loss budget left</small><strong class="<?= $D['limit'] === null ? '' : ($D['reached'] ? 'down' : ($D['warning'] ? 'warn' : 'up')) ?>"><?= $D['limit'] === null ? '—' : e(money($D['remaining'], $cur)) ?></strong><em><?= $D['limit'] === null ? '<a href="' . e(url('/terminal/accounts#limits')) . '">Set a daily limit</a>' : 'of ' . e(money($D['limit'], $cur)) ?></em></div>
       </div>
       <?php if ($latest): ?>
       <div class="table-wrap"><table class="tbl cards"><thead><tr><th>Time</th><th>Symbol</th><th>Side</th><th class="r">P&amp;L</th><th class="r">R</th><th>Setup</th></tr></thead><tbody>
@@ -78,7 +85,7 @@ $total = 9; $doneN = count($done);
       <p class="muted small" style="margin:6px 0 0">Main cash sessions Mon–Fri in each market's local time (London &amp; New York daylight-saving handled). Holidays not modelled.</p>
     </section>
     <section class="panel">
-      <div class="panel-head"><h2><?= icon('alert', 'icon icon-sm') ?> Risk limits</h2><a class="small" href="<?= e(url('/terminal/settings#risk')) ?>">Edit</a></div>
+      <div class="panel-head"><h2><?= icon('alert', 'icon icon-sm') ?> Risk limits</h2><a class="small" href="<?= e(url('/terminal/accounts#limits')) ?>">Edit</a></div>
       <?php foreach (['daily' => 'Today', 'weekly' => 'This week'] as $lk => $ll): $L = $limits[$lk]; ?>
       <div class="limit-row">
         <div class="limit-head"><span><?= $ll ?></span><strong class="num <?= $L['net'] >= 0 ? 'up' : 'down' ?>"><?= e(money($L['net'], $cur, true)) ?></strong></div>

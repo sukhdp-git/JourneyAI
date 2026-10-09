@@ -21,14 +21,7 @@ $err = fn ($k) => field_error($k);
       <div class="f"><label for="s-rr">Default target (R)</label><input id="s-rr" name="default_target_rr" type="number" step="0.1" min="0.1" max="50" value="<?= e($v('default_target_rr')) ?>"><?= $err('default_target_rr') ?></div>
       <div class="f"><label for="s-ap">Higher-risk tier for A+ setups (%)</label><input id="s-ap" name="a_plus_risk_pct" type="number" step="0.01" min="0.01" max="100" value="<?= e($v('a_plus_risk_pct')) ?>" placeholder="optional, e.g. 1.5"><span class="f-hint">Only mentioned by the Edge Matrix when your history strongly supports a setup.</span><?= $err('a_plus_risk_pct') ?></div>
     </div>
-    <h3 style="margin-top:6px">Daily &amp; weekly loss limits</h3>
-    <p class="muted small">When realised losses reach a limit, the terminal shows a prominent warning. Percent limits use the account capital at the start of the day/week. Journal warnings only — journzey.ai cannot block orders at your broker.</p>
-    <div class="grid-form">
-      <div class="f"><label for="s-dlt">Daily limit type</label><select id="s-dlt" name="daily_limit_type"><option value="percent"<?= $v('daily_limit_type') === 'percent' ? ' selected' : '' ?>>% of account capital</option><option value="amount"<?= $v('daily_limit_type') !== 'percent' ? ' selected' : '' ?>>Fixed amount</option></select></div>
-      <div class="f"><label for="s-dl">Daily maximum loss</label><input id="s-dl" name="max_daily_loss" type="number" step="0.01" min="0" value="<?= e($v('max_daily_loss')) ?>" placeholder="e.g. 2 (%) or 500"><?= $err('max_daily_loss') ?></div>
-      <div class="f"><label for="s-wlt">Weekly limit type</label><select id="s-wlt" name="weekly_limit_type"><option value="percent"<?= $v('weekly_limit_type') === 'percent' ? ' selected' : '' ?>>% of account capital</option><option value="amount"<?= $v('weekly_limit_type') !== 'percent' ? ' selected' : '' ?>>Fixed amount</option></select></div>
-      <div class="f"><label for="s-wl">Weekly maximum loss</label><input id="s-wl" name="max_weekly_loss" type="number" step="0.01" min="0" value="<?= e($v('max_weekly_loss')) ?>" placeholder="e.g. 5 (%) or 1500"><?= $err('max_weekly_loss') ?></div>
-    </div>
+    <div class="tm-alert tm-alert-info" style="margin-top:6px"><?= icon('info', 'icon icon-sm') ?><p><strong>Daily &amp; weekly loss limits are now set per account</strong> — each prop, live or demo account can have its own rules. <a href="<?= e(url('/terminal/accounts')) ?>">Set them in Accounts →</a></p></div>
     <h2 style="margin-top:8px">Tilt Circuit Breaker</h2>
     <p class="muted small">After this many losses inside the window, the journzey terminal locks new trade entries for the cooldown (TERMINAL LOCK). It cannot block orders at your broker.</p>
     <div class="grid-form">

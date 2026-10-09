@@ -31,14 +31,14 @@ final class Journal
             $parts['Mistake tags'] = [max(0, 20 - 7 * $tagged), 20];
             $net = array_sum(array_map(fn ($t) => (float) $t['pnl'], $closed));
             $limit = null;
-            if ($m['max_daily_loss'] !== null && (float) $m['max_daily_loss'] > 0) {
-                if (($m['daily_limit_type'] ?? 'amount') === 'percent') {
+            if (($acc['max_daily_loss'] ?? null) !== null && (float) $acc['max_daily_loss'] > 0) {
+                if (($acc['daily_limit_type'] ?? 'amount') === 'percent') {
                     $fromUtc = (new \DateTimeImmutable($date . ' 00:00:00', new \DateTimeZone($tz)))->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
                     $before = (float) Database::value("SELECT COALESCE(SUM(pnl), 0) FROM trades WHERE account_id = :a AND status = 'CLOSED' AND executed_at < :d", ['a' => $acc['id'], 'd' => $fromUtc]);
                     $flows = (float) Database::value("SELECT COALESCE(SUM(CASE WHEN type = 'WITHDRAWAL' THEN -ABS(amount) WHEN type = 'DEPOSIT' THEN ABS(amount) ELSE amount END), 0) FROM capital_transactions WHERE account_id = :a AND occurred_at < :d", ['a' => $acc['id'], 'd' => $fromUtc]);
-                    $limit = ((float) $acc['starting_capital'] + $flows + $before) * (float) $m['max_daily_loss'] / 100;
+                    $limit = ((float) $acc['starting_capital'] + $flows + $before) * (float) $acc['max_daily_loss'] / 100;
                 } else {
-                    $limit = (float) $m['max_daily_loss'];
+                    $limit = (float) $acc['max_daily_loss'];
                 }
             }
             $within = $limit === null ? true : -$net < $limit;

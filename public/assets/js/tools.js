@@ -133,24 +133,138 @@
     });
   });
 
-  /* ---------------------------------------------------------------- Voice / sentence trade entry */
-  var vt = $('[data-voice-trade]');
-  if (vt) {
-    var vin = $('[data-vt-text]', vt), vprev = $('[data-vt-preview]', vt), tform = $(vt.dataset.voiceTrade);
-    var fields = { symbol: 't-symbol', side: 't-side', entry: 't-entry', stop: 't-stop', tp: 't-tp', exit: 't-exit', lots: 't-lots' };
-    $('[data-vt-parse]', vt).addEventListener('click', function () {
-      if (!vin.value.trim()) { toast('Say or type a trade first.', 'error'); return; }
-      post(base + '/quick-trade/parse', { command: vin.value, voice: '1' }).then(function (r) {
-        vprev.textContent = ''; var p = r.parsed; if (!p) { vprev.textContent = r.error || 'Could not read that sentence.'; return; }
-        var rows = [['Instrument', p.symbol], ['Direction', p.side ? (p.side === 'LONG' ? 'BUY' : 'SELL') : null], ['Entry', p.entry], ['Stop loss', p.stop], ['Take profit', p.tp], ['Exit', p.exit_spoken], ['Lot size', p.lots_spoken ? p.lots : null]];
-        var dl = txt('dl', 'vt-dl'); rows.forEach(function (r2) { dl.appendChild(txt('dt', '', r2[0])); dl.appendChild(txt('dd', r2[1] === null || r2[1] === undefined ? 'not heard' : '', r2[1] === null || r2[1] === undefined ? '—' : String(r2[1]))); });
-        vprev.appendChild(dl);
-        (p.errors || []).forEach(function (m) { vprev.appendChild(txt('p', 'err', '✕ ' + m)); });
-        if (!p.symbol && !p.entry) return;
-        var set = function (k, v) { if (v === null || v === undefined) return; var el = d.getElementById(fields[k]); if (!el) return; el.value = v; el.classList.add('filled'); setTimeout(function () { el.classList.remove('filled'); }, 2500); };
-        set('symbol', p.symbol); set('side', p.side); set('entry', p.entry); set('stop', p.stop); set('tp', p.tp); set('exit', p.exit_spoken); if (p.lots_spoken) set('lots', p.lots);
-        vprev.appendChild(txt('p', 'ok', '✓ Values copied into the form below. Check and correct them, then press “Save trade”. Nothing is saved until you confirm.'));
-        if (tform) tform.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  /* ---------------------------------------------------------------- Spoken numbers & guided voice forms */
+  var WORDNUM = { zero: 0, oh: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10 };
+  function spokenNumbers(t) {
+    t = String(t).toLowerCase().replace(/(\d),(?=\d{3}\b)/g, '$1').replace(/\b(point|dot|decimal)\b/g, ' . ');
+    t = t.replace(/\b(zero|oh|one|two|three|four|five|six|seven|eight|nine|ten)\b/g, function (w) { return WORDNUM[w]; });
+    t = t.replace(/(\d)\s*\.\s*(\d)/g, '$1.$2').replace(/(^|\s)\.\s*(\d)/g, '$10.$2');
+    t = t.replace(/(\.\d+)\s+(?=\d\b)/g, '$1');
+    return (t.match(/-?\d+(?:\.\d+)?/g) || []).map(parseFloat);
+  }
+  function flash(el) { el.classList.add('filled'); setTimeout(function () { el.classList.remove('filled'); }, 1800); }
+  function pickOption(sel, text) {
+    var words = String(text).toLowerCase().replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).filter(function (w) { return w.length > 1; }), best = null, score = 0;
+    $$('option', sel).forEach(function (o) {
+      var hay = ' ' + (o.dataset.search || (o.value + ' ' + o.textContent).toLowerCase()) + ' ', sc = 0;
+      words.forEach(function (w) { if (hay.indexOf(' ' + w + ' ') >= 0) sc += 3; else if (w.length > 3 && hay.indexOf(w) >= 0) sc += 1; });
+      var joined = words.join(''); if (joined.length > 3 && hay.indexOf(' ' + joined + ' ') >= 0) sc += 4;
+      if (sc > score) { score = sc; best = o; }
+    });
+    return best;
+  }
+  /**
+   * Guided voice: <form data-voice-guide> with fields marked data-vg-step="symbol|side|number|emotion|text|select" and
+   * data-vg-ask="question". Listens for one answer per field, fills it and moves to the next field automatically.
+   * "skip", "back" and "stop" work at any time. Several numbers in one answer are read by the server sentence parser.
+   */
+  $$('[data-voice-guide]').forEach(function (form) {
+    var steps = $$('[data-vg-step]', form), startB = $('[data-vg-start]', form), stopB = $('[data-vg-stop]', form);
+    var promptEl = $('[data-vg-prompt]', form), heardEl = $('[data-vg-heard]', form), labelEl = $('[data-vg-label]', form);
+    var idx = -1, rec = null, active = false, handled = false, retries = 0;
+    if (!startB) return;
+    if (!SR) { startB.disabled = true; var un = $('[data-vg-unsupported]', form); if (un) un.hidden = false; return; }
+    function field(st) { var k = st.dataset.vgStep; return (k === 'symbol' || k === 'emotion' || k === 'select') ? $('select', st) : k === 'side' ? ($('select', st) || $('input[type=radio]', st)) : $('input[type=number], input[type=text], textarea', st); }
+    function mark() { steps.forEach(function (st, i) { st.classList.toggle('vg-on', i === idx); }); }
+    function stopAll(msg) {
+      active = false; if (rec) { try { rec.abort(); } catch (e) {} rec = null; }
+      idx = -1; mark(); form.classList.remove('vg-live'); stopB.hidden = true; labelEl.textContent = 'Voice log';
+      promptEl.textContent = msg || 'Voice log stopped.'; heardEl.textContent = 'Check the values, then save.';
+    }
+    function next() {
+      idx++;
+      if (idx >= steps.length) { stopAll('All done ✓ — check the values and press Save.'); var sb = $('button[type=submit]', form); if (sb) sb.focus(); return; }
+      var st = steps[idx]; mark(); retries = 0;
+      promptEl.textContent = (idx + 1) + '/' + steps.length + ' · ' + st.dataset.vgAsk;
+      st.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      listen();
+    }
+    function listen() {
+      if (!active) return;
+      handled = false; rec = new SR(); rec.lang = voiceLang(); rec.interimResults = true; rec.continuous = false;
+      rec.onresult = function (ev) {
+        var res = ev.results[ev.results.length - 1], t = res[0].transcript.trim();
+        heardEl.textContent = '“' + t + '”';
+        if (res.isFinal && !handled) { handled = true; handle(t); }
+      };
+      rec.onerror = function (ev) { if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') { stopAll('Microphone access is blocked — allow it in your browser to use voice.'); } };
+      rec.onend = function () { rec = null; if (active && !handled) { if (++retries > 6) { stopAll('No answer heard — voice log paused.'); return; } listen(); } };
+      try { rec.start(); } catch (e) { setTimeout(listen, 300); }
+    }
+    function again(msg) { heardEl.textContent = msg; handled = false; setTimeout(listen, 250); }
+    function advance() { setTimeout(next, 450); }
+    function handle(t) {
+      var low = t.toLowerCase(), st = steps[idx], kind = st.dataset.vgStep, el = field(st);
+      if (/^(stop|cancel|finish|done|that's all|that is all)( listening| voice| voice log)?[.!]?$/.test(low)) { stopAll('Voice log stopped.'); return; }
+      if (/^(skip|next|none|nothing|no|not yet|open)\b/.test(low)) { advance(); return; }
+      if (/^(back|previous|go back)\b/.test(low)) { idx = Math.max(-1, idx - 2); advance(); return; }
+      var nums = spokenNumbers(low);
+      if (kind === 'number' && nums.length >= 2 && !$('#t-entry', form)) {
+        // "entry 2645 stop 2639 target 2660 risk 1 percent" — fill the matching boxes by keyword
+        var hit = 0;
+        steps.forEach(function (st2) {
+          var k2 = st2.dataset.vgKey; if (!k2) return;
+          var m2 = low.match(new RegExp('(?:' + k2 + ')\\D{0,12}?(-?\\d+(?:[.,]\\d+)?)'));
+          if (m2) { var f2 = field(st2); f2.value = parseFloat(m2[1].replace(',', '.')); f2.dispatchEvent(new Event('input', { bubbles: true })); flash(f2); hit++; }
+        });
+        if (hit) { var j2 = 0; while (j2 < steps.length && !(steps[j2].dataset.vgStep === 'number' && !field(steps[j2]).value)) j2++; idx = j2 - 1; advance(); return; }
+      }
+      if (kind === 'number' && nums.length >= 2 && $('#t-entry', form)) {
+        post(base + '/quick-trade/parse', { command: t, voice: '1' }).then(function (r) {
+          var p = r && r.parsed; if (!p) { again('Could not read that — say one value: ' + st.dataset.vgAsk); return; }
+          var put = function (id, v) { var x = d.getElementById(id); if (x && v !== null && v !== undefined) { x.value = v; flash(x); } };
+          put('t-symbol', p.symbol); put('t-side', p.side); put('t-entry', p.entry); put('t-stop', p.stop); put('t-tp', p.tp); put('t-exit', p.exit_spoken); if (p.lots_spoken) put('t-lots', p.lots);
+          // continue with the first number field that is still empty
+          var j = idx; while (j < steps.length && !(steps[j].dataset.vgStep === 'number' && !field(steps[j]).value)) j++;
+          idx = j - 1; advance();
+        });
+        return;
+      }
+      if (kind === 'symbol') { var o = pickOption(el, low); if (!o) { again('Instrument not recognised — try “gold”, “nasdaq”, “euro dollar”…'); return; } el.value = o.value; el.dispatchEvent(new Event('change', { bubbles: true })); }
+      else if (kind === 'side') {
+        var sv = /\b(buy|long|bought|bullish)\b/.test(low) ? 'LONG' : /\b(sell|short|sold|bearish)\b/.test(low) ? 'SHORT' : null;
+        if (!sv) { again('Say “buy” or “sell”.'); return; }
+        if (el.type === 'radio') { var rb = $('input[type=radio][value="' + sv + '"]', st); rb.checked = true; rb.dispatchEvent(new Event('change', { bubbles: true })); el = rb.parentNode; } else el.value = sv;
+      }
+      else if (kind === 'number') { if (!nums.length) { again('No number heard — ' + st.dataset.vgAsk); return; } el.value = nums[0]; el.dispatchEvent(new Event('input', { bubbles: true })); }
+      else if (kind === 'emotion' || kind === 'select') { var o2 = pickOption(el, low); if (!o2 || !o2.value) { again('Not recognised — say one of the options or “skip”.'); return; } el.value = o2.value; el.dispatchEvent(new Event('change', { bubbles: true })); }
+      else if (kind === 'text') { el.value = el.value ? el.value + ' ' + t : t; }
+      flash(el); advance();
+    }
+    startB.addEventListener('click', function () {
+      if (active) { stopAll(); return; }
+      active = true; idx = -1; form.classList.add('vg-live'); stopB.hidden = false; labelEl.textContent = 'Listening…'; next();
+    });
+    stopB.addEventListener('click', function () { stopAll(); });
+  });
+
+  /* ---------------------------------------------------------------- Trade form: conversion rate + screenshot reader */
+  var tf = $('#trade-form');
+  if (tf) {
+    var sym = $('#t-symbol', tf), rateWrap = $('[data-rate-wrap]', tf), cur = tf.dataset.currency;
+    var syncRate = function () {
+      var o = sym && sym.selectedOptions[0]; if (!o || !rateWrap || !cur) return;
+      var need = o.dataset.quote !== cur && o.dataset.base !== cur;
+      if (need || $('.f-err', rateWrap)) { rateWrap.hidden = false; $('[data-rate-pair]', rateWrap).textContent = '(' + o.dataset.quote + ' → ' + cur + ')'; } else rateWrap.hidden = true;
+    };
+    if (sym) { sym.addEventListener('change', syncRate); syncRate(); }
+    var shotIn = $('[data-shot-input]', tf), readB = $('[data-shot-read]', tf), prev = $('[data-shot-preview]', tf), msg = $('[data-shot-msg]', tf);
+    if (shotIn) shotIn.addEventListener('change', function () {
+      var f = shotIn.files[0]; if (!f) return;
+      if (f.size > 5 * 1024 * 1024) { msg.textContent = 'Screenshots must be 5 MB or smaller.'; shotIn.value = ''; return; }
+      prev.src = URL.createObjectURL(f); prev.hidden = false; msg.textContent = '✓ ' + f.name + ' will be saved with the trade.' + (readB ? ' Press “Read chart” to fill the form from it.' : '');
+      if (readB) readB.disabled = false;
+    });
+    if (readB) readB.addEventListener('click', function () {
+      var f = shotIn.files[0]; if (!f) return;
+      var fd = new FormData(); fd.append('screenshot', f); readB.disabled = true; readB.classList.add('busy'); msg.textContent = 'Reading the chart…';
+      post(readB.dataset.shotRead, fd).then(function (r) {
+        readB.disabled = false; readB.classList.remove('busy');
+        if (!r || !r.ok) { msg.textContent = (r && r.error) || 'Could not read the chart — please type the values.'; return; }
+        var map = { symbol: 't-symbol', side: 't-side', entry: 't-entry', stop: 't-stop', tp: 't-tp', exit: 't-exit' }, got = [];
+        Object.keys(map).forEach(function (k) { var v = r.fields[k], x = d.getElementById(map[k]); if (v !== null && v !== undefined && x) { x.value = v; flash(x); got.push(k); } });
+        if (sym) syncRate();
+        msg.textContent = got.length ? '✓ Filled ' + got.join(', ') + ' from the screenshot. Check every value before saving.' + (r.note ? ' ' + r.note : '') : 'No position tool or prices found on the screenshot — please type the values.';
       });
     });
   }
@@ -229,14 +343,105 @@
   });
   $$('[data-open-modal]').forEach(function (b) { b.addEventListener('click', function () { var m = $(b.dataset.openModal); if (m) { d.body.classList.remove('side-open'); window.tmOpen(m); } }); });
 
-  /* ---------------------------------------------------------------- Ruin radar scenarios */
+  /* ---------------------------------------------------------------- Daily flex card (+ QR "Verified by journzey") */
+  function rr(cx, x, y, w, h, r) { cx.beginPath(); cx.moveTo(x + r, y); cx.arcTo(x + w, y, x + w, y + h, r); cx.arcTo(x + w, y + h, x, y + h, r); cx.arcTo(x, y + h, x, y, r); cx.arcTo(x, y, x + w, y, r); cx.closePath(); }
+  function drawFlex(canvas, c, url, site) {
+    var cx = canvas.getContext('2d'), W = canvas.width, H = canvas.height, up = c.net >= 0, main = up ? '#34d399' : '#f87171', P = 80;
+    cx.fillStyle = '#07080d'; cx.fillRect(0, 0, W, H);
+    var g1 = cx.createRadialGradient(W * 0.15, H * 0.12, 20, W * 0.15, H * 0.12, W); g1.addColorStop(0, up ? 'rgba(52,211,153,.30)' : 'rgba(248,113,113,.30)'); g1.addColorStop(1, 'rgba(0,0,0,0)'); cx.fillStyle = g1; cx.fillRect(0, 0, W, H);
+    var g2 = cx.createRadialGradient(W, H * 0.75, 20, W, H * 0.75, W * 0.9); g2.addColorStop(0, 'rgba(124,108,255,.28)'); g2.addColorStop(1, 'rgba(0,0,0,0)'); cx.fillStyle = g2; cx.fillRect(0, 0, W, H);
+    var bar = cx.createLinearGradient(0, 0, W, 0); bar.addColorStop(0, '#7c6cff'); bar.addColorStop(1, '#22d3ee'); cx.fillStyle = bar; cx.fillRect(0, 0, W, 12);
+    // header
+    rr(cx, P, 64, 56, 56, 14); cx.fillStyle = bar; cx.fill(); cx.fillStyle = '#fff'; cx.font = '800 34px Inter, sans-serif'; cx.textAlign = 'center'; cx.fillText('j', P + 28, 104); cx.textAlign = 'left';
+    cx.fillStyle = '#f5f6fb'; cx.font = '700 36px Inter, sans-serif'; cx.fillText(site, P + 74, 104);
+    cx.fillStyle = '#9aa1ba'; cx.font = '600 28px Inter, sans-serif'; cx.textAlign = 'right'; cx.fillText(c.date_label, W - P, 104); cx.textAlign = 'left';
+    // title
+    cx.fillStyle = '#9aa1ba'; cx.font = '700 26px "JetBrains Mono", monospace'; cx.fillText('DAY RECAP' + (c.demo ? ' · DEMO DATA' : ''), P, 214);
+    cx.fillStyle = '#f5f6fb'; cx.font = '800 50px Inter, sans-serif'; cx.fillText((c.name ? c.name + '’s' : 'My') + ' trading day', P, 278);
+    // P&L
+    cx.fillStyle = '#9aa1ba'; cx.font = '700 28px Inter, sans-serif'; cx.fillText(up ? 'NET PROFIT' : 'NET LOSS', P, 372);
+    var pnl = (c.net > 0 ? '+' : c.net < 0 ? '−' : '') + curSym(c.currency) + Math.abs(c.net).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    var size = 150; cx.font = '800 ' + size + 'px "JetBrains Mono", monospace'; while (cx.measureText(pnl).width > W - P * 2 && size > 60) { size -= 6; cx.font = '800 ' + size + 'px "JetBrains Mono", monospace'; }
+    cx.shadowColor = main; cx.shadowBlur = 40; cx.fillStyle = main; cx.fillText(pnl, P, 372 + size * 0.95); cx.shadowBlur = 0;
+    // stat tiles
+    var tiles = [['TRADES', c.trades + '  (' + c.wins + 'W·' + c.losses + 'L)'], ['WIN RATE', c.win_rate === null ? '—' : Math.round(c.win_rate * 100) + '%'], ['TOTAL R', c.total_r === null ? '—' : (c.total_r > 0 ? '+' : '') + c.total_r.toFixed(2) + 'R'], ['DISCIPLINE', c.discipline === null ? '—' : c.discipline + '/10']];
+    var ty = 600, tw = (W - P * 2 - 30) / 2, th = 130;
+    tiles.forEach(function (t, i) {
+      var x = P + (i % 2) * (tw + 30), y = ty + Math.floor(i / 2) * (th + 26);
+      rr(cx, x, y, tw, th, 24); cx.fillStyle = 'rgba(255,255,255,.05)'; cx.fill(); cx.strokeStyle = 'rgba(255,255,255,.10)'; cx.lineWidth = 2; cx.stroke();
+      cx.fillStyle = '#9aa1ba'; cx.font = '700 22px "JetBrains Mono", monospace'; cx.fillText(t[0], x + 28, y + 46);
+      var col = '#f5f6fb'; if (i === 2 && c.total_r !== null) col = c.total_r >= 0 ? '#34d399' : '#f87171'; if (i === 1 && c.win_rate !== null) col = c.win_rate >= 0.5 ? '#34d399' : '#f87171';
+      cx.fillStyle = col; cx.font = '800 44px "JetBrains Mono", monospace'; cx.fillText(t[1], x + 28, y + 102);
+    });
+    // emotions + best trade + lesson
+    var y = ty + 2 * (th + 26) + 34;
+    if (c.emotions && c.emotions.length) {
+      cx.fillStyle = '#9aa1ba'; cx.font = '700 22px "JetBrains Mono", monospace'; cx.fillText('MOOD', P, y + 30);
+      var x = P + 100; cx.font = '700 28px Inter, sans-serif';
+      c.emotions.forEach(function (em) { var w = cx.measureText(em).width + 44; rr(cx, x, y, w, 48, 24); cx.fillStyle = 'rgba(124,108,255,.22)'; cx.fill(); cx.fillStyle = '#e6e3ff'; cx.fillText(em, x + 22, y + 34); x += w + 12; });
+      y += 78;
+    }
+    if (c.best) { cx.fillStyle = '#9aa1ba'; cx.font = '600 28px Inter, sans-serif'; cx.fillText('Best trade  ', P, y + 24); var bw = cx.measureText('Best trade  ').width; cx.fillStyle = '#f5f6fb'; cx.font = '700 28px Inter, sans-serif'; cx.fillText(c.best.symbol, P + bw, y + 24); var sw = cx.measureText(c.best.symbol + '  ').width; cx.fillStyle = c.best.pnl >= 0 ? '#34d399' : '#f87171'; cx.font = '700 28px "JetBrains Mono", monospace'; cx.fillText(signedMoney(c.best.pnl, c.currency), P + bw + sw, y + 24); y += 52; }
+    if (c.lesson) { cx.fillStyle = '#c8cde0'; cx.font = 'italic 500 28px Inter, sans-serif'; cx.fillText('“' + c.lesson + '”', P, y + 24); }
+    // footer with QR
+    var fy = H - 230; cx.fillStyle = 'rgba(255,255,255,.08)'; cx.fillRect(P, fy - 30, W - P * 2, 2);
+    var qs = 170, qx = W - P - qs, qy = fy;
+    rr(cx, qx - 12, qy - 12, qs + 24, qs + 24, 18); cx.fillStyle = '#ffffff'; cx.fill();
+    if (window.qrcode) { var q = window.qrcode(0, 'M'); q.addData(url); q.make(); var n = q.getModuleCount(), m = qs / n; cx.fillStyle = '#07080d'; for (var r = 0; r < n; r++) for (var k = 0; k < n; k++) if (q.isDark(r, k)) cx.fillRect(qx + k * m, qy + r * m, Math.ceil(m), Math.ceil(m)); }
+    cx.fillStyle = '#34d399'; cx.beginPath(); cx.arc(P + 22, fy + 52, 22, 0, Math.PI * 2); cx.fill(); cx.strokeStyle = '#07080d'; cx.lineWidth = 6; cx.beginPath(); cx.moveTo(P + 11, fy + 52); cx.lineTo(P + 19, fy + 61); cx.lineTo(P + 34, fy + 43); cx.stroke();
+    cx.fillStyle = '#f5f6fb'; cx.font = '800 40px Inter, sans-serif'; cx.fillText('Verified by ' + site, P + 60, fy + 66);
+    cx.fillStyle = '#9aa1ba'; cx.font = '500 26px Inter, sans-serif'; cx.fillText('Scan the code to check this card', P, fy + 124);
+    cx.fillText('against the trader’s journal.', P, fy + 160);
+  }
+  var flexState = null;
+  $$('[data-flex-day]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      b.classList.add('busy');
+      post(base + '/flex', { date: b.dataset.flexDay }).then(function (r) {
+        b.classList.remove('busy');
+        if (!r || !r.ok) { toast((r && r.error) || 'Could not build the card.', 'error'); return; }
+        var m = $('#tm-flex'), cv = $('canvas', m); flexState = r;
+        var go = function () { drawFlex(cv, r.card, r.url, r.site); window.tmOpen(m); };
+        if (d.fonts && d.fonts.ready) d.fonts.ready.then(go); else go();
+      });
+    });
+  });
+  (function () {
+    var m = $('#tm-flex'); if (!m) return; var cv = $('canvas', m);
+    var name = function () { return 'journzey-day-' + (flexState ? flexState.card.date : 'card') + '.png'; };
+    var download = function () { var a = d.createElement('a'); a.download = name(); a.href = cv.toDataURL('image/png'); a.click(); };
+    $('[data-flex-download]', m).addEventListener('click', download);
+    var cp = $('[data-flex-copy]', m);
+    if (!window.ClipboardItem || !navigator.clipboard || !navigator.clipboard.write) cp.hidden = true;
+    else cp.addEventListener('click', function () { cv.toBlob(function (bl) { navigator.clipboard.write([new ClipboardItem({ 'image/png': bl })]).then(function () { toast('Card copied — paste it into your post.', 'success'); }, function () { toast('Copy was blocked — use Download.', 'error'); }); }); });
+    $('[data-flex-share]', m).addEventListener('click', function () {
+      if (!flexState) return;
+      var c = flexState.card, text = 'My trading day: ' + signedMoney(c.net, c.currency) + ' · ' + c.trades + ' trades · ' + (c.win_rate === null ? '' : Math.round(c.win_rate * 100) + '% win rate') + ' — journaled with ' + flexState.site;
+      cv.toBlob(function (bl) {
+        var file = new File([bl], name(), { type: 'image/png' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) { navigator.share({ files: [file], text: text, url: flexState.url }).catch(function () {}); return; }
+        download();
+        window.open('https://x.com/intent/post?text=' + encodeURIComponent(text) + '&url=' + encodeURIComponent(flexState.url), '_blank', 'noopener');
+        toast('Image downloaded — attach it to your post on X.', 'success');
+      });
+    });
+  })();
+
+  /* ---------------------------------------------------------------- Blow-up radar what-if + runner audit */
   $$('[data-radar] [data-scen]').forEach(function (b) {
     b.addEventListener('click', function () {
-      var box = b.closest('[data-radar]'), x = JSON.parse(b.dataset.scen), p = x.p * 100;
+      var box = b.closest('[data-radar]'), x = JSON.parse(b.dataset.scen);
       $$('[data-scen]', box).forEach(function (o) { o.classList.toggle('on', o === b); });
-      var big = $('[data-radar-p]', box); big.textContent = p.toFixed(1) + '%'; big.className = 'radar-big ' + (x.p >= 0.25 ? 'down' : x.p >= 0.1 ? 'warn' : 'up');
-      $('[data-radar-mark]', box).style.left = Math.min(100, p) + '%';
-      $('[data-radar-detail]', box).textContent = 'At ' + x.risk + '% risk per trade: median worst drawdown ' + (x.median_dd * 100).toFixed(1) + '% · bad case (95th pct) ' + (x.p95_dd * 100).toFixed(1) + '%';
+      $('[data-radar-detail]', box).textContent = 'At ' + x.risk + '% per trade: ' + (x.p * 100).toFixed(1) + '% chance of being blown in 14 days · typical worst dip −' + (x.median_dd * 100).toFixed(1) + '%, bad case −' + (x.p95_dd * 100).toFixed(1) + '%.';
+    });
+  });
+  $$('[data-runner-run]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var msg = $('[data-runner-msg]'); b.disabled = true; b.classList.add('busy'); if (msg) msg.textContent = 'Checking price action after your exits…';
+      post(b.dataset.runnerRun, {}).then(function (r) {
+        if (r && r.ok) { location.reload(); return; }
+        b.disabled = false; b.classList.remove('busy'); if (msg) msg.textContent = (r && r.error) || 'Could not run the audit.';
+      });
     });
   });
 

@@ -42,7 +42,8 @@ final class Domain
     /** Analytics session buckets (DST-aware, see Sessions::bucket). */
     public const SESSION_BUCKETS = ['ASIAN' => 'Asian', 'LONDON' => 'London', 'NEW_YORK' => 'New York'];
     public const CURRENCIES = ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'INR', 'SGD', 'AED', 'BRL', 'CNY', 'RUB'];
-    public const THEMES = ['dark-terminal' => 'Dark Terminal', 'clean-light' => 'Clean Light', 'cyberpunk-slate' => 'Cyberpunk Slate', 'midnight-navy' => 'Midnight Navy'];
+    public const DEFAULT_THEME = 'obsidian-pro';
+    public const THEMES = ['obsidian-pro' => 'Obsidian Pro (default)', 'dark-terminal' => 'Dark Terminal', 'clean-light' => 'Clean Light', 'cyberpunk-slate' => 'Cyberpunk Slate', 'midnight-navy' => 'Midnight Navy'];
     public const LANGUAGES = ['en' => 'English', 'ru' => 'Русский', 'zh' => '简体中文', 'pt' => 'Português'];
     public const VOICE_LANGUAGES = ['en' => 'en-US', 'ru' => 'ru-RU', 'zh' => 'zh-CN', 'pt' => 'pt-BR'];
     public const CHECKLIST = [

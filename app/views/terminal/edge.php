@@ -1,144 +1,205 @@
 <?php
 use App\Controllers\Terminal\EdgeController;
 use App\Trading\Edge;
+use App\Trading\Runner;
 $cur = $acc['currency'];
 $money = fn ($v, $sign = true) => money($v, $cur, $sign);
-$stat = fn (array $s) => '<span class="num">' . (int) $s['trades'] . ((int) $s['trades'] === 1 ? ' trade' : ' trades') . '</span> · ' . e(pct($s['win_rate'], 0)) . ' win' . ($s['avg_r'] !== null ? ' · ' . e(($s['avg_r'] > 0 ? '+' : '') . number_format($s['avg_r'], 2)) . 'R avg' : '');
+$tone = fn ($v) => $v === null ? '' : ((float) $v >= 0 ? 'up' : 'down');
+$num = fn ($v, $d = 2) => rtrim(rtrim(number_format((float) $v, $d), '0'), '.');
+$rFmt = fn ($v) => $v === null ? '—' : (($v > 0 ? '+' : '') . number_format((float) $v, 2) . 'R');
+/** Card header with an icon, title, one-line subtitle and a "?" help popover. */
+$head = function (string $id, string $icon, string $title, string $sub, string $helpTitle, array $help, string $extra = '') {
+    $h = '<header class="ex-head"><span class="ex-icon">' . icon($icon, 'icon icon-sm') . '</span><div class="ex-title"><h2>' . e($title) . '</h2>' . ($sub !== '' ? '<p>' . $sub . '</p>' : '') . '</div>' . $extra;
+    $h .= '<button type="button" class="ex-help-btn" popovertarget="help-' . $id . '" aria-label="' . e('What does ' . $title . ' show?') . '">?</button></header>';
+    $h .= '<div class="ex-help" id="help-' . $id . '" popover><div class="ex-help-top"><span class="ex-icon">' . icon($icon, 'icon icon-sm') . '</span><h3>' . e($helpTitle) . '</h3></div><ul>';
+    foreach ($help as $line) {
+        $h .= '<li>' . $line . '</li>';
+    }
+    return $h . '</ul><button type="button" class="tm-btn tm-btn-sm tm-btn-primary" popovertarget="help-' . $id . '" popovertargetaction="hide">Got it</button></div>';
+};
 ?>
-<?php if (!$sum['trades']): ?><div class="panel empty"><?= icon('grid', 'icon') ?><p>The Edge Matrix needs closed trades. <a href="<?= e(url('/terminal/trades/new')) ?>">Log trades</a> or load the demo journal from the Home Hub.</p></div><?php else: ?>
-<p class="muted small">Historical analysis of <strong><?= e($acc['name']) ?></strong><?= (int) $acc['has_demo_data'] ? ' (DEMO DATA)' : '' ?>. These describe what happened in your journal — <strong>historical performance does not guarantee future results.</strong></p>
-<div class="edge-grid">
+<?php if (!$sum['trades']): ?><div class="panel empty"><?= icon('grid', 'icon') ?><p>The Edge Matrix needs closed trades. <a href="<?= e(url('/terminal/trades/new')) ?>">Log trades</a> or load the demo journal from the Home Hub.</p></div><?php else:
+  $rp = $radar['ok'] ? $radar['current_p'] : null; ?>
 
-  <!-- 1. Last Month Audit -->
-  <section class="panel edge-card">
-    <div class="panel-head"><h2><?= icon('calendar', 'icon icon-sm') ?> Last month audit</h2><span class="muted small"><?= e($auditLabel) ?> · <?= (int) $audit['summary']['trades'] ?> trades · <strong class="<?= $audit['summary']['net'] >= 0 ? 'up' : 'down' ?>"><?= e($money($audit['summary']['net'])) ?></strong></span></div>
-    <?php if (!$audit['summary']['trades']): ?><p class="muted">No trades in that month.</p><?php else: ?>
-    <div class="edge-cols">
-      <div>
-        <h3 class="up" style="margin-bottom:8px">High-quality / positive edge</h3>
-        <?php foreach ($audit['positive'] as $p): ?>
-          <div class="edge-item good"><div><small><?= e($p['dim']) ?></small><strong><?= e($p['key']) ?></strong><small><?= $stat($p['s']) ?></small></div><div class="v up"><?= e($money($p['s']['net'])) ?></div></div>
-        <?php endforeach; ?>
-        <?php if (!$audit['positive']): ?><p class="muted small">No group had a positive result with at least 2 trades.</p><?php else: ?><p class="muted small">Historically strongest during this period.</p><?php endif; ?>
-      </div>
-      <div>
-        <h3 class="down" style="margin-bottom:8px">Negative expectancy traps</h3>
-        <?php foreach (array_slice($audit['negative'], 0, 8) as $n): ?>
-          <div class="edge-item bad"><div><small><?= e($n['dim']) ?></small><strong><?= e($n['key']) ?></strong><small><?= $stat($n['s']) ?></small></div><div class="v down"><?= e($money($n['s']['net'])) ?></div></div>
-        <?php endforeach; ?>
-        <?php if (!$audit['negative']): ?><p class="muted small">No losing trap found — no session, hour, instrument, strategy or tagged behaviour lost money.</p><?php endif; ?>
-      </div>
+<section class="ex-hero">
+  <div class="ex-hero-text">
+    <span class="ex-kicker"><?= icon('sparkles', 'icon icon-xs') ?> Edge Matrix<?= (int) $acc['has_demo_data'] ? ' · DEMO DATA' : '' ?></span>
+    <h2>Your trading edge, decoded.</h2>
+    <p><?= e($acc['name']) ?> · last 30 days. Tap <b class="ex-q">?</b> on any card to see what it means.</p>
+  </div>
+  <div class="ex-hero-stats">
+    <div class="ex-stat"><small>Net P&amp;L · 30d</small><strong class="<?= $tone($last30['net']) ?>"><?= e($money($last30['net'])) ?></strong><em><?= (int) $last30['trades'] ?> trades</em></div>
+    <div class="ex-stat"><small>Win rate</small><strong class="<?= $last30['trades'] ? ($last30['win_rate'] >= 0.5 ? 'up' : 'down') : '' ?>"><?= $last30['trades'] ? e(pct($last30['win_rate'], 0)) : '—' ?></strong><em>last 30 days</em></div>
+    <div class="ex-stat"><small>Profit factor</small><strong class="<?= $last30['profit_factor'] === null ? ($last30['trades'] ? 'up' : '') : ($last30['profit_factor'] >= 1 ? 'up' : 'down') ?>"><?= $last30['trades'] ? ($last30['profit_factor'] === null ? '∞' : e(number_format($last30['profit_factor'], 2))) : '—' ?></strong><em>gross win ÷ gross loss</em></div>
+    <div class="ex-stat ex-stat-risk"><small>Blow-up risk · 14d</small><strong class="<?= $rp === null ? '' : $radar['level'][1] ?>"><?= $rp === null ? '—' : e(number_format($rp * 100, 1)) . '%' ?></strong><em><?= $rp === null ? 'needs 8 trades' : e($radar['level'][0]) . ' risk' ?></em></div>
+  </div>
+</section>
+
+<div class="ex-board">
+
+  <!-- Last month audit (compact) -->
+  <section class="ex-card c-blue ex-span-2">
+    <?= $head('audit', 'calendar', 'Last month audit', e($auditLabel) . ' · ' . (int) $audit['summary']['trades'] . ' trades · <b class="' . $tone($audit['summary']['net']) . '">' . e($money($audit['summary']['net'])) . '</b>', 'Last month audit', [
+        'Looks only at <b>last calendar month</b> and finds what made money and what lost money.',
+        '<b class="up">Green chips</b> = your best strategy, instrument, session and hour last month.',
+        '<b class="down">Red chips</b> = traps: the groups and behaviours (FOMO, revenge, broken rules…) that cost you money.',
+        'Use it as your monthly to-do: do more of the green, cut the red.',
+    ]) ?>
+    <?php if (!$audit['summary']['trades']): ?><p class="ex-empty">No trades in that month.</p><?php else: ?>
+    <div class="ex-audit">
+      <div class="ex-audit-row"><span class="ex-audit-label up"><?= icon('trend-up', 'icon icon-xs') ?> Keep doing</span>
+        <div class="ex-chips"><?php foreach (array_slice($audit['positive'], 0, 4) as $p): ?><span class="ex-chip good" title="<?= e($p['dim'] . ': ' . (int) $p['s']['trades'] . ' trades, ' . pct($p['s']['win_rate'], 0) . ' win') ?>"><small><?= e($p['dim']) ?></small><?= e($p['key']) ?> <b><?= e($money($p['s']['net'])) ?></b></span><?php endforeach; ?>
+        <?php if (!$audit['positive']): ?><span class="muted small">No group made money with 2+ trades.</span><?php endif; ?></div></div>
+      <div class="ex-audit-row"><span class="ex-audit-label down"><?= icon('trend-down', 'icon icon-xs') ?> Cut out</span>
+        <div class="ex-chips"><?php foreach (array_slice($audit['negative'], 0, 4) as $n): ?><span class="ex-chip bad" title="<?= e($n['dim'] . ': ' . (int) $n['s']['trades'] . ' trades, ' . pct($n['s']['win_rate'], 0) . ' win') ?>"><small><?= e($n['dim']) ?></small><?= e($n['key']) ?> <b><?= e($money($n['s']['net'])) ?></b></span><?php endforeach; ?>
+        <?php if (!$audit['negative']): ?><span class="muted small">No losing trap found. Clean month.</span><?php endif; ?></div></div>
     </div>
     <?php endif; ?>
   </section>
 
-  <!-- 2. Best trading window + A+ -->
-  <section class="panel edge-card">
-    <div class="panel-head"><h2><?= icon('target', 'icon icon-sm') ?> Best trading window</h2><span class="muted small">All history · min. <?= Edge::MIN_WINDOW ?> trades per combination</span></div>
+  <!-- Best trading window -->
+  <section class="ex-card c-green">
+    <?= $head('best', 'target', 'Best trading window', 'Where you historically win most', 'Best trading window', [
+        'Scans <b>all your history</b> for the session + instrument (or strategy) combination with the best results, needing at least ' . Edge::MIN_WINDOW . ' trades.',
+        'It also finds the <b>2-hour slot</b> inside that session where you perform best.',
+        '<b>A+ setup</b> appears only when a window is exceptional (' . Edge::APLUS['trades'] . '+ trades, ' . (int) (Edge::APLUS['win_rate'] * 100) . '%+ win rate, ' . Edge::APLUS['avg_r'] . 'R+ average, profit factor ' . Edge::APLUS['profit_factor'] . '+).',
+        'Past results do not guarantee future results — treat it as where to focus, not a promise.',
+    ]) ?>
     <?php if ($best): ?>
-    <div class="window-card">
-      <div class="eyebrow">YOUR HISTORICALLY STRONGEST WINDOW</div>
-      <div class="headline"><?= e(Edge::windowName($best)) ?></div>
-      <div class="sub"><?= $best['setup'] && $best['setup'] !== $best['strategy'] ? 'Most common setup: <strong>' . e($best['setup']) . '</strong> · ' : '' ?>Best hours: <strong><?= e($best['best_hours']['label']) ?></strong> (<?= (int) $best['best_hours']['s']['trades'] ?> trades, <?= e($money($best['best_hours']['s']['net'])) ?>)</div>
-      <div class="window-stats">
-        <div><small>Win rate</small><strong class="<?= $best['s']['win_rate'] >= 0.5 ? 'up' : 'down' ?>"><?= e(pct($best['s']['win_rate'], 0)) ?></strong></div>
-        <div><small>Average R</small><strong class="up"><?= $best['s']['avg_r'] === null ? '—' : e(($best['s']['avg_r'] > 0 ? '+' : '') . number_format($best['s']['avg_r'], 2)) . 'R' ?></strong></div>
-        <div><small>Net P&amp;L</small><strong class="up"><?= e($money($best['s']['net'])) ?></strong></div>
-        <div><small>Profit factor</small><strong><?= $best['s']['profit_factor'] === null ? '∞' : e(number_format($best['s']['profit_factor'], 2)) ?></strong></div>
-        <div><small>Sample size</small><strong><?= (int) $best['s']['trades'] ?> trades</strong></div>
+      <div class="ex-big"><?= e(Edge::windowName($best)) ?></div>
+      <p class="ex-line"><?= icon('clock', 'icon icon-xs') ?> Best hours <b><?= e($best['best_hours']['label']) ?></b><?= $best['setup'] && $best['setup'] !== $best['strategy'] ? ' · setup <b>' . e($best['setup']) . '</b>' : '' ?></p>
+      <div class="ex-mini">
+        <div><small>Win rate</small><b class="<?= $best['s']['win_rate'] >= 0.5 ? 'up' : 'down' ?>"><?= e(pct($best['s']['win_rate'], 0)) ?></b></div>
+        <div><small>Avg R</small><b class="<?= $tone($best['s']['avg_r']) ?>"><?= e($rFmt($best['s']['avg_r'])) ?></b></div>
+        <div><small>Net</small><b class="<?= $tone($best['s']['net']) ?>"><?= e($money($best['s']['net'])) ?></b></div>
+        <div><small>Trades</small><b><?= (int) $best['s']['trades'] ?></b></div>
       </div>
-      <?php if ($aplus): ?>
-      <div class="aplus" role="note">
-        <strong class="tag">A+ HISTORICAL SETUP</strong>
-        <p style="margin:6px 0 0">Your historical results show unusually strong performance for this window (<?= (int) $aplus['s']['trades'] ?> trades, <?= e(pct($aplus['s']['win_rate'], 0)) ?> win rate, <?= e(number_format($aplus['s']['avg_r'], 2)) ?>R average). If it remains within your personal risk plan, you may consider your configured higher-risk tier<?= $m['a_plus_risk_pct'] ? ' (<strong>' . e(rtrim(rtrim((string) $m['a_plus_risk_pct'], '0'), '.')) . '%</strong>)' : ' (for example 1.5%–1.75% — <a href="' . e(url('/terminal/settings#risk')) . '">set yours in Settings</a>)' ?>.</p>
-        <p class="small muted" style="margin:4px 0 0">Historical performance does not guarantee future results. Never exceed your own maximum risk rules.</p>
-      </div>
-      <?php else: ?>
-      <p class="muted small" style="margin:10px 0 0">A+ setup detection needs at least <?= Edge::APLUS['trades'] ?> trades with ≥<?= (int) (Edge::APLUS['win_rate'] * 100) ?>% win rate, ≥<?= Edge::APLUS['avg_r'] ?>R average and profit factor ≥<?= Edge::APLUS['profit_factor'] ?> — not met yet, so no higher-risk suggestion is shown.</p>
-      <?php endif; ?>
-    </div>
-    <?php else: ?><p class="muted">More trading data is required to identify a strongest window reliably (at least <?= Edge::MIN_WINDOW ?> trades in the same session and instrument or strategy, with a positive result).</p><?php endif; ?>
-    <div class="kpis" style="margin:12px 0 0">
-      <?php foreach ($dims as $label => $g): ?><div class="kpi"><small>Best <?= e(strtolower($label)) ?></small><strong><?= e($g['key'] ?? '—') ?></strong><em><?= $g ? e($money($g['s']['expectancy'])) . ' / trade · ' . $g['s']['trades'] . ' trades' : 'Needs ≥ ' . Edge::MIN_GROUP . ' trades' ?></em></div><?php endforeach; ?>
-    </div>
+      <?php if ($aplus): ?><div class="ex-aplus"><b>A+ SETUP</b> Exceptional history here.<?= $m['a_plus_risk_pct'] ? ' Your A+ risk tier: <b>' . e($num($m['a_plus_risk_pct'])) . '%</b>.' : '' ?> <span class="muted">Never exceed your own max risk.</span></div><?php endif; ?>
+    <?php else: ?><p class="ex-empty">Needs at least <?= Edge::MIN_WINDOW ?> profitable trades in the same session and instrument.</p><?php endif; ?>
+    <?php if (array_filter($dims)): ?>
+    <div class="ex-tags"><?php $seen = []; foreach ($dims as $label => $g): if (!$g || in_array($g['key'], $seen, true)) continue; $seen[] = $g['key']; ?><span><small><?= e($label) ?></small><?= e($g['key']) ?></span><?php endforeach; ?></div>
+    <?php endif; ?>
   </section>
 
-  <!-- 3. Anti-window -->
-  <section class="panel edge-card">
-    <div class="panel-head"><h2 class="down"><?= icon('alert', 'icon icon-sm') ?> Anti-window detector</h2></div>
+  <!-- Anti-window -->
+  <section class="ex-card c-red">
+    <?= $head('anti', 'alert', 'Anti-window', 'Where you historically lose most', 'Anti-window detector', [
+        'The opposite of your best window: the session + instrument combination that <b>lost the most</b> (at least ' . Edge::MIN_WINDOW . ' trades).',
+        'Shows the 2-hour slot where the losses cluster.',
+        'If you see one, consider trading smaller there — or not at all — until your numbers improve.',
+    ]) ?>
     <?php if ($anti): ?>
-    <div class="window-card anti" role="alert">
-      <div class="eyebrow">ANTI-WINDOW DETECTED · HISTORICALLY WEAK</div>
-      <div class="headline"><?= e(Edge::windowName($anti)) ?></div>
-      <div class="sub">Weakest hours: <strong><?= e($anti['worst_hours']['label']) ?></strong> (<?= (int) $anti['worst_hours']['s']['trades'] ?> trades, <?= e($money($anti['worst_hours']['s']['net'])) ?>)</div>
-      <div class="window-stats">
-        <div><small>Win rate</small><strong class="down"><?= e(pct($anti['s']['win_rate'], 0)) ?></strong></div>
-        <div><small>Net P&amp;L</small><strong class="down"><?= e($money($anti['s']['net'])) ?></strong></div>
-        <div><small>Average R</small><strong class="<?= ($anti['s']['avg_r'] ?? 0) < 0 ? 'down' : '' ?>"><?= $anti['s']['avg_r'] === null ? '—' : e(($anti['s']['avg_r'] > 0 ? '+' : '') . number_format($anti['s']['avg_r'], 2)) . 'R' ?></strong></div>
-        <div><small>Sample size</small><strong><?= (int) $anti['s']['trades'] ?> trades</strong></div>
+      <div class="ex-big"><?= e(Edge::windowName($anti)) ?></div>
+      <p class="ex-line"><?= icon('clock', 'icon icon-xs') ?> Weakest hours <b><?= e($anti['worst_hours']['label']) ?></b></p>
+      <div class="ex-mini">
+        <div><small>Win rate</small><b class="down"><?= e(pct($anti['s']['win_rate'], 0)) ?></b></div>
+        <div><small>Avg R</small><b class="<?= $tone($anti['s']['avg_r']) ?>"><?= e($rFmt($anti['s']['avg_r'])) ?></b></div>
+        <div><small>Net</small><b class="down"><?= e($money($anti['s']['net'])) ?></b></div>
+        <div><small>Trades</small><b><?= (int) $anti['s']['trades'] ?></b></div>
       </div>
-      <p style="margin:10px 0 0"><strong>Consider reducing risk significantly or avoiding this window until your data improves.</strong></p>
-    </div>
-    <?php else: ?><p class="muted">No historically losing window with at least <?= Edge::MIN_WINDOW ?> trades. More data may reveal one.</p><?php endif; ?>
+      <div class="ex-callout bad"><?= icon('alert', 'icon icon-xs') ?> Reduce size or avoid this window until your data improves.</div>
+    <?php else: ?><div class="ex-good-state"><?= icon('check-circle', 'icon') ?><p>No losing window found. Nice.</p></div><?php endif; ?>
   </section>
 
-  <!-- 4. Ruin Probability Radar -->
-  <section class="panel edge-card" data-radar>
-    <div class="panel-head"><h2><?= icon('activity', 'icon icon-sm') ?> Ruin probability radar</h2>
-      <form method="get" action="<?= e(url('/terminal/edge')) ?>"><label class="small muted" for="dd-th">Severe drawdown =</label> <select id="dd-th" name="dd" data-autosubmit style="width:auto"><?php foreach (EdgeController::THRESHOLDS as $k => $l): ?><option value="<?= $k ?>"<?= $th === (string) $k ? ' selected' : '' ?>><?= e($l) ?></option><?php endforeach; ?></select></form></div>
-    <?php if (!$radar['ok']): ?><p class="muted">At least <?= (int) $radar['needed'] ?> closed trades with a stop loss are needed (you have <?= (int) $radar['have'] ?>).</p><?php else:
-      $sc = $radar['scenarios']; $cp = $radar['current_p']; ?>
-    <div class="grid g-2">
-      <div>
-        <p class="muted small" style="margin:0">Current risk behaviour (<?= e(rtrim(rtrim(number_format($radar['current'], 2), '0'), '.')) ?>% per trade)</p>
-        <p class="small" style="margin:4px 0">Estimated 14-day probability of a ≥<?= (int) round($radar['threshold'] * 100) ?>% drawdown:</p>
-        <div class="radar-big <?= $cp >= 0.25 ? 'down' : ($cp >= 0.1 ? 'warn' : 'up') ?>" data-radar-p><?= e(number_format($cp * 100, 1)) ?>%</div>
-        <div class="radar-meter" aria-hidden="true"><i data-radar-mark style="left:<?= min(100, $cp * 100) ?>%"></i></div>
-        <div class="small muted" style="display:flex;justify-content:space-between"><span>Low</span><span>High</span></div>
-        <p class="small" style="margin-top:10px">Try another risk level:</p>
-        <div class="radar-scen" role="radiogroup" aria-label="Risk per trade scenario">
-          <?php foreach ($sc as $x): ?><button type="button" class="chip-btn<?= abs($x['risk'] - $radar['current']) < 0.001 ? ' on' : '' ?>" data-scen='<?= e(json_encode($x)) ?>'><?= e(rtrim(rtrim(number_format($x['risk'], 2), '0'), '.')) ?>%</button><?php endforeach; ?>
-        </div>
-        <p class="small" data-radar-detail>Median worst drawdown <?= e(number_format($sc[array_search($radar['current'], array_column($sc, 'risk'))]['median_dd'] * 100, 1)) ?>% · bad case (95th pct) <?= e(number_format($sc[array_search($radar['current'], array_column($sc, 'risk'))]['p95_dd'] * 100, 1)) ?>%</p>
+  <!-- Blow-up radar -->
+  <section class="ex-card c-violet ex-span-2" data-radar>
+    <?= $head('radar', 'activity', 'Blow-up probability radar', 'Chance your account is blown in the next 14 days', 'Blow-up probability radar', [
+        'Reads your <b>last 30 days</b>: win rate, average reward-to-risk, drawdown and position size (how much of the account you risk per trade).',
+        'It then replays those exact trades in random order ' . ($radar['ok'] ? number_format($radar['paths']) : '2,000') . ' times over the number of trades you usually take in <b>14 days</b>.',
+        'The big number = the share of those futures where your account fell by your “blown” level (choose −5%, −10%, −20% or −50%).',
+        '<b class="up">Low</b> under 5% · <b class="warn">Elevated</b> 5–20% · <b class="down">High</b> 20%+. Use the risk buttons to see how a smaller or bigger position changes it.',
+        'A statistical estimate from your own history — not a prediction.',
+    ], '<form method="get" action="' . e(url('/terminal/edge')) . '" class="ex-head-form"><label class="sr-only" for="dd-th">Account blown when it falls</label><select id="dd-th" name="dd" data-autosubmit>' . implode('', array_map(fn ($k, $l) => '<option value="' . $k . '"' . ($th === (string) $k ? ' selected' : '') . '>Blown at ' . e($l) . '</option>', array_keys(EdgeController::THRESHOLDS), EdgeController::THRESHOLDS)) . '</select></form>') ?>
+    <?php if (!$radar['ok']): ?><p class="ex-empty">Needs at least <?= (int) $radar['needed'] ?> closed trades with a stop loss (you have <?= (int) $radar['have'] ?>).</p><?php else:
+      $in = $radar['inputs']; $len = 157.08; $sc = $radar['scenarios']; ?>
+    <div class="ex-radar">
+      <div class="ex-gauge-wrap">
+        <svg class="ex-gauge" viewBox="0 0 120 70" role="img" aria-label="<?= e(number_format($rp * 100, 1)) ?>% probability of a <?= (int) round($radar['threshold'] * 100) ?>% drawdown in 14 days">
+          <defs><linearGradient id="g-gauge" x1="0" x2="1"><stop offset="0" stop-color="var(--pos)"/><stop offset=".5" stop-color="var(--warn)"/><stop offset="1" stop-color="var(--neg)"/></linearGradient></defs>
+          <path d="M10 62 A50 50 0 0 1 110 62" class="ex-gauge-track"/>
+          <path d="M10 62 A50 50 0 0 1 110 62" class="ex-gauge-fill" stroke="url(#g-gauge)" style="stroke-dasharray:<?= round(max(0.02, min(1, $rp)) * $len, 2) ?> <?= $len ?>"/>
+        </svg>
+        <div class="ex-gauge-val"><strong class="<?= $radar['level'][1] ?>"><?= e(number_format($rp * 100, 1)) ?>%</strong><span class="ex-level <?= $radar['level'][1] ?>"><?= e($radar['level'][0]) ?> risk</span></div>
+        <p class="ex-gauge-cap">chance of losing <b><?= (int) round($radar['threshold'] * 100) ?>%</b> from peak in the next 14 days at your current behaviour</p>
       </div>
-      <div>
-        <h3 style="margin-bottom:8px">Probability by risk per trade</h3>
-        <div class="sess-bars">
-          <?php foreach ($sc as $x): ?><div class="sess-bar"><span><?= e(rtrim(rtrim(number_format($x['risk'], 2), '0'), '.')) ?>%<?= abs($x['risk'] - $radar['current']) < 0.001 ? ' (now)' : '' ?></span><span class="track"><span class="<?= $x['p'] >= 0.25 ? 'bad' : ($x['p'] < 0.1 ? 'good' : '') ?>" style="width:<?= max(1, min(100, $x['p'] * 100)) ?>%;<?= $x['p'] >= 0.1 && $x['p'] < 0.25 ? 'background:var(--warn)' : '' ?>"></span></span><span class="val"><?= e(number_format($x['p'] * 100, 1)) ?>%</span></div><?php endforeach; ?>
+      <div class="ex-radar-inputs">
+        <h3>What your last 30 days look like</h3>
+        <div class="ex-inputs">
+          <div><small>Win rate</small><b class="<?= $in['win_rate'] >= 0.5 ? 'up' : 'down' ?>"><?= e(pct($in['win_rate'], 0)) ?></b></div>
+          <div><small>Avg reward : risk</small><b class="<?= $in['rr'] !== null && $in['rr'] >= 1 ? 'up' : 'down' ?>"><?= $in['rr'] === null ? '∞' : '1 : ' . e(number_format($in['rr'], 2)) ?></b></div>
+          <div><small>Max drawdown</small><b class="<?= $in['max_dd'] > 0 ? 'down' : 'up' ?>"><?= $in['max_dd'] > 0 ? '−' : '' ?><?= e(number_format($in['max_dd'] * 100, 1)) ?>%</b></div>
+          <div><small>Avg drawdown</small><b class="<?= $in['avg_dd'] > 0 ? 'down' : 'up' ?>"><?= $in['avg_dd'] > 0 ? '−' : '' ?><?= e(number_format($in['avg_dd'] * 100, 1)) ?>%</b></div>
+          <div><small>Avg position risk</small><b class="<?= ($in['risk_avg'] ?? 0) > 2 ? 'down' : '' ?>"><?= $in['risk_avg'] === null ? e($num($radar['current'])) . '%' : e($num($in['risk_avg'])) . '%' ?></b></div>
+          <div><small>Biggest position risk</small><b class="<?= ($in['risk_max'] ?? 0) > 2 ? 'down' : '' ?>"><?= $in['risk_max'] === null ? '—' : e($num($in['risk_max'])) . '%' ?></b></div>
+          <div><small>Trades / day</small><b><?= e((string) $in['per_day']) ?></b></div>
+          <div><small>Worst losing streak</small><b class="<?= $in['max_loss_streak'] >= 3 ? 'down' : '' ?>"><?= (int) $in['max_loss_streak'] ?></b></div>
         </div>
-        <h3 style="margin:12px 0 6px">Recent behaviour used</h3>
-        <dl class="dl small">
-          <dt>Sample</dt><dd><?= (int) $radar['inputs']['trades'] ?> trades · <?= e($radar['basis']) ?></dd>
-          <dt>Win rate</dt><dd><?= e(pct($radar['inputs']['win_rate'], 0)) ?> · avg win <?= e((string) $radar['inputs']['avg_win_r']) ?>R · avg loss <?= e((string) $radar['inputs']['avg_loss_r']) ?>R</dd>
-          <dt>Activity</dt><dd><?= e((string) $radar['inputs']['per_day']) ?> trades/day → <?= (int) $radar['horizon'] ?> trades in the next ~14 days</dd>
-          <dt>Behaviour</dt><dd>FOMO <?= (int) $radar['inputs']['fomo'] ?> · revenge <?= (int) $radar['inputs']['revenge'] ?> · overtrading <?= (int) $radar['inputs']['overtrading'] ?> · longest losing streak <?= (int) $radar['inputs']['max_loss_streak'] ?></dd>
-        </dl>
+        <div class="ex-whatif">
+          <p><b>What if you risked…</b> <span class="muted">per trade</span></p>
+          <div class="ex-scen" role="group" aria-label="Risk per trade scenario">
+            <?php foreach ($sc as $x): $on = abs($x['risk'] - $radar['current']) < 0.001; ?><button type="button" class="ex-scen-btn <?= $x['p'] >= 0.2 ? 'bad' : ($x['p'] >= 0.05 ? 'mid' : 'good') ?><?= $on ? ' on' : '' ?>" data-scen='<?= e(json_encode($x)) ?>'><span><?= e($num($x['risk'])) ?>%</span><b><?= e(number_format($x['p'] * 100, 1)) ?>%</b></button><?php endforeach; ?>
+          </div>
+          <p class="small" data-radar-detail>At <?= e($num($radar['current'])) ?>% per trade (your median): typical worst dip −<?= e(number_format($radar['median_dd'] * 100, 1)) ?>%, bad case −<?= e(number_format($radar['p95_dd'] * 100, 1)) ?>%.</p>
+        </div>
       </div>
     </div>
-    <p class="panel-note"><strong>Statistical simulation based on recent historical behaviour — not a prediction.</strong> <?= (int) $radar['paths'] ?> simulated paths re-sample your own recent R results (including any FOMO/revenge trades) at each risk level. Real outcomes can differ.</p>
+    <p class="ex-foot">Based on <?= (int) $in['trades'] ?> trades (<?= e($radar['basis']) ?>) · ~<?= (int) $radar['horizon'] ?> trades simulated over 14 days · statistical estimate, not a prediction.</p>
     <?php endif; ?>
   </section>
 
-  <!-- 5. Discipline leak -->
-  <section class="panel edge-card" id="leak">
-    <div class="leak-hero">
-      <div class="headline"><?= $leak['leak'] > 0 ? 'Your emotions cost you <b>' . e(money($leak['leak'], $cur)) . '</b> ' . e($leakLabel) : 'No discipline leak ' . e($leakLabel) ?></div>
-      <p class="small" style="margin:6px 0 0">Actual P&amp;L <strong class="<?= $leak['actual'] >= 0 ? 'up' : 'down' ?>"><?= e($money($leak['actual'])) ?></strong> vs rule-compliant / emotion-filtered <strong><?= e($money($leak['flawless'])) ?></strong> · <?= (int) $leak['violations'] ?> <?= (int) $leak['violations'] === 1 ? 'trade' : 'trades' ?> with mistakes or broken rules</p>
-    </div>
+  <!-- Runner audit -->
+  <section class="ex-card c-cyan" data-runner-card>
+    <?= $head('runner', 'trend-up', '20% runner audit', 'What if you let 20% run 2 more hours?', '20% runner audit', [
+        'For every <b>winning</b> trade, the system checks what price did in the <b>' . Runner::HOURS . ' hours after you closed</b>.',
+        'It imagines you had closed 80% where you did, kept <b>20% open</b>, and moved its stop to breakeven (your entry).',
+        '<b class="up">Green</b> = the runner would have added profit. <b class="down">Red</b> = closing everything was better.',
+        'Tells you whether you tend to exit too early. Hypothetical — not a recommendation.',
+    ]) ?>
+    <?php if (!$runnerReady): ?>
+      <p class="ex-empty">Needs market price history. The site owner can switch it on in Control Panel → Integrations (market data).</p>
+    <?php elseif (!$runner['count']): ?>
+      <p class="ex-empty"><?= $runnerPending ? 'Ready to check ' . (int) $runnerPending . ' winning trades.' : 'No winning trades with a stop loss to check yet.' ?></p>
+    <?php else: ?>
+      <div class="ex-big <?= $tone($runner['extra_pnl'] ?? $runner['extra_r']) ?>"><?= $runner['extra_pnl'] !== null ? e($money($runner['extra_pnl'])) : e($rFmt($runner['extra_r'])) ?></div>
+      <p class="ex-line"><?= $runner['extra_pnl'] !== null ? e($rFmt($runner['extra_r'])) . ' · ' : '' ?><?= (int) $runner['count'] ?> trades checked<?= $runner['demo'] ? ' · <b class="warn">DEMO — simulated prices</b>' : '' ?></p>
+      <div class="ex-split" aria-label="Runner outcomes">
+        <?php $tot = max(1, $runner['count']); ?>
+        <span class="good" style="flex:<?= $runner['helped'] ?>"></span><span class="flat" style="flex:<?= $runner['flat'] ?>"></span><span class="bad" style="flex:<?= $runner['hurt'] ?>"></span>
+      </div>
+      <p class="ex-legend"><span class="up">● <?= (int) $runner['helped'] ?> would gain</span><span class="down">● <?= (int) $runner['hurt'] ?> would give back</span><span class="muted"><?= (int) $runner['stopped'] ?> stopped at breakeven</span></p>
+      <p class="ex-callout <?= ($runner['extra_r'] ?? 0) > 0 ? 'good' : 'bad' ?>"><?= ($runner['extra_r'] ?? 0) > 0 ? 'You often exit early — a small runner has historically added profit.' : 'Your exits have been well-timed — runners would mostly have given profit back.' ?></p>
+    <?php endif; ?>
+    <?php if ($runnerReady && $runnerPending): ?>
+      <button type="button" class="tm-btn tm-btn-sm ex-runner-btn" data-runner-run="<?= e(url('/terminal/edge/runner')) ?>"><?= icon('refresh', 'icon icon-sm') ?> Check <?= min(Runner::BATCH, $runnerPending) ?> more trade<?= min(Runner::BATCH, $runnerPending) === 1 ? '' : 's' ?></button>
+      <p class="small muted" data-runner-msg aria-live="polite"></p>
+    <?php endif; ?>
+  </section>
+
+  <!-- Discipline leak -->
+  <section class="ex-card c-amber" id="leak">
+    <?= $head('leak', 'heart', 'Discipline leak', 'What emotions cost you ' . e($leakLabel), 'Discipline leak', [
+        'Compares your real P&amp;L with a version where you <b>skipped every emotional or rule-breaking trade</b> (FOMO, revenge, overtrading, chasing, impulsive, broken rules).',
+        'Losses from moved stops or oversized positions are capped at a normal 1R loss.',
+        'The difference is your <b>discipline leak</b> — money lost to behaviour, not to the market.',
+        'No hypothetical profit is ever added.',
+    ]) ?>
+    <div class="ex-big <?= $leak['leak'] > 0 ? 'down' : 'up' ?>"><?= $leak['leak'] > 0 ? '−' . e(money($leak['leak'], $cur)) : e(money(0, $cur)) ?></div>
+    <p class="ex-line">Actual <b class="<?= $tone($leak['actual']) ?>"><?= e($money($leak['actual'])) ?></b> vs disciplined <b class="<?= $tone($leak['flawless']) ?>"><?= e($money($leak['flawless'])) ?></b></p>
     <?php if (count($leak['curve']['actual']) > 1): ?>
-    <div class="legend"><span><i style="background:var(--series-1)"></i>Actual equity curve (cumulative P&amp;L)</span><span><i style="background:var(--neg)"></i>Rule-compliant hypothetical</span></div>
-    <div class="chart" data-chart="lines" data-format="money:<?= e($cur) ?>" data-height="220" data-label="Actual versus rule-compliant cumulative P&L" data-json="<?= e(json_encode(['base' => 0, 'series' => [['name' => 'Actual', 'cls' => 's1', 'points' => $leak['curve']['actual']], ['name' => 'Rule-compliant', 'cls' => 's2 dash', 'points' => $leak['curve']['filtered']]]])) ?>"></div>
+    <div class="chart" data-chart="lines" data-format="money:<?= e($cur) ?>" data-height="150" data-label="Actual versus disciplined cumulative P&L" data-json="<?= e(json_encode(['base' => 0, 'series' => [['name' => 'Actual', 'cls' => 's1', 'points' => $leak['curve']['actual']], ['name' => 'Disciplined', 'cls' => 's2 dash', 'points' => $leak['curve']['filtered']]]])) ?>"></div>
+    <div class="legend"><span><i style="background:var(--series-1)"></i>Actual</span><span><i style="background:var(--neg)"></i>Disciplined</span></div>
     <?php endif; ?>
-    <?php if ($leak['by']): ?>
-    <h3 style="margin:10px 0 6px">Where the leak came from</h3>
-    <?php foreach ($leak['by'] as $b): ?><div class="edge-item bad"><div><strong><?= e($b['label']) ?></strong><small><?= (int) $b['trades'] ?> <?= (int) $b['trades'] === 1 ? 'trade' : 'trades' ?> · actual <?= e($money($b['actual'])) ?></small></div><div class="v down">−<?= e(money($b['leak'], $cur)) ?></div></div><?php endforeach; ?>
-    <?php endif; ?>
-    <p class="panel-note">Historical hypothetical, not guaranteed profit: trades tagged FOMO, revenge, overtrading, chasing, impulsive or rule-breaking are treated as not taken, and moved-stop / oversized losses are capped at 1R. No hypothetical profit is ever added.</p>
+    <?php if ($leak['by']): ?><div class="ex-chips"><?php foreach (array_slice($leak['by'], 0, 4) as $b): ?><span class="ex-chip bad"><?= e($b['label']) ?> <b>−<?= e(money($b['leak'], $cur)) ?></b></span><?php endforeach; ?></div><?php endif; ?>
   </section>
 
-  <section class="panel">
-    <div class="panel-head"><h2><?= icon('alert', 'icon icon-sm') ?> Tilt circuit breaker</h2><a class="small" href="<?= e(url('/terminal/settings#risk')) ?>">Change rule</a></div>
-    <p>Rule: <strong><?= $tiltRule[0] ?> losses within <?= $tiltRule[1] ?> minutes</strong> triggers a <?= $tiltRule[2] ?>-minute cooldown of quick logging in this terminal. journzey.ai cannot block orders at your broker.</p>
+  <!-- Tilt rule -->
+  <section class="ex-card c-pink ex-span-2 ex-slim">
+    <?= $head('tilt', 'shield', 'Tilt circuit breaker', '<b>' . $tiltRule[0] . ' losses in ' . $tiltRule[1] . ' min</b> → ' . $tiltRule[2] . '-minute cooldown on quick logging · <a href="' . e(url('/terminal/settings#risk')) . '">Change rule</a>', 'Tilt circuit breaker', [
+        'Tilt = trading emotionally after a run of losses.',
+        'When you hit the loss count inside the time window, quick logging pauses for the cooldown so you step away.',
+        'journzey.ai cannot block orders at your broker — it is a reminder, not a lock.',
+    ]) ?>
   </section>
 </div>
+<p class="ex-disclaimer">Historical analysis of your own journal — historical performance does not guarantee future results.</p>
 <?php endif; ?>

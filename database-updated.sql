@@ -1,5 +1,5 @@
 -- ---------------------------------------------------------------------------------------------
--- journzey.ai — database update (schema versions 2 and 3)
+-- journzey.ai — database update (schema versions 2, 3 and 4)
 -- Safe to run on an existing database: it only ADDS columns, tables and rows. Nothing is dropped,
 -- reset or overwritten, and running it twice is harmless. Import it with phpMyAdmin → Import.
 -- (The website also applies these changes automatically on the first request after updating.)
@@ -228,5 +228,77 @@ INSERT IGNORE INTO `settings` (`key`, `value`, `group_name`) VALUES
 ('seo_learn_title', 'Learn: 10 intraday trading strategies', 'seo'),
 ('seo_learn_description', 'An educational playbook of 10 intraday strategies — liquidity raids, order blocks, VWAP reversion, volume profile, order flow and opening range breakouts — with rules, entries, stops and targets.', 'seo');
 
--- Record the schema version
+-- Schema version 3 reached
 INSERT INTO `settings` (`key`, `value`, `group_name`) VALUES ('schema_version', '3', 'system') ON DUPLICATE KEY UPDATE `value` = IF(CAST(`value` AS UNSIGNED) < 3, '3', `value`);
+
+-- ---------------------------------------------------------------------------------------------
+-- journzey.ai — database update (schema version 4): premium terminal, runner audit, per-account limits
+-- ---------------------------------------------------------------------------------------------
+
+-- 20% runner audit results (one row per trade; hypothetical analysis only)
+CREATE TABLE IF NOT EXISTS `trade_runner_audits` (
+  `trade_id` INT UNSIGNED NOT NULL,
+  `user_id` INT UNSIGNED NOT NULL,
+  `status` ENUM('ok','unavailable') NOT NULL,
+  `runner_exit` DECIMAL(20,8) NULL,
+  `best_price` DECIMAL(20,8) NULL,
+  `stopped` TINYINT(1) NOT NULL DEFAULT 0,
+  `extra_r` DECIMAL(10,4) NULL,
+  `extra_pnl` DECIMAL(16,2) NULL,
+  `is_demo` TINYINT(1) NOT NULL DEFAULT 0,
+  `message` VARCHAR(255) NULL,
+  `checked_at` DATETIME NOT NULL,
+  PRIMARY KEY (`trade_id`),
+  KEY `idx_runner_user` (`user_id`),
+  CONSTRAINT `fk_runner_trade` FOREIGN KEY (`trade_id`) REFERENCES `trades` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_runner_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Premium "Obsidian Pro" terminal theme becomes the default (members can still pick another theme in the user menu)
+ALTER TABLE `user_settings` ALTER COLUMN `theme` SET DEFAULT 'obsidian-pro';
+UPDATE `user_settings` SET `theme` = 'obsidian-pro' WHERE `theme` IN ('dark-terminal', 'clean-light') AND (SELECT `value` FROM `settings` WHERE `key` = 'schema_version') < 4;
+
+-- Daily / weekly loss limits per trading account (copied once from the member's previous global setting)
+SET @s := (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `trading_accounts` ADD COLUMN `max_daily_loss` DECIMAL(16,2) NULL AFTER `starting_capital`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'trading_accounts' AND COLUMN_NAME = 'max_daily_loss');
+PREPARE jz_stmt FROM @s;
+EXECUTE jz_stmt;
+DEALLOCATE PREPARE jz_stmt;
+SET @s := (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `trading_accounts` ADD COLUMN `daily_limit_type` ENUM(''amount'',''percent'') NOT NULL DEFAULT ''amount'' AFTER `max_daily_loss`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'trading_accounts' AND COLUMN_NAME = 'daily_limit_type');
+PREPARE jz_stmt FROM @s;
+EXECUTE jz_stmt;
+DEALLOCATE PREPARE jz_stmt;
+SET @s := (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `trading_accounts` ADD COLUMN `max_weekly_loss` DECIMAL(16,2) NULL AFTER `daily_limit_type`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'trading_accounts' AND COLUMN_NAME = 'max_weekly_loss');
+PREPARE jz_stmt FROM @s;
+EXECUTE jz_stmt;
+DEALLOCATE PREPARE jz_stmt;
+SET @s := (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `trading_accounts` ADD COLUMN `weekly_limit_type` ENUM(''amount'',''percent'') NOT NULL DEFAULT ''amount'' AFTER `max_weekly_loss`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'trading_accounts' AND COLUMN_NAME = 'weekly_limit_type');
+PREPARE jz_stmt FROM @s;
+EXECUTE jz_stmt;
+DEALLOCATE PREPARE jz_stmt;
+UPDATE `trading_accounts` a JOIN `user_settings` s ON s.user_id = a.user_id
+  SET a.max_daily_loss = s.max_daily_loss, a.daily_limit_type = s.daily_limit_type, a.max_weekly_loss = s.max_weekly_loss, a.weekly_limit_type = s.weekly_limit_type
+  WHERE a.max_daily_loss IS NULL AND a.max_weekly_loss IS NULL AND (s.max_daily_loss IS NOT NULL OR s.max_weekly_loss IS NOT NULL)
+    AND (SELECT `value` FROM `settings` WHERE `key` = 'schema_version') < 4;
+
+-- Daily flex cards: short public code behind the QR "Verified by journzey.ai" link (stores only the card's own figures)
+CREATE TABLE IF NOT EXISTS `share_cards` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `code` CHAR(12) NOT NULL,
+  `user_id` INT UNSIGNED NOT NULL,
+  `account_id` INT UNSIGNED NOT NULL,
+  `card_date` DATE NOT NULL,
+  `payload` TEXT NOT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_share_code` (`code`),
+  UNIQUE KEY `uq_share_day` (`user_id`, `account_id`, `card_date`),
+  CONSTRAINT `fk_share_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_share_account` FOREIGN KEY (`account_id`) REFERENCES `trading_accounts` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Customer support email (set it in Control Panel → Settings → Contact details)
+INSERT IGNORE INTO `settings` (`key`, `value`, `group_name`) VALUES ('support_email', '', 'general');
+
+-- Record the schema version
+INSERT INTO `settings` (`key`, `value`, `group_name`) VALUES ('schema_version', '4', 'system') ON DUPLICATE KEY UPDATE `value` = IF(CAST(`value` AS UNSIGNED) < 4, '4', `value`);
