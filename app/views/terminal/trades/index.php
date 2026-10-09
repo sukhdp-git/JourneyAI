@@ -30,7 +30,7 @@ $sortLink = function (string $col, string $label) use ($f, $qs) { $on = ($f['sor
   <div class="shot-grid">
     <?php foreach ($rows as $t): $p = $t['pnl']; ?>
     <a class="shot-card <?= $p === null ? '' : ((float) $p >= 0 ? 'is-up' : 'is-down') ?>" href="<?= e(url('/terminal/trades/' . $t['id'])) ?>">
-      <img src="<?= e(url('/terminal/trades/' . $t['id'] . '/screenshot')) ?>" alt="<?= e($t['symbol'] . ' chart, ' . fmt_date($t['executed_at'], 'M j')) ?>" loading="lazy">
+      <img src="<?= e($t['screenshot_path'] ? url('/terminal/trades/' . $t['id'] . '/screenshot') : $t['screenshot_url']) ?>" referrerpolicy="no-referrer" alt="<?= e($t['symbol'] . ' chart, ' . fmt_date($t['executed_at'], 'M j')) ?>" loading="lazy">
       <span class="shot-meta"><b><?= e($t['symbol']) ?></b> <span class="badge <?= strtolower($t['side']) ?>"><?= $t['side'] === 'LONG' ? 'BUY' : 'SELL' ?></span><span class="shot-pnl <?= $p === null ? '' : ((float) $p >= 0 ? 'up' : 'down') ?>"><?= $p === null ? 'OPEN' : e(money($p, $cur, true)) ?></span></span>
       <span class="shot-sub"><?= e(fmt_date($t['executed_at'], 'M j, H:i')) ?><?= $t['strategy_name'] || $t['setup_tag'] ? ' · ' . e($t['strategy_name'] ?: $t['setup_tag']) : '' ?><?= $t['rr'] !== null ? ' · ' . e(((float) $t['rr'] > 0 ? '+' : '') . number_format((float) $t['rr'], 2)) . 'R' : '' ?></span>
     </a>

@@ -170,10 +170,10 @@ final class TradeController extends TerminalController
     private static function readImage(?array $f): array
     {
         if (!$f || ($f['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK || !is_uploaded_file($f['tmp_name'])) {
-            return [null, 'Choose a PNG, JPEG or WebP image up to 5 MB.'];
+            return [null, 'Choose a PNG, JPEG or WebP image up to 10 MB.'];
         }
-        if ($f['size'] > 5 * 1024 * 1024) {
-            return [null, 'Screenshots must be 5 MB or smaller.'];
+        if ($f['size'] > 10 * 1024 * 1024) {
+            return [null, 'Screenshots must be 10 MB or smaller.'];
         }
         $mime = (new \finfo(FILEINFO_MIME_TYPE))->file($f['tmp_name']);
         $ext = strtolower(pathinfo((string) $f['name'], PATHINFO_EXTENSION));

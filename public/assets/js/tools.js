@@ -238,37 +238,6 @@
     stopB.addEventListener('click', function () { stopAll(); });
   });
 
-  /* ---------------------------------------------------------------- Trade form: conversion rate + screenshot reader */
-  var tf = $('#trade-form');
-  if (tf) {
-    var sym = $('#t-symbol', tf), rateWrap = $('[data-rate-wrap]', tf), cur = tf.dataset.currency;
-    var syncRate = function () {
-      var o = sym && sym.selectedOptions[0]; if (!o || !rateWrap || !cur) return;
-      var need = o.dataset.quote !== cur && o.dataset.base !== cur;
-      if (need || $('.f-err', rateWrap)) { rateWrap.hidden = false; $('[data-rate-pair]', rateWrap).textContent = '(' + o.dataset.quote + ' → ' + cur + ')'; } else rateWrap.hidden = true;
-    };
-    if (sym) { sym.addEventListener('change', syncRate); syncRate(); }
-    var shotIn = $('[data-shot-input]', tf), readB = $('[data-shot-read]', tf), prev = $('[data-shot-preview]', tf), msg = $('[data-shot-msg]', tf);
-    if (shotIn) shotIn.addEventListener('change', function () {
-      var f = shotIn.files[0]; if (!f) return;
-      if (f.size > 5 * 1024 * 1024) { msg.textContent = 'Screenshots must be 5 MB or smaller.'; shotIn.value = ''; return; }
-      prev.src = URL.createObjectURL(f); prev.hidden = false; msg.textContent = '✓ ' + f.name + ' will be saved with the trade.' + (readB ? ' Press “Read chart” to fill the form from it.' : '');
-      if (readB) readB.disabled = false;
-    });
-    if (readB) readB.addEventListener('click', function () {
-      var f = shotIn.files[0]; if (!f) return;
-      var fd = new FormData(); fd.append('screenshot', f); readB.disabled = true; readB.classList.add('busy'); msg.textContent = 'Reading the chart…';
-      post(readB.dataset.shotRead, fd).then(function (r) {
-        readB.disabled = false; readB.classList.remove('busy');
-        if (!r || !r.ok) { msg.textContent = (r && r.error) || 'Could not read the chart — please type the values.'; return; }
-        var map = { symbol: 't-symbol', side: 't-side', entry: 't-entry', stop: 't-stop', tp: 't-tp', exit: 't-exit' }, got = [];
-        Object.keys(map).forEach(function (k) { var v = r.fields[k], x = d.getElementById(map[k]); if (v !== null && v !== undefined && x) { x.value = v; flash(x); got.push(k); } });
-        if (sym) syncRate();
-        msg.textContent = got.length ? '✓ Filled ' + got.join(', ') + ' from the screenshot. Check every value before saving.' + (r.note ? ' ' + r.note : '') : 'No position tool or prices found on the screenshot — please type the values.';
-      });
-    });
-  }
-
   /* ---------------------------------------------------------------- Share / flex cards */
   function drawCard(canvas, data, style) {
     var cx = canvas.getContext('2d'), W = canvas.width, H = canvas.height, win = data.positive;

@@ -83,7 +83,7 @@
       el('rect', { x: 0, y: y - 1, width: w, height: row + 2, class: 'bar-hit' }, g);
       var lab = el('text', { x: 0, y: y + row / 2 + 4, class: 'cat-label' }, g); lab.textContent = it.label.length > 18 ? it.label.slice(0, 17) + '…' : it.label;
       el('rect', { x: bx, y: y + 5, width: bw, height: row - 10, rx: 3, class: it.value >= 0 ? 'bar-pos' : 'bar-neg' }, g);
-      var vt = el('text', { x: it.value >= 0 ? Math.min(bx + bw + 6, w - vw + 6) : Math.max(lw, bx - 6), y: y + row / 2 + 4, 'text-anchor': it.value >= 0 ? 'start' : 'end', class: 'bar-label' }, g);
+      var vt = el('text', { x: it.value >= 0 ? Math.min(bx + bw + 6, w - vw + 6) : Math.max(lw, bx - 6), y: y + row / 2 + 4, 'text-anchor': it.value >= 0 ? 'start' : 'end', class: 'bar-label ' + (it.value >= 0 ? 'pos' : 'neg') }, g);
       if (it.value < 0 && bx - 6 < lw + 40) { vt.setAttribute('x', x0 + 6); vt.setAttribute('text-anchor', 'start'); }
       vt.textContent = signed(it.value, f);
       var show = function () { var sc = root.clientWidth / w; setTip(t, it.label + (it.sub ? ' · ' + it.sub : ''), signed(it.value, f), (x0 + (it.value >= 0 ? bw / 2 : -bw / 2)) * sc, y * sc + 2); };

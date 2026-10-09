@@ -1,5 +1,5 @@
 -- ---------------------------------------------------------------------------------------------
--- journzey.ai — database update (schema versions 2, 3 and 4)
+-- journzey.ai — database update (schema versions 2 to 5)
 -- Safe to run on an existing database: it only ADDS columns, tables and rows. Nothing is dropped,
 -- reset or overwritten, and running it twice is harmless. Import it with phpMyAdmin → Import.
 -- (The website also applies these changes automatically on the first request after updating.)
@@ -300,5 +300,18 @@ CREATE TABLE IF NOT EXISTS `share_cards` (
 -- Customer support email (set it in Control Panel → Settings → Contact details)
 INSERT IGNORE INTO `settings` (`key`, `value`, `group_name`) VALUES ('support_email', '', 'general');
 
--- Record the schema version
+-- Schema version 4 reached
 INSERT INTO `settings` (`key`, `value`, `group_name`) VALUES ('schema_version', '4', 'system') ON DUPLICATE KEY UPDATE `value` = IF(CAST(`value` AS UNSIGNED) < 4, '4', `value`);
+
+-- ---------------------------------------------------------------------------------------------
+-- journzey.ai — database update (schema version 5): new Log Trade format
+-- ---------------------------------------------------------------------------------------------
+
+-- Chart screenshot link (TradingView or another hosted image) next to the uploaded screenshot
+SET @s := (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `trades` ADD COLUMN `screenshot_url` VARCHAR(500) NULL AFTER `screenshot_path`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'trades' AND COLUMN_NAME = 'screenshot_url');
+PREPARE jz_stmt FROM @s;
+EXECUTE jz_stmt;
+DEALLOCATE PREPARE jz_stmt;
+
+-- Record the schema version
+INSERT INTO `settings` (`key`, `value`, `group_name`) VALUES ('schema_version', '5', 'system') ON DUPLICATE KEY UPDATE `value` = IF(CAST(`value` AS UNSIGNED) < 5, '5', `value`);

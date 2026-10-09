@@ -107,7 +107,7 @@ final class Ledger
             $p += ['q1' => $like, 'q2' => $like, 'q3' => $like];
         }
         if (($f['view'] ?? '') === 'shots') {
-            $w[] = 't.screenshot_path IS NOT NULL';
+            $w[] = '(t.screenshot_path IS NOT NULL OR t.screenshot_url IS NOT NULL)';
         }
         foreach (['symbol' => 't.symbol', 'side' => 't.side', 'session' => 't.session', 'emotion' => 't.emotion', 'mistake' => 't.mistake_tag'] as $k => $col) {
             if (!empty($f[$k])) {
@@ -159,6 +159,10 @@ final class Ledger
         $exec = null;
         try {
             $raw = trim((string) ($in['executed_at'] ?? ''));
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) ($in['trade_date'] ?? ''))) {
+                $time = preg_match('/^\d{2}:\d{2}$/', (string) ($in['trade_time'] ?? '')) ? $in['trade_time'] : '12:00';
+                $raw = $in['trade_date'] . ' ' . $time;
+            }
             $exec = $raw === '' ? gmdate('Y-m-d H:i:s') : (new \DateTimeImmutable($raw, new \DateTimeZone($tz)))->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
             if (strtotime($exec . ' UTC') > time() + 3600) {
                 $e['executed_at'] = 'Execution time cannot be in the future.';
@@ -207,6 +211,10 @@ final class Ledger
             }
         }
         $emotion = in_array($in['emotion'] ?? '', Domain::EMOTIONS, true) ? $in['emotion'] : null;
+        $shotUrl = trim((string) ($in['screenshot_url'] ?? ''));
+        if ($shotUrl !== '' && (!filter_var($shotUrl, FILTER_VALIDATE_URL) || !preg_match('#^https://#i', $shotUrl) || strlen($shotUrl) > 500)) {
+            $e['screenshot_url'] = 'Use a full https:// link (for example a TradingView snapshot link).';
+        }
         $mistake = isset(Domain::MISTAKES[$in['mistake_tag'] ?? '']) ? $in['mistake_tag'] : 'NONE';
         $override = ($in['pnl'] ?? '') !== '';
         $pnlIn = $override ? $num($in['pnl']) : null;
@@ -230,7 +238,8 @@ final class Ledger
             'entry_price' => $entry, 'exit_price' => $exit, 'stop_loss' => $stop, 'take_profit' => $tp, 'lot_size' => $lots, 'fees' => $fees,
             'pnl' => $pnl, 'pnl_override' => $override ? 1 : 0, 'rr' => $calc['rr'], 'risk_amount' => $calc['risk'],
             'strategy_id' => $strategyId, 'setup_tag' => mb_substr(trim((string) ($in['setup_tag'] ?? '')), 0, 120) ?: null,
-            'session' => Sessions::classify($exec), 'emotion' => $emotion, 'mistake_tag' => $mistake,
+            'session' => isset(Domain::SESSIONS[$in['session'] ?? '']) ? $in['session'] : Sessions::classify($exec), 'emotion' => $emotion,
+            'screenshot_url' => $shotUrl !== '' ? $shotUrl : null, 'mistake_tag' => $mistake,
             'rules_followed' => in_array($in['rules_followed'] ?? '1', ['1', 'on', 1, true], true) ? 1 : 0,
             'notes' => mb_substr(trim((string) ($in['notes'] ?? '')), 0, 5000) ?: null,
         ]];

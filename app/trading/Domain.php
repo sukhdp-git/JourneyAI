@@ -8,9 +8,9 @@ final class Domain
 {
     public const ASSET_CLASSES = ['METALS' => 'Gold & metals', 'FOREX' => 'Forex', 'INDICES' => 'Indices', 'CRYPTO' => 'Crypto', 'COMMODITIES' => 'Commodities'];
     public const SIDES = ['LONG', 'SHORT'];
-    public const SESSIONS = ['ASIA' => 'Asia', 'LONDON' => 'London', 'LONDON_NY_OVERLAP' => 'London/NY overlap', 'NEW_YORK' => 'New York', 'OFF_HOURS' => 'Off-hours'];
-    public const EMOTIONS = ['CALM', 'FOCUSED', 'CONFIDENT', 'NEUTRAL', 'PATIENT', 'DISCIPLINED', 'ANXIOUS', 'FEARFUL', 'GREEDY', 'FOMO', 'REVENGE', 'FRUSTRATED', 'BORED', 'TIRED', 'EUPHORIC', 'OVERCONFIDENT', 'IMPULSIVE'];
-    public const NEGATIVE_EMOTIONS = ['ANXIOUS', 'FEARFUL', 'GREEDY', 'FOMO', 'REVENGE', 'FRUSTRATED', 'BORED', 'TIRED', 'EUPHORIC', 'OVERCONFIDENT', 'IMPULSIVE'];
+    public const SESSIONS = ['ASIA' => 'Asia', 'LONDON' => 'London', 'LONDON_NY_OVERLAP' => 'London/NY overlap', 'NEW_YORK' => 'New York', 'NY_PM' => 'NY PM', 'OFF_HOURS' => 'Off-hours'];
+    public const EMOTIONS = ['CALM', 'FOCUSED', 'CONFIDENT', 'NEUTRAL', 'PATIENT', 'DISCIPLINED', 'HESITANT', 'ANXIOUS', 'FEARFUL', 'GREEDY', 'FOMO', 'REVENGE', 'FRUSTRATED', 'BORED', 'TIRED', 'EUPHORIC', 'OVERCONFIDENT', 'IMPULSIVE'];
+    public const NEGATIVE_EMOTIONS = ['HESITANT', 'ANXIOUS', 'FEARFUL', 'GREEDY', 'FOMO', 'REVENGE', 'FRUSTRATED', 'BORED', 'TIRED', 'EUPHORIC', 'OVERCONFIDENT', 'IMPULSIVE'];
     public const MISTAKES = [
         'NONE' => 'None', 'FOMO_ENTRY' => 'FOMO entry', 'REVENGE_TRADE' => 'Revenge trade', 'MOVED_STOP' => 'Moved stop', 'NO_STOP' => 'No stop',
         'OVERSIZED' => 'Oversized', 'EARLY_EXIT' => 'Early exit', 'LATE_ENTRY' => 'Late entry', 'CHASING' => 'Chasing', 'IGNORED_PLAN' => 'Ignored plan',

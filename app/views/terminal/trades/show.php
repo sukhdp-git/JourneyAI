@@ -40,6 +40,7 @@ $writable = App\Trading\Ledger::writable($m, $tacc);
   <section class="panel">
     <div class="panel-head"><h2>Screenshot</h2><?php if ($t['screenshot_path'] && $writable): ?><form method="post" action="<?= e(url('/terminal/trades/' . $t['id'] . '/screenshot/delete')) ?>" data-confirm="Remove this screenshot?"><?= csrf_field() ?><button class="tm-btn tm-btn-sm">Remove</button></form><?php endif; ?></div>
     <?php if ($t['screenshot_path']): ?><a href="<?= e(url('/terminal/trades/' . $t['id'] . '/screenshot')) ?>" target="_blank" rel="noopener"><img class="share-preview" src="<?= e(url('/terminal/trades/' . $t['id'] . '/screenshot')) ?>" alt="Chart screenshot for this trade"></a><?php endif; ?>
+    <?php if (!empty($t['screenshot_url'])): ?><p class="small"><?= icon('external', 'icon icon-xs') ?> <a href="<?= e($t['screenshot_url']) ?>" target="_blank" rel="noopener noreferrer nofollow">Open chart link</a> <span class="muted">(<?= e(parse_url($t['screenshot_url'], PHP_URL_HOST) ?: 'external') ?>)</span></p><?php endif; ?>
     <?php if ($writable): ?>
     <form class="panel" style="border-style:dashed;text-align:center;margin-top:8px" action="<?= e(url('/terminal/trades/' . $t['id'] . '/screenshot')) ?>" data-shot-form>
       <p class="muted small">Drop an image here, paste from the clipboard (Ctrl/⌘ + V) or</p>
