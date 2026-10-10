@@ -147,12 +147,14 @@ final class MemberController extends AdminController
         }
         $amount = is_numeric($req->post('amount')) && (float) $req->post('amount') >= 0 ? round((float) $req->post('amount'), 2) : 0.0;
         $note = mb_substr(trim((string) $req->post('note', '')), 0, 200);
-        Database::transaction(function () use ($u, $plan, $days, $amount, $note) {
+        $pid = Database::transaction(function () use ($u, $plan, $days, $amount, $note) {
             $pid = Database::insert('payments', ['user_id' => $u['id'], 'plan_id' => $plan['id'], 'gateway' => 'manual', 'gateway_order_id' => 'manual-' . bin2hex(random_bytes(6)),
                 'amount' => $amount, 'currency' => $plan['currency'], 'status' => 'paid', 'period_days' => $days, 'customer_email' => $u['email'],
                 'note' => trim('Granted by admin #' . Auth::id() . ($note !== '' ? ': ' . $note : '')), 'paid_at' => gmdate('Y-m-d H:i:s')]);
             Payments::extend((int) $u['id'], (int) $plan['id'], $days, $pid);
+            return $pid;
         });
+        \App\Trading\Affiliates::onPayment((int) $pid); // a recorded amount from a referred customer earns its affiliate commission
         Activity::log('grant_plan', 'members', (int) $u['id'], $plan['name'] . ' +' . $days . ' days');
         $this->back(admin_url('members/' . $u['id']), 'success', $plan['name'] . ' granted for ' . $days . ' days.');
     }

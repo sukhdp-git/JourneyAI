@@ -1,6 +1,7 @@
 <?php
 /** Public website routes — all clean URLs. @var App\Core\Router $router */
 
+use App\Controllers\AffiliateController;
 use App\Controllers\BlogController;
 use App\Controllers\FormController;
 use App\Controllers\HomeController;
@@ -33,6 +34,9 @@ $router->get('/contact', [FormController::class, 'contact']);
 $router->post('/contact', [FormController::class, 'contactSubmit']);
 
 $router->get('/verify/{code}', [VerifyController::class, 'show']);
+$router->get('/affiliates', [AffiliateController::class, 'page']);
+$router->post('/affiliates', [AffiliateController::class, 'apply']);
+$router->get('/r/{code}', [AffiliateController::class, 'track']);
 
 $router->get('/sitemap.xml', [SeoController::class, 'sitemap']);
 $router->get('/robots.txt', [SeoController::class, 'robots']);

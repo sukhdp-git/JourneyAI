@@ -51,7 +51,11 @@ final class HomeController extends TerminalController
         if ($tilt) {
             Response::json(['ok' => false, 'error' => 'JOURNZEY TERMINAL LOCK: tilt cooldown is active until ' . fmt_date(gmdate('Y-m-d H:i:s', $tilt), 'H:i') . '. Quick logging is paused; use the full trade form if you must record a trade.'], 423);
         }
-        $p = QuickTrade::parse(mb_substr((string) $req->post('command', ''), 0, 300));
+        $voice = $req->post('voice') === '1';
+        $p = QuickTrade::parse(mb_substr((string) $req->post('command', ''), 0, 300), $voice);
+        if ($voice && $p['exit_spoken'] === null) {
+            $p['exit'] = null; // spoken without an exit price → logged as an OPEN trade
+        }
         if ($p['errors']) {
             Response::json(['ok' => false, 'error' => implode(' ', $p['errors']), 'parsed' => $p], 422);
         }
@@ -63,14 +67,16 @@ final class HomeController extends TerminalController
             'symbol' => $p['symbol'], 'side' => $p['side'], 'executed_at' => '', 'entry_price' => (string) $p['entry'], 'exit_price' => $p['exit'] === null ? '' : (string) $p['exit'],
             'stop_loss' => $p['stop'] === null ? '' : (string) $p['stop'], 'take_profit' => $p['tp'] === null ? '' : (string) $p['tp'], 'lot_size' => (string) $p['lots'],
             'strategy_id' => $strategyId ?: '', 'setup_tag' => $p['setup'] ?? '', 'emotion' => $p['emotion'] ?? '', 'mistake_tag' => $p['mistake'] ?? 'NONE',
-            'rules_followed' => $p['mistake'] ? '0' : '1', 'notes' => 'Quick command: ' . $req->post('command'),
+            'rules_followed' => $p['mistake'] ? '0' : '1', 'notes' => ($voice ? 'Voice log: ' . mb_substr((string) $req->post('heard', ''), 0, 400) : 'Quick command: ' . $req->post('command')),
         ];
         [$errors, $row] = Ledger::validateTrade($this->m, $this->acc, $in);
         if ($errors) {
             Response::json(['ok' => false, 'error' => implode(' ', $errors), 'parsed' => $p], 422);
         }
-        $id = Database::insert('trades', $row + ['user_id' => $this->uid, 'account_id' => $this->acc['id'], 'source' => 'QUICK_COMMAND']);
-        Response::json(['ok' => true, 'id' => $id, 'message' => $row['symbol'] . ' ' . $row['side'] . ' logged' . ($row['pnl'] !== null ? ' · ' . money($row['pnl'], $this->acc['currency'], true) : ' as OPEN') . '.']);
+        $id = Database::insert('trades', $row + ['user_id' => $this->uid, 'account_id' => $this->acc['id'], 'source' => $voice ? 'VOICE' : 'QUICK_COMMAND']);
+        $lim = \App\Trading\RiskLimits::status($this->m, $this->acc, Ledger::balance($this->acc), $this->tz);
+        $alerts = array_values(array_filter([$lim['daily']['reached'] ? 'DAILY RISK LIMIT REACHED' : null, $lim['weekly']['reached'] ? 'WEEKLY RISK LIMIT REACHED' : null, $this->tiltActive() ? 'TILT RISK DETECTED — cooldown started' : null]));
+        Response::json(['ok' => true, 'id' => $id, 'alerts' => $alerts, 'message' => $row['symbol'] . ' ' . $row['side'] . ' logged' . ($row['pnl'] !== null ? ' · ' . money($row['pnl'], $this->acc['currency'], true) : ' as OPEN') . '.']);
     }
 
     private function tiltActive(): ?int

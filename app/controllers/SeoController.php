@@ -18,7 +18,7 @@ final class SeoController
             $urls[] = ['/services/' . $r['slug'], $r['updated_at'], '0.8'];
         }
         try {
-            foreach (Database::all("SELECT slug, updated_at FROM learn_strategies WHERE status = 'published' ORDER BY sort_order") as $r) {
+            foreach (Database::all("SELECT slug, updated_at FROM learn_strategies WHERE status = 'published' AND is_free = 1 ORDER BY sort_order") as $r) {
                 $urls[] = ['/learn/' . $r['slug'], $r['updated_at'], '0.7'];
             }
         } catch (\PDOException) {

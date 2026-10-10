@@ -40,7 +40,9 @@ All URLs are clean and never end in `.php`.
 | `/` | Homepage. Its 12 sections are CMS-managed, reorderable and can be switched on or off. |
 | `/about` | About page: hero plus content blocks. |
 | `/services`, `/services/{slug}` | Platform capabilities, each with benefits, process, FAQ and SEO. |
-| `/learn`, `/learn/{slug}` | Learning section: the 10-strategy intraday playbook (logic, setup rules, entry, stop, target), a summary matrix and a glossary. Signed-in members can copy any strategy into their personal strategies. |
+| `/learn`, `/learn/{slug}` | Learning section: **3 free strategies** from the intraday playbook (logic, setup rules, entry, stop, target), a summary matrix and a glossary. The other strategies are shown as locked cards with a “Sign up free to unlock” prompt; members open them in the terminal **University**. Choose which strategies are free in **Content → Learning playbook** (“Free on the public Learn page”). |
+| `/affiliates` | Affiliate programme: how it works and the application form (applicants need a free member account). |
+| `/r/{CODE}` | An affiliate's personal link: counts the click, remembers the code for 60 days and opens `/pricing`; the code is pre-filled at checkout. |
 | `/blog`, `/blog/{slug}` | Blog with featured post, search, pagination, related posts and sharing. |
 | `/blog/category/{slug}`, `/blog/tag/{slug}`, `/blog/page/2` | Blog archives and pagination. |
 | `/contact` | Contact details, map and contact form (saved to MySQL). |
@@ -57,7 +59,7 @@ All URLs are clean and never end in `.php`.
 
 | Page | What it does |
 |---|---|
-| **Home Hub** | “Hi [name],” greeting, trading-psychology quotes, a clock in the member's chosen timezone with the London / New York / Tokyo session indicator (daylight saving handled), daily & weekly risk-limit status, 9-step checklist, quick trade command (`/` hotkey). |
+| **Home Hub** | “Hi [name],” greeting, trading-psychology quotes, a clock in the member's chosen timezone with the London / New York / Tokyo session indicator (daylight saving handled), daily & weekly risk-limit status, 9-step checklist, quick trade command (`/` hotkey) and a **microphone on the execution desk**: say one sentence such as “sold gold entry 2860 stop 2870 exit 2850 half a lot” (English, Русский, 中文 or Português) and the trade is logged straight away, with **Undo** and **Edit** buttons. Without an exit price it is logged as an open trade. |
 | **Dashboard** | Date presets, four headline numbers plus a compact stats strip, account-equity curve that includes deposits/withdrawals (shown as green/red dots), cumulative P&L and drawdown charts, breakdowns by weekday, session, instrument and strategy. |
 | **Calendar** | Highlighted monthly P&L box (green/red days, best/worst day), daily P&L calendar with weekly summaries, day drill-down and the daily **flex card**. |
 | **Trade Log** | Compact table (cards on mobile) and a **Screenshot journal** gallery. **Log New Trade** modal: glowing LONG/SHORT badge; multilingual voice console (one-shot “Speak trade” plus a mini-mic on asset, direction, entry, exit, stop, lot, session and strategy; English / Русский / 中文 / Português with spoken numbers such as “two thousand eight hundred sixty point five”, “девятьсот”, “三千”; spoken confirmation with an audio on/off switch; “Try it” example chips); asset chips, date + time defaulting to now; live risk / R:R / net P&L card with the Gold formula badge and an optional manual P&L override; Asian / London / New York / NY PM session buttons; strategy cards with Volume Profile level triggers, catalyst chips and rules preview; chart screenshot by paste (Ctrl/⌘+V), upload (≤10 MB) or image link, plus **Read chart** when AI is configured; mindset, mistake (auto-set for FOMO/Revenge) and “Followed all trading rules” box. Filters, CSV export, **Share** card per trade, runner audit. |
@@ -65,9 +67,11 @@ All URLs are clean and never end in `.php`.
 | **Strategy Analysis** | Personal strategy builder (style, edge/thesis, reorderable rules, sub-setups), scoreboard, win-rate rings, win rate by Asian/London/New York session. |
 | **Edge Matrix** | Colour-coded cards, each with a **?** help explanation: compact last-month audit (keep doing / cut out), best trading window with cautious A+ detection, anti-window, **Blow-up probability radar** (last 30 days of win rate, reward:risk, drawdown and position size → chance the account falls by −5/−10/−20/−50% in the next 14 days, with what-if risk buttons), **20% runner audit** (what 20% left open for 2 more hours with a breakeven stop would have done; needs market data, simulated for DEMO DATA), discipline leak and tilt rule. |
 | **Daily Notepad** | “How was your trading day?”, rules followed (yes/partially/no), emotional state, own discipline rating plus a separate system discipline score, key lessons library; voice dictation in English, Russian, Chinese and Portuguese. |
-| **AI Coach** | Automatic strengths & critical-leaks summary, weekly/monthly reviews (with optional AI narrative), and chat with voice input, grounded in the member's trades, journals, lessons and limits (Anthropic Claude or Google Gemini). |
+| **AI Coach** | Short and point-based: a highlighted “Today's focus”, top-3 edge and top-3 leaks in one line each, compact weekly/monthly reviews (score, what worked, what cost money, next actions — max 3 points each, key numbers highlighted), and chat with voice input that answers in at most 6 short bullets plus “Next:” actions (Anthropic Claude or Google Gemini). |
+| **University** | All playbook strategies explained step by step (logic, rules, entry, stop, targets), colour-coded by style; **Add to my strategies** copies one into the member's strategy builder. |
+| **Affiliate** | Shown only to members who applied to the affiliate programme: personal link and coupon code with copy buttons, clicks, referred and paying customers, earnings (pending / paid), commissions list with masked customer emails, and payout details. |
 | **Accounts** | Manual demo, live equity, prop-firm and custom accounts, each with **its own daily and weekly loss limit** (% or amount); deposits, withdrawals, equity adjustments and capital history; **CSV statement import**. |
-| **Settings / Plan & Billing** | Profile, timezone, language, theme (Obsidian Pro default + 4 more), risk rules, A+ risk tier, tilt rule, password, **Export my data** (JSON/CSV), **Delete account**, plan status and payment history. |
+| **Settings / Plan & Billing** | Profile, timezone, language, theme (**Obsidian Pro** dark — default — or **Clean Light**), risk rules, A+ risk tier, tilt rule, password, **Export my data** (JSON/CSV), **Delete account**, plan status and payment history. |
 
 **Free vs paid.** Every member can create unlimited **demo** accounts and load the 42-trade demo journal (marked DEMO DATA, kept in its own account). **Live** accounts can be created and written to only while a paid plan is active; when a plan ends, live data stays visible but read-only.
 
@@ -176,7 +180,7 @@ You can install in one of two ways.
 ### 4.3a Updating an existing installation
 1. Back up the database (phpMyAdmin → Export) and `config/config.php`.
 2. Upload the new ZIP and extract it over the existing files (your `config/config.php`, `uploads/` and `storage/` are not in the ZIP and are kept).
-3. Open the website once. The site applies `database-updated.sql` automatically (it only adds columns, tables and rows — nothing is deleted; schema version 4 also copies each member's old global loss limits onto each of their accounts and switches members on the old Dark Terminal / Clean Light themes to the new Obsidian Pro theme, which they can change back from the user menu). If you prefer, import **database-updated.sql** yourself in phpMyAdmin → Import first; running it twice is harmless.
+3. Open the website once. The site applies `database-updated.sql` automatically (it only adds columns, tables and rows — nothing is deleted; schema version 4 also copies each member's old global loss limits onto each of their accounts and switches members on the old Dark Terminal / Clean Light themes to the new Obsidian Pro theme, which they can change back from the user menu; schema version 6 moves anyone on a removed theme to Obsidian Pro, marks the first 3 playbook strategies as free and adds the affiliate tables and “Affiliates” links). If you prefer, import **database-updated.sql** yourself in phpMyAdmin → Import first; running it twice is harmless.
 
 ### 4.4 Folder permissions
 On cPanel the defaults are usually right: folders `755`, files `644`.
@@ -297,7 +301,7 @@ Go to **Content → Services**. Each service has:
 You can search, filter and sort. Drag rows to reorder, and use the switch to publish or unpublish. A service's FAQs produce `FAQPage` structured data.
 
 ### Learning playbook management
-Go to **Content → Learning playbook** (needs the *Pages* permission). Each strategy has a name, short name for the summary matrix, style, summary, institutional logic, assets, session, timeframes, setup rules (one per line), entry trigger, stop loss, take-profit targets (one per line), target R:R and SEO fields. Drag rows to reorder; use the switch to publish or hide. The content is educational — keep the "not financial advice" wording and avoid promising results.
+Go to **Content → Learning playbook** (needs the *Pages* permission). Each strategy has a name, short name for the summary matrix, style, summary, institutional logic, assets, session, timeframes, setup rules (one per line), entry trigger, stop loss, take-profit targets (one per line), target R:R and SEO fields. Drag rows to reorder; use the switch to publish or hide. Tick **Free on the public Learn page** for the strategies visitors can read (3 by default); the rest are members-only and appear in the terminal **University**. The content is educational — keep the "not financial advice" wording and avoid promising results.
 
 ### Blog management
 Go to **Content → Blog** to manage posts. **Categories** and **Tags** buttons are at the top of the list. Each post has:
@@ -372,6 +376,19 @@ Use **Test connection** after saving. Plans are activated only after a verified 
 
 ### Upload size for chart screenshots
 Screenshots can be up to 10 MB. The included `.user.ini` raises PHP's upload limit on hosts that use PHP-FPM/CGI (most cPanel servers). If uploads above 2 MB fail, set *upload_max_filesize* = 12M and *post_max_size* = 16M in cPanel → MultiPHP INI Editor.
+
+### Affiliate programme
+Influencers apply at **/affiliates** with their member account (name or brand, platform, channel link, audience size). Applications appear under **Members → Affiliates** (the badge shows how many are waiting; needs the *Billing* permission).
+
+- **Approve:** the coupon code is suggested from the name (e.g. `PRIYA25`) and can be changed; set the commission % (default **25%**, changeable under *Programme settings*, which also opens or closes applications). The affiliate's link is `/r/CODE`.
+- **Attribution:** a customer is linked to an affiliate the first time they enter a valid code at checkout — typed in, or pre-filled from the link (the link alone does not attribute; the code must be applied). The first code wins; an affiliate cannot use their own code; a suspended affiliate's code is not accepted.
+- **Commission:** every paid plan payment from a linked customer — each monthly renewal, online or a manual grant with an amount — creates a *pending* commission of payment × rate. Refunds void unpaid commissions automatically.
+- **Payouts are manual:** on the affiliate's page, approve commissions, pay the affiliate outside the website using the payout details they entered, then **Mark paid** (or *Mark all approved as paid*). Void removes a commission.
+- **Who sees what:** the affiliate sees only their own dashboard (**Terminal → Affiliate**) with masked customer emails; full details are only in the Control Panel. Suspend pauses an affiliate; reject sends an optional note.
+- Payments are one-time per plan period, so “monthly” commission is earned each time the customer renews.
+
+### Risk alerts sound
+When the daily or weekly loss limit is reached, or the tilt breaker fires (3 losses within 20 minutes), the terminal plays a short beep together with the banner. Browsers only allow sound after the member has clicked or typed on the page, so a beep that is blocked on page load plays on the first click. Each alert beeps at most once every 10 minutes.
 
 ### Customer support email
 Set **Control Panel → Settings → Contact details → Customer support email**. It appears as “Customer support” on the contact page, in the footer and as **Help & support** in the member terminal's user menu. Nothing is shown while it is empty.

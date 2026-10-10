@@ -144,7 +144,7 @@ if ($editing && $t['pnl'] !== null) {
       <input type="hidden" name="strategy_id" value="<?= e($v('strategy_id')) ?>" data-lt-strategy>
       <div class="lt-strats" role="group" aria-label="Strategy">
         <?php foreach ($stratData as $s): ?><button type="button" class="lt-strat<?= (string) $v('strategy_id') === (string) $s['id'] ? ' on' : '' ?>" data-lt-strat="<?= $s['id'] ?>"><b><?= e($s['name']) ?></b><?php if ($s['styleLabel']): ?><span class="lt-cat"><?= e($s['styleLabel']) ?></span><?php endif; ?></button><?php endforeach; ?>
-        <?php if (!$stratData): ?><p class="muted small">No strategies yet — <a href="<?= e(url('/terminal/strategies/new')) ?>">create one</a> or copy one from the <a href="<?= e(url('/learn')) ?>">playbook</a>.</p><?php endif; ?>
+        <?php if (!$stratData): ?><p class="muted small">No strategies yet — <a href="<?= e(url('/terminal/strategies/new')) ?>">create one</a> or copy one from the <a href="<?= e(url('/terminal/university')) ?>">University</a>.</p><?php endif; ?>
       </div>
       <?= $err('strategy_id') ?>
     </div>

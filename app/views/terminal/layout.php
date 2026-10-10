@@ -7,7 +7,7 @@ $theme = isset(Domain::THEMES[$m['theme']]) ? $m['theme'] : Domain::DEFAULT_THEM
 $links = [
     ['home', '/terminal', 'nav.home', 'home'], ['dashboard', '/terminal/dashboard', 'nav.dashboard', 'dashboard'], ['calendar', '/terminal/calendar', 'nav.calendar', 'calendar'],
     ['trades', '/terminal/trades', 'nav.trades', 'list'], ['calculator', '/terminal/calculator', 'nav.calculator', 'scale'], ['strategies', '/terminal/strategies', 'nav.strategies', 'target'], ['edge', '/terminal/edge', 'nav.edge', 'grid'],
-    ['notepad', '/terminal/notepad', 'nav.notepad', 'journal'], ['coach', '/terminal/coach', 'nav.coach', 'sparkles'],
+    ['notepad', '/terminal/notepad', 'nav.notepad', 'journal'], ['coach', '/terminal/coach', 'nav.coach', 'sparkles'], ['university', '/terminal/university', 'nav.university', 'book'],
 ];
 $initials = mb_strtoupper(mb_substr($m['name'], 0, 1));
 ?><!doctype html>
@@ -59,6 +59,7 @@ $initials = mb_strtoupper(mb_substr($m['name'], 0, 1));
       </ul>
       <ul class="tm-nav-2">
         <li><a href="<?= e(url('/terminal/accounts')) ?>"<?= $nav === 'accounts' ? ' class="on" aria-current="page"' : '' ?>><?= icon('link', 'icon') ?><span><?= e(t('nav.accounts')) ?></span></a></li>
+        <?php if (App\Core\Database::value('SELECT id FROM affiliates WHERE user_id = :u', ['u' => $m['id']])): ?><li><a href="<?= e(url('/terminal/affiliate')) ?>"<?= $nav === 'affiliate' ? ' class="on" aria-current="page"' : '' ?>><?= icon('link', 'icon') ?><span><?= e(t('nav.affiliate')) ?></span></a></li><?php endif; ?>
         <li><a href="<?= e(url('/terminal/billing')) ?>"<?= $nav === 'billing' ? ' class="on" aria-current="page"' : '' ?>><?= icon('star', 'icon') ?><span><?= e(t('nav.billing')) ?></span><?php if (!$m['ent']['paid']): ?><b class="tm-badge">FREE</b><?php endif; ?></a></li>
         <li><a href="<?= e(url('/terminal/settings')) ?>"<?= $nav === 'settings' ? ' class="on" aria-current="page"' : '' ?>><?= icon('settings', 'icon') ?><span><?= e(t('nav.settings')) ?></span></a></li>
       </ul>
@@ -123,6 +124,7 @@ $initials = mb_strtoupper(mb_substr($m['name'], 0, 1));
 <script src="<?= e(asset('js/charts.js')) ?>" defer></script>
 <script src="<?= e(asset('js/terminal.js')) ?>" defer></script>
 <script src="<?= e(asset('js/vendor/qrcode.js')) ?>" defer></script>
+<script src="<?= e(asset('js/voice-parse.js')) ?>" defer></script>
 <script src="<?= e(asset('js/tools.js')) ?>" defer></script>
 </body>
 </html>

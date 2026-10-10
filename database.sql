@@ -984,7 +984,7 @@ INSERT INTO `pages` (`title`, `slug`, `template`, `hero_eyebrow`, `hero_title`, 
 INSERT INTO `smtp_settings` (`id`, `host`, `port`, `username`, `password_enc`, `encryption`, `from_email`, `from_name`, `reply_to`, `is_enabled`) VALUES (1, '', 587, '', NULL, 'tls', '', 'journzey.ai', '', 0);
 
 -- ---------------------------------------------------------------------------------------------
--- journzey.ai — database update (schema versions 2 to 5)
+-- journzey.ai — database update (schema versions 2 to 6)
 -- Safe to run on an existing database: it only ADDS columns, tables and rows. Nothing is dropped,
 -- reset or overwritten, and running it twice is harmless. Import it with phpMyAdmin → Import.
 -- (The website also applies these changes automatically on the first request after updating.)
@@ -1298,5 +1298,87 @@ PREPARE jz_stmt FROM @s;
 EXECUTE jz_stmt;
 DEALLOCATE PREPARE jz_stmt;
 
--- Record the schema version
+-- Schema version 5 reached
 INSERT INTO `settings` (`key`, `value`, `group_name`) VALUES ('schema_version', '5', 'system') ON DUPLICATE KEY UPDATE `value` = IF(CAST(`value` AS UNSIGNED) < 5, '5', `value`);
+
+-- ---------------------------------------------------------------------------------------------
+-- journzey.ai — database update (schema version 6): University, affiliates, two themes
+-- ---------------------------------------------------------------------------------------------
+
+-- Public Learn page shows only "free" strategies; all of them are in the member University
+SET @s := (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `learn_strategies` ADD COLUMN `is_free` TINYINT(1) NOT NULL DEFAULT 0 AFTER `status`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'learn_strategies' AND COLUMN_NAME = 'is_free');
+PREPARE jz_stmt FROM @s;
+EXECUTE jz_stmt;
+DEALLOCATE PREPARE jz_stmt;
+UPDATE `learn_strategies` SET `is_free` = 1 WHERE COALESCE((SELECT `value` FROM `settings` WHERE `key` = 'schema_version'), 0) < 6 ORDER BY `sort_order`, `id` LIMIT 3;
+
+-- Two terminal themes remain: Obsidian Pro (dark, default) and Clean Light
+UPDATE `user_settings` SET `theme` = 'obsidian-pro' WHERE `theme` NOT IN ('obsidian-pro', 'clean-light');
+
+-- Affiliate programme: applications/affiliates, customer attribution and commissions
+CREATE TABLE IF NOT EXISTS `affiliates` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id` INT UNSIGNED NOT NULL,
+  `code` VARCHAR(32) NULL,
+  `status` ENUM('pending','approved','rejected','suspended') NOT NULL DEFAULT 'pending',
+  `commission_pct` DECIMAL(5,2) NOT NULL DEFAULT 25.00,
+  `full_name` VARCHAR(120) NOT NULL,
+  `platform` VARCHAR(40) NULL,
+  `channel_url` VARCHAR(255) NULL,
+  `audience` VARCHAR(40) NULL,
+  `message` TEXT NULL,
+  `payout_details` VARCHAR(500) NULL,
+  `clicks` INT UNSIGNED NOT NULL DEFAULT 0,
+  `admin_note` VARCHAR(500) NULL,
+  `approved_at` DATETIME NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_aff_user` (`user_id`),
+  UNIQUE KEY `uq_aff_code` (`code`),
+  KEY `idx_aff_status` (`status`),
+  CONSTRAINT `fk_aff_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `affiliate_commissions` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `affiliate_id` INT UNSIGNED NOT NULL,
+  `user_id` INT UNSIGNED NULL,
+  `payment_id` INT UNSIGNED NOT NULL,
+  `payment_amount` DECIMAL(12,2) NOT NULL,
+  `rate` DECIMAL(5,2) NOT NULL,
+  `commission` DECIMAL(12,2) NOT NULL,
+  `currency` CHAR(3) NOT NULL,
+  `status` ENUM('pending','approved','paid','void') NOT NULL DEFAULT 'pending',
+  `paid_at` DATETIME NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_comm_payment` (`payment_id`),
+  KEY `idx_comm_aff` (`affiliate_id`, `status`),
+  CONSTRAINT `fk_comm_aff` FOREIGN KEY (`affiliate_id`) REFERENCES `affiliates` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_comm_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_comm_payment` FOREIGN KEY (`payment_id`) REFERENCES `payments` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+SET @s := (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `users` ADD COLUMN `referred_by_affiliate_id` INT UNSIGNED NULL AFTER `plan_expires_at`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'referred_by_affiliate_id');
+PREPARE jz_stmt FROM @s;
+EXECUTE jz_stmt;
+DEALLOCATE PREPARE jz_stmt;
+SET @s := (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `users` ADD COLUMN `referred_at` DATETIME NULL AFTER `referred_by_affiliate_id`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'referred_at');
+PREPARE jz_stmt FROM @s;
+EXECUTE jz_stmt;
+DEALLOCATE PREPARE jz_stmt;
+SET @s := (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `users` ADD KEY `idx_users_affiliate` (`referred_by_affiliate_id`)', 'DO 0') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND INDEX_NAME = 'idx_users_affiliate');
+PREPARE jz_stmt FROM @s;
+EXECUTE jz_stmt;
+DEALLOCATE PREPARE jz_stmt;
+
+INSERT IGNORE INTO `settings` (`key`, `value`, `group_name`) VALUES ('affiliate_commission_pct', '25', 'billing'), ('affiliates_enabled', '1', 'billing');
+
+-- "Affiliates" links on the public site (added once; edit them in Control Panel → Navigation)
+INSERT INTO `navigation` (`location`, `parent_id`, `label`, `url`, `target`, `sort_order`, `is_enabled`) SELECT 'footer_2', NULL, 'Affiliates', '/affiliates', '_self', 45, 1 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM `navigation` WHERE `url` = '/affiliates' AND `location` = 'footer_2');
+INSERT INTO `navigation` (`location`, `parent_id`, `label`, `url`, `target`, `sort_order`, `is_enabled`) SELECT 'header', NULL, 'Affiliates', '/affiliates', '_self', 27, 1 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM `navigation` WHERE `url` = '/affiliates' AND `location` = 'header');
+
+-- Record the schema version
+INSERT INTO `settings` (`key`, `value`, `group_name`) VALUES ('schema_version', '6', 'system') ON DUPLICATE KEY UPDATE `value` = IF(CAST(`value` AS UNSIGNED) < 6, '6', `value`);

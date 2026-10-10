@@ -414,6 +414,83 @@
     });
   });
 
+  /* ---------------------------------------------------------------- Alert beep (risk limits, tilt) */
+  // Browsers only allow sound after the member has interacted with the page, so a beep that is blocked on
+  // page load is replayed on the first click or key press. Each alert beeps at most once every 10 minutes.
+  var audioCtx = null, pendingBeep = false;
+  function play() {
+    [0, 0.28, 0.56].forEach(function (t) {
+      var o = audioCtx.createOscillator(), g = audioCtx.createGain(), at = audioCtx.currentTime + t;
+      o.type = 'square'; o.frequency.value = 880; o.connect(g); g.connect(audioCtx.destination);
+      g.gain.setValueAtTime(0.0001, at); g.gain.exponentialRampToValueAtTime(0.18, at + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, at + 0.2);
+      o.start(at); o.stop(at + 0.22);
+    });
+    window.__jzBeeps = (window.__jzBeeps || 0) + 1;
+  }
+  function beepNow() {
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'running') { play(); return; }
+      // resume() is asynchronous; it only succeeds once the browser allows audio (now, or after a gesture).
+      pendingBeep = true;
+      audioCtx.resume().then(function () { if (pendingBeep && audioCtx.state === 'running') { pendingBeep = false; play(); } }).catch(function () {});
+    } catch (e) {}
+  }
+  window.jzBeep = function (key) {
+    var k = 'jz-beep-' + (key || 'alert'), now = Date.now(), last = 0;
+    try { last = +localStorage.getItem(k) || 0; } catch (e) {}
+    if (key && now - last < 10 * 60 * 1000) return;
+    try { localStorage.setItem(k, String(now)); } catch (e) {}
+    beepNow();
+  };
+  ['pointerdown', 'keydown'].forEach(function (ev) { d.addEventListener(ev, function () { if (pendingBeep) { pendingBeep = false; beepNow(); } }, { once: false }); });
+  $$('.limit-alert').forEach(function (a) { window.jzBeep(/WEEKLY/.test(a.textContent) ? 'weekly' : 'daily'); });
+  if ($('.panel.tilt')) window.jzBeep('tilt');
+
+  /* ---------------------------------------------------------------- Home Hub: speak a trade, it is logged */
+  $$('[data-hub-voice]').forEach(function (form) {
+    var mic = $('[data-hub-mic]', form), status = $('[data-hub-status]', form), input = $('[data-quick-input]', form);
+    var P = window.jzVoiceParser ? window.jzVoiceParser(JSON.parse(form.dataset.specs || '{}'), []) : null;
+    var loc = d.documentElement.dataset.voiceLang || 'en-US', rec = null, timer = null;
+    var mark = function () { $$('[data-hub-locale]', form).forEach(function (b) { b.classList.toggle('on', b.dataset.hubLocale === loc); }); };
+    $$('[data-hub-locale]', form).forEach(function (b) { b.addEventListener('click', function () { loc = b.dataset.hubLocale; mark(); }); });
+    mark();
+    var say = function (text, cls) { status.className = 'hub-voice-status' + (cls ? ' ' + cls : ''); status.textContent = text; };
+    function logSpoken(heard) {
+      if (!P) return;
+      var f = P.extract(heard, loc).fields, cmd = P.toCommand(f);
+      if (!f.symbol || f.entry === null || !f.side) {
+        input.value = cmd; say('Heard “' + heard + '” — missing ' + [!f.side ? 'buy/sell' : '', !f.symbol ? 'instrument' : '', f.entry === null ? 'entry price' : ''].filter(Boolean).join(', ') + '. Tap the mic and try again.', 'bad');
+        return;
+      }
+      input.value = cmd; say('Logging: ' + cmd + ' …');
+      post(base + '/quick-trade', { command: cmd, voice: '1', heard: heard }).then(function (r) {
+        if (!r || !r.ok) { say((r && r.error) || 'Could not log that trade.', 'bad'); return; }
+        status.className = 'hub-voice-status good'; status.textContent = '✓ ' + r.message + ' ';
+        var undo = txt('button', 'tm-btn tm-btn-sm', 'Undo'), edit = txt('a', 'tm-btn tm-btn-sm', 'Edit');
+        edit.href = base + '/trades/' + r.id + '/edit'; status.appendChild(undo); status.appendChild(edit);
+        if (r.alerts && r.alerts.length) { r.alerts.forEach(function (a) { window.jzBeep(/WEEKLY/.test(a) ? 'weekly' : (/TILT/.test(a) ? 'tilt' : 'daily')); }); toast('⚠ ' + r.alerts.join(' · '), 'error'); }
+        try { if (window.speechSynthesis) { var u = new SpeechSynthesisUtterance('Trade logged'); u.lang = 'en-US'; window.speechSynthesis.speak(u); } } catch (e) {}
+        timer = setTimeout(function () { location.reload(); }, 4500);
+        undo.addEventListener('click', function () {
+          clearTimeout(timer); undo.disabled = true;
+          post(base + '/trades/' + r.id + '/delete', {}).then(function () { say('Trade removed.'); setTimeout(function () { location.reload(); }, 900); });
+        });
+      });
+    }
+    if (!SR) { mic.title = 'Voice needs Chrome, Edge or Safari'; mic.addEventListener('click', function () { toast('Voice logging needs Chrome, Edge or Safari with microphone access.', 'error'); }); return; }
+    mic.addEventListener('click', function () {
+      if (rec) { try { rec.stop(); } catch (e) {} return; }
+      var finalText = '';
+      rec = new SR(); rec.lang = loc; rec.interimResults = true; rec.continuous = false;
+      mic.classList.add('rec'); mic.setAttribute('aria-pressed', 'true'); say('Listening… say your trade');
+      rec.onresult = function (ev) { var t = ''; for (var i = 0; i < ev.results.length; i++) { t += ev.results[i][0].transcript; if (ev.results[i].isFinal) finalText = t; } say('“' + t + '”'); };
+      rec.onerror = function (ev) { if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') say('Microphone access is blocked — allow it in your browser settings.', 'bad'); };
+      rec.onend = function () { rec = null; mic.classList.remove('rec'); mic.setAttribute('aria-pressed', 'false'); if (finalText.trim()) logSpoken(finalText.trim()); else if (!/blocked/.test(status.textContent)) say('Nothing heard — tap the mic and try again.', 'bad'); };
+      try { rec.start(); } catch (e) { rec = null; mic.classList.remove('rec'); }
+    });
+  });
+
   /* ---------------------------------------------------------------- Segmented radio styling helper */
   $$('.seg input[type=radio]').forEach(function (r) { var sync = function () { $$('input[name="' + r.name + '"]', r.form || d).forEach(function (x) { x.parentNode.classList.toggle('on', x.checked); }); }; r.addEventListener('change', sync); sync(); });
 })();

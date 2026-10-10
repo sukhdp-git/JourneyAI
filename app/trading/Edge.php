@@ -371,26 +371,26 @@ final class Edge
         $best = self::bestDimensions($trades, $tz);
         foreach ($best as $dim => $g) {
             if ($g && $g['s']['trades'] >= 5) {
-                $s[] = ['title' => 'Strongest ' . strtolower(preg_replace('/ \(.*/', '', $dim)) . ': ' . $g['key'],
+                $s[] = ['value' => money($g['s']['net'], $cur, true), 'short' => $g['key'] . ' · ' . pct($g['s']['win_rate'], 0) . ' win', 'title' => 'Strongest ' . strtolower(preg_replace('/ \(.*/', '', $dim)) . ': ' . $g['key'],
                     'detail' => sprintf('%s over %d trades · win rate %s · expectancy %s/trade%s', money($g['s']['net'], $cur, true), $g['s']['trades'], pct($g['s']['win_rate'], 0), money($g['s']['expectancy'], $cur, true), $g['s']['avg_r'] !== null ? ' · avg ' . number_format($g['s']['avg_r'], 2) . 'R' : '')];
             }
         }
         $sum = Analytics::summarize($trades);
         if ($sum['avg_r'] !== null && $sum['payoff'] !== null && $sum['avg_r'] > 0) {
-            $s[] = ['title' => 'R profile: average ' . number_format($sum['avg_r'], 2) . 'R per trade', 'detail' => 'Average win is ' . number_format($sum['payoff'], 2) . '× the average loss across ' . $sum['trades'] . ' trades.'];
+            $s[] = ['value' => '+' . number_format($sum['avg_r'], 2) . 'R', 'short' => 'Average R per trade · wins ' . number_format($sum['payoff'], 1) . '× losses', 'title' => 'R profile: average ' . number_format($sum['avg_r'], 2) . 'R per trade', 'detail' => 'Average win is ' . number_format($sum['payoff'], 2) . '× the average loss across ' . $sum['trades'] . ' trades.'];
         }
         $l = [];
         foreach (['FOMO', 'REVENGE', 'OVERTRADING', 'IMPULSIVE', 'MOVED_STOP', 'CHASING'] as $k) {
             $sub = array_filter($trades, fn ($t) => self::inBehaviour($t, $k));
             $x = Analytics::summarize($sub);
             if ($x['trades'] >= 2 && $x['net'] < 0) {
-                $l[] = ['title' => Domain::BEHAVIOURS[$k][0] . ' cost ' . money($x['net'], $cur), 'detail' => $x['trades'] . ' tagged trades · win rate ' . pct($x['win_rate'], 0) . '.'];
+                $l[] = ['value' => money($x['net'], $cur), 'short' => Domain::BEHAVIOURS[$k][0] . ' · ' . $x['trades'] . ' trades', 'title' => Domain::BEHAVIOURS[$k][0] . ' cost ' . money($x['net'], $cur), 'detail' => $x['trades'] . ' tagged trades · win rate ' . pct($x['win_rate'], 0) . '.'];
             }
         }
         $worst = function (callable $fn, string $label) use ($trades, $cur) {
             $g = self::groups($trades, $fn, 3);
             usort($g, fn ($a, $b) => $a['s']['net'] <=> $b['s']['net']);
-            return $g && $g[0]['s']['net'] < 0 ? ['title' => 'Weak ' . $label . ': ' . $g[0]['key'], 'detail' => money($g[0]['s']['net'], $cur) . ' over ' . $g[0]['s']['trades'] . ' trades · win rate ' . pct($g[0]['s']['win_rate'], 0) . '.'] : null;
+            return $g && $g[0]['s']['net'] < 0 ? ['value' => money($g[0]['s']['net'], $cur), 'short' => 'Weak ' . $label . ': ' . $g[0]['key'], 'title' => 'Weak ' . $label . ': ' . $g[0]['key'], 'detail' => money($g[0]['s']['net'], $cur) . ' over ' . $g[0]['s']['trades'] . ' trades · win rate ' . pct($g[0]['s']['win_rate'], 0) . '.'] : null;
         };
         foreach ([[fn ($t) => Domain::SESSION_BUCKETS[self::sessionOf($t)], 'session'], [fn ($t) => self::hourLabel((int) Analytics::local($t['executed_at'], $tz)->format('G')), 'trading hour'], [[self::class, 'strategyOf'], 'strategy']] as [$fn, $label]) {
             if ($w = $worst($fn, $label)) {
@@ -400,10 +400,10 @@ final class Edge
         $limit = $equity * (float) $m['default_risk_pct'] / 100 * 1.5;
         $over = array_filter($trades, fn ($t) => $t['risk_amount'] && (float) $t['risk_amount'] > $limit);
         if ($limit > 0 && count($over) >= 2) {
-            $l[] = ['title' => count($over) . ' trades risked more than 1.5× your ' . rtrim(rtrim((string) $m['default_risk_pct'], '0'), '.') . '% rule', 'detail' => 'Those trades netted ' . money(array_sum(array_map(fn ($t) => (float) $t['pnl'], $over)), $cur, true) . '.'];
+            $l[] = ['value' => count($over) . ' trades', 'short' => 'Risked over 1.5× your ' . rtrim(rtrim((string) $m['default_risk_pct'], '0'), '.') . '% rule', 'title' => count($over) . ' trades risked more than 1.5× your ' . rtrim(rtrim((string) $m['default_risk_pct'], '0'), '.') . '% rule', 'detail' => 'Those trades netted ' . money(array_sum(array_map(fn ($t) => (float) $t['pnl'], $over)), $cur, true) . '.'];
         }
         if ($sum['compliance'] !== null && $sum['compliance'] < 0.8) {
-            $l[] = ['title' => 'Rule compliance ' . pct($sum['compliance'], 0), 'detail' => 'Below 80% of trades followed your plan.'];
+            $l[] = ['value' => pct($sum['compliance'], 0), 'short' => 'Trades that followed your plan', 'title' => 'Rule compliance ' . pct($sum['compliance'], 0), 'detail' => 'Below 80% of trades followed your plan.'];
         }
         return ['enough' => true, 'strengths' => $s, 'leaks' => $l];
     }

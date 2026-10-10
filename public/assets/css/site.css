@@ -528,3 +528,18 @@ label.check { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 
 .verify-stats dt { font-size: .75rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); } .verify-stats dd { margin: 4px 0 0; color: var(--heading); font-weight: 600; }
 .verify-note { font-size: .88rem; color: var(--muted); margin: 0; }
 .contact-cards .support-card span.muted { display: block; font-size: .85rem; margin-top: 2px; }
+.learn-locked-head { margin: 56px 0 20px; } .learn-locked-head h2 { display: flex; align-items: center; gap: 10px; }
+.learn-card.is-locked { opacity: .92; } .learn-card.is-locked h3 { color: var(--heading); }
+.learn-lock { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; font-size: .74rem; font-weight: 700; color: #fbbf24; background: color-mix(in srgb, #fbbf24 14%, transparent); border: 1px solid color-mix(in srgb, #fbbf24 35%, transparent); }
+.learn-blur { filter: blur(3px); user-select: none; }
+.learn-unlock { margin-top: 32px; } .learn-unlock .center-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.learn-tr-locked th a { color: #fbbf24 !important; }
+/* ---------- Affiliates ---------- */
+.aff-steps { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); }
+.aff-step { padding: 24px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--glass); }
+.aff-step span { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--grad); color: #fff; font-weight: 800; margin-bottom: 12px; }
+.aff-step p { color: var(--muted); margin: 0; }
+.aff-example { display: flex; gap: 12px; align-items: flex-start; margin-top: 20px; padding: 16px 18px; border-radius: 14px; border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--line)); background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.aff-example .icon { color: var(--accent); margin-top: 3px; } .aff-example p { margin: 0; }
+.coupon-form { margin-top: 16px; }
+.coupon-row { display: flex; gap: 8px; } .coupon-row input { flex: 1; min-width: 0; }

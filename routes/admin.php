@@ -7,6 +7,7 @@
  * @var App\Core\Router $router
  */
 
+use App\Controllers\Admin\AffiliateController;
 use App\Controllers\Admin\AuthController;
 use App\Controllers\Admin\DashboardController;
 use App\Controllers\Admin\EmailController;
@@ -60,6 +61,12 @@ foreach (['status', 'note', 'grant', 'revoke', 'delete'] as $action) {
 }
 $router->get("$P/member-logins", [MemberController::class, 'logins'], $mw);
 $router->get("$P/payments", [MemberController::class, 'payments'], $mw);
+$router->get("$P/affiliates", [AffiliateController::class, 'index'], $mw);
+$router->post("$P/affiliates/settings", [AffiliateController::class, 'settings'], $mw);
+$router->get("$P/affiliates/{id}", [AffiliateController::class, 'show'], $mw);
+foreach (['approve', 'status', 'commissions'] as $action) {
+    $router->post("$P/affiliates/{id}/$action", [AffiliateController::class, $action], $mw);
+}
 $router->get("$P/integrations", [IntegrationsController::class, 'show'], $mw);
 $router->post("$P/integrations", [IntegrationsController::class, 'save'], $mw);
 $router->post("$P/integrations/test", [IntegrationsController::class, 'test'], $mw);

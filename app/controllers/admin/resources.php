@@ -97,7 +97,7 @@ return [
         'search' => ['title', 'short_title', 'slug', 'summary', 'assets'],
         'filters' => ['status' => ['label' => 'Status', 'options' => $status], 'style' => ['label' => 'Style', 'options' => App\Trading\Domain::STRATEGY_STYLES]],
         'sortable' => ['title' => 'Title', 'updated_at' => 'Last updated', 'sort_order' => 'Manual order'],
-        'columns' => [['title', 'Strategy', 'title'], ['slug', 'URL', 'path:/learn/'], ['style', 'Style', 'tag'], ['target_rr', 'Target R:R', 'text'], ['status', 'Status', 'status'], ['updated_at', 'Updated', 'date']],
+        'columns' => [['title', 'Strategy', 'title'], ['slug', 'URL', 'path:/learn/'], ['style', 'Style', 'tag'], ['is_free', 'Public', 'bool'], ['target_rr', 'Target R:R', 'text'], ['status', 'Status', 'status'], ['updated_at', 'Updated', 'date']],
         'view' => fn ($r) => $r['status'] === 'published' ? '/learn/' . $r['slug'] : null,
         'fields' => [
             ['name' => 'title', 'label' => 'Strategy name', 'type' => 'text', 'rules' => 'required|max:160', 'tab' => 'Strategy', 'help' => 'Members who copy the strategy get the first 80 characters as its name.'],
@@ -105,6 +105,7 @@ return [
             ['name' => 'short_title', 'label' => 'Short name (summary matrix)', 'type' => 'text', 'rules' => 'required|max:80', 'tab' => 'Strategy', 'width' => 'half'],
             ['name' => 'style', 'label' => 'Trading style', 'type' => 'select', 'options' => App\Trading\Domain::STRATEGY_STYLES, 'tab' => 'Strategy', 'width' => 'half'],
             ['name' => 'status', 'label' => 'Status', 'type' => 'select', 'options' => $status, 'rules' => 'required', 'tab' => 'Strategy', 'width' => 'half'],
+            ['name' => 'is_free', 'label' => 'Free on the public Learn page (others are members-only, in the University)', 'type' => 'checkbox', 'tab' => 'Strategy'],
             ['name' => 'summary', 'label' => 'Summary (card text)', 'type' => 'textarea', 'rules' => 'required|max:500', 'tab' => 'Strategy', 'rows' => 3, 'counter' => 220],
             ['name' => 'logic', 'label' => 'Institutional logic', 'type' => 'textarea', 'rules' => 'max:5000', 'tab' => 'Strategy', 'rows' => 5],
             ['name' => 'assets', 'label' => 'Target assets', 'type' => 'text', 'rules' => 'max:255', 'tab' => 'Strategy', 'width' => 'half'],

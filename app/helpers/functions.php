@@ -358,3 +358,10 @@ function t(string $key, array $vars = []): string
     }
     return $s;
 }
+
+
+/** Escapes AI coach text and turns **key phrase** into a highlighted <mark>. */
+function coach_text(?string $text): string
+{
+    return preg_replace('/\*\*(.+?)\*\*/s', '<mark>$1</mark>', e($text)) ?? e($text);
+}

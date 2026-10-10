@@ -80,7 +80,7 @@ $facts = array_filter([
             <a class="btn btn-ghost btn-block learn-signin" href="<?= e(url('/login')) ?>">Sign in</a>
           <?php endif; ?>
         </div>
-        <a class="card-link" href="<?= e(url('/learn')) ?>#matrix"><?= icon('grid', 'icon icon-sm') ?> All 10 strategies</a>
+        <a class="card-link" href="<?= e(url('/learn')) ?>#matrix"><?= icon('grid', 'icon icon-sm') ?> All strategies</a>
       </div>
     </aside>
   </div>

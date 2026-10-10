@@ -10,21 +10,23 @@ $rv = $review; $rs = $rv['summary'];
 <?php endif; ?>
 
 <!-- Automatic home state: computed from your data, no AI call needed -->
+<?php $topS = array_slice($home['strengths'], 0, 3); $topL = array_slice($home['leaks'], 0, 3); ?>
+<?php if ($home['enough'] && $topL): ?><div class="coach-focus"><?= icon('target', 'icon icon-sm') ?> <span>Today’s focus:</span> <strong><?= e($topL[0]['short'] ?? $topL[0]['title']) ?></strong> <mark class="down"><?= e($topL[0]['value'] ?? '') ?></mark></div><?php endif; ?>
 <div class="coach-home">
-  <section class="panel good">
-    <h2>Your mathematical edge &amp; strengths</h2>
-    <?php if (!$home['enough']): ?><p class="muted small">More trading data is required to identify this pattern reliably (at least 10 closed trades).</p>
-    <?php elseif (!$home['strengths']): ?><p class="muted small">More trading data is required to identify this pattern reliably.</p>
-    <?php else: foreach ($home['strengths'] as $x): ?><div class="insight"><strong class="up">▲</strong> <strong><?= e($x['title']) ?></strong><p class="muted"><?= e($x['detail']) ?></p></div><?php endforeach; endif; ?>
+  <section class="ex-card c-green coach-col">
+    <h2><?= icon('trend-up', 'icon icon-sm') ?> Your edge</h2>
+    <?php if (!$home['enough']): ?><p class="muted small">Needs 10+ closed trades.</p>
+    <?php elseif (!$topS): ?><p class="muted small">No clear strength yet.</p>
+    <?php else: foreach ($topS as $x): ?><div class="ins"><span><?= e($x['short'] ?? $x['title']) ?></span><b class="up"><?= e($x['value'] ?? '') ?></b></div><?php endforeach; endif; ?>
   </section>
-  <section class="panel bad">
-    <h2>Your critical leaks</h2>
-    <?php if (!$home['enough']): ?><p class="muted small">More trading data is required to identify this pattern reliably (at least 10 closed trades).</p>
-    <?php elseif (!$home['leaks']): ?><p class="muted small">No clear leak in your data yet. More trading data is required to identify this pattern reliably.</p>
-    <?php else: foreach ($home['leaks'] as $x): ?><div class="insight"><strong class="down">▼</strong> <strong><?= e($x['title']) ?></strong><p class="muted"><?= e($x['detail']) ?></p></div><?php endforeach; endif; ?>
+  <section class="ex-card c-red coach-col">
+    <h2><?= icon('trend-down', 'icon icon-sm') ?> Your leaks</h2>
+    <?php if (!$home['enough']): ?><p class="muted small">Needs 10+ closed trades.</p>
+    <?php elseif (!$topL): ?><p class="muted small">No clear leak — keep it up.</p>
+    <?php else: foreach ($topL as $x): ?><div class="ins"><span><?= e($x['short'] ?? $x['title']) ?></span><b class="down"><?= e($x['value'] ?? '') ?></b></div><?php endforeach; endif; ?>
   </section>
 </div>
-<p class="muted small" style="margin:-4px 0 12px">Calculated from <?= e($acc['name']) ?><?= (int) $acc['has_demo_data'] ? ' (DEMO DATA)' : '' ?> — only conclusions supported by your recorded trades are shown. Historical patterns do not guarantee future results.</p>
+<p class="muted small" style="margin:-4px 0 12px"><?= e($acc['name']) ?><?= (int) $acc['has_demo_data'] ? ' · DEMO DATA' : '' ?> · from your recorded trades · not a forecast.</p>
 
 <div class="grid g-main">
   <section class="panel stack">
@@ -32,15 +34,15 @@ $rv = $review; $rs = $rv['summary'];
       <h2><?= $conv ? e($conv['title']) : 'Ask your coach' ?></h2>
       <span class="muted small"><span data-ai-remaining><?= (int) $remaining ?></span> / <?= (int) $limit ?> messages left today</span>
     </div>
-    <p class="muted small">The coach reads your trades, P&amp;L, strategies, sessions, hours, R, risk, journal entries, emotions, mistake tags, discipline answers, key lessons and loss limits — prepared on the server for this account only. Answers are AI-generated and are not financial advice.</p>
+    <p class="muted small">Short answers from your own trades and journal. AI-generated — not financial advice.</p>
     <div class="chat" data-chat-log aria-live="polite">
       <?php foreach ($messages as $msg): ?>
-        <div class="msg <?= e($msg['role']) ?>"><?= e($msg['content']) ?><?php if ($msg['role'] === 'assistant'): ?><small>AI-generated · <?= e(fmt_date($msg['created_at'], 'M j, H:i')) ?></small><?php endif; ?></div>
+        <div class="msg <?= e($msg['role']) ?>"><?= $msg['role'] === 'assistant' ? coach_text($msg['content']) : e($msg['content']) ?><?php if ($msg['role'] === 'assistant'): ?><small>AI-generated · <?= e(fmt_date($msg['created_at'], 'M j, H:i')) ?></small><?php endif; ?></div>
       <?php endforeach; ?>
       <?php if (!$messages): ?><div class="msg assistant">Ask about your strongest setup, why you are losing money, sessions, emotions, discipline or your key lessons. I answer from your own data.</div><?php endif; ?>
     </div>
     <div class="prompt-chips" style="display:flex;flex-wrap:wrap;gap:6px">
-      <?php foreach ($prompts as $p): ?><button type="button" class="tm-btn tm-btn-sm tm-btn-ghost" data-prompt="<?= e($p) ?>"<?= $configured ? '' : ' disabled' ?>><?= e($p) ?></button><?php endforeach; ?>
+      <?php foreach (array_slice($prompts, 0, 4) as $p): ?><button type="button" class="tm-btn tm-btn-sm tm-btn-ghost" data-prompt="<?= e($p) ?>"<?= $configured ? '' : ' disabled' ?>><?= e($p) ?></button><?php endforeach; ?>
     </div>
     <form data-chat-form data-conversation="<?= $conv ? (int) $conv['id'] : '' ?>" class="stack">
       <label class="sr-only" for="chat-q">Your question</label>
@@ -62,21 +64,28 @@ $rv = $review; $rs = $rv['summary'];
       <div class="panel-head"><h2>Performance review</h2>
         <form method="get" action="<?= e(url('/terminal/coach' . ($conv ? '/' . $conv['id'] : ''))) ?>#review"><label class="sr-only" for="rv-p">Period</label><select id="rv-p" name="period" data-autosubmit style="width:auto"><?php foreach (CoachController::PERIODS as $k => $l): ?><option value="<?= $k ?>"<?= $period === $k ? ' selected' : '' ?>><?= e($l) ?></option><?php endforeach; ?></select></form></div>
       <div id="review-doc">
-      <p class="small" style="margin:0"><strong><?= e($periodLabel) ?></strong> · <?= e($periodFrom) ?> to <?= e($periodTo) ?> · <?= (int) $rs['trades'] ?> trades · <strong class="<?= $rs['net'] >= 0 ? 'up' : 'down' ?>"><?= e(money($rs['net'], $cur, true)) ?></strong> · win rate <?= e(pct($rs['win_rate'], 0)) ?> · rule compliance <?= e(pct($rs['compliance'], 0)) ?></p>
-      <?php if (!$rs['trades'] && !$rv['lessons']): ?><p class="muted small">No trades or journal lessons in this period yet.</p><?php else: ?>
-      <p class="muted small" style="margin:6px 0 0">Based on your historical journal and trading data, these are the behaviours associated with your strongest and weakest performance in this period.</p>
-      <?php if ($rv['best_trades']): ?><h3>Best trades</h3><ul><?php foreach ($rv['best_trades'] as $t): ?><li><?= e(fmt_date($t['executed_at'], 'M j')) ?> · <?= e($t['symbol']) ?> <?= $t['side'] === 'LONG' ? 'BUY' : 'SELL' ?> · <span class="up"><?= e(money($t['pnl'], $cur, true)) ?></span><?= $t['rr'] !== null ? ' · ' . e(number_format((float) $t['rr'], 2)) . 'R' : '' ?><?= $t['strategy_name'] ? ' · ' . e($t['strategy_name']) : '' ?></li><?php endforeach; ?></ul><?php endif; ?>
-      <?php $dims = array_filter($rv['dims']); if ($dims): ?><h3>Strongest</h3><ul><?php foreach ($dims as $k => $g): ?><li><?= e(preg_replace('/ \(.*/', '', $k)) ?>: <strong><?= e($g['key']) ?></strong> — <span class="<?= $g['s']['net'] >= 0 ? 'up' : 'down' ?>"><?= e(money($g['s']['net'], $cur, true)) ?></span>, <?= (int) $g['s']['trades'] ?> trades</li><?php endforeach; ?></ul><?php endif; ?>
-      <?php if ($rv['best_window']): ?><h3>Strongest trading window</h3><ul><li><?= e(Edge::windowName($rv['best_window'])) ?> · <?= e($rv['best_window']['best_hours']['label']) ?> — <span class="<?= $rv['best_window']['s']['net'] >= 0 ? 'up' : 'down' ?>"><?= e(money($rv['best_window']['s']['net'], $cur, true)) ?></span></li></ul><?php endif; ?>
-      <?php if ($rv['worst_window']): ?><h3>Weakest trading window</h3><ul><li class="down"><?= e(Edge::windowName($rv['worst_window'])) ?> · <?= e($rv['worst_window']['worst_hours']['label']) ?> — <?= e(money($rv['worst_window']['s']['net'], $cur)) ?></li></ul><?php endif; ?>
-      <?php if ($rv['leak']['by']): ?><h3>Key discipline leaks</h3><ul><?php foreach (array_slice($rv['leak']['by'], 0, 4) as $b): ?><li><?= e($b['label']) ?>: <?= (int) $b['trades'] ?> trades, leak <span class="down"><?= e(money($b['leak'], $cur)) ?></span></li><?php endforeach; ?></ul><?php endif; ?>
-      <?php if ($rv['mistakes']): ?><h3>Repeated mistakes</h3><ul><?php foreach ($rv['mistakes'] as $k => $n): ?><li><?= e($k) ?> × <?= (int) $n ?></li><?php endforeach; ?></ul><?php endif; ?>
-      <?php if ($rv['emotions'] || $rv['journal_emotions']): ?><h3>Emotional patterns</h3><ul><?php foreach ($rv['emotions'] as $x): ?><li><?= e($x) ?></li><?php endforeach; ?><?php if ($rv['journal_emotions']): ?><li>Journal mood: <?= e(implode(', ', array_map(fn ($k, $v) => $k . ' ×' . $v, array_keys($rv['journal_emotions']), $rv['journal_emotions']))) ?></li><?php endif; ?></ul><?php endif; ?>
-      <?php if ($rv['answers']): ?><h3>Rule compliance (journal)</h3><ul><li><?= e(implode(' · ', array_map(fn ($k, $v) => ['yes' => 'Followed rules', 'partial' => 'Partially', 'no' => 'Did not'][$k] . ': ' . $v . ' day' . ($v === 1 ? '' : 's'), array_keys($rv['answers']), $rv['answers']))) ?></li></ul><?php endif; ?>
-      <?php if ($rv['lessons']): ?><h3>Best lessons</h3><ul><?php foreach (array_slice($rv['lessons'], 0, 6) as $j): ?><li>“<?= e($j['key_lesson']) ?>” <span class="muted small"><?= e($j['journal_date']) ?></span></li><?php endforeach; ?></ul><?php endif; ?>
-      <?php if ($rv['improve']): ?><h3>Improvement areas</h3><ul><?php foreach ($rv['improve'] as $x): ?><li><?= e($x) ?></li><?php endforeach; ?></ul><?php endif; ?>
+      <p class="muted small" style="margin:0"><?= e($periodLabel) ?> · <?= e($periodFrom) ?> → <?= e($periodTo) ?></p>
+      <div class="rv-score">
+        <div><small>Net</small><b class="<?= $rs['net'] >= 0 ? 'up' : 'down' ?>"><?= e(money($rs['net'], $cur, true)) ?></b></div>
+        <div><small>Win rate</small><b class="<?= ($rs['win_rate'] ?? 0) >= 0.5 ? 'up' : 'down' ?>"><?= e(pct($rs['win_rate'], 0)) ?></b></div>
+        <div><small>Rules kept</small><b class="<?= ($rs['compliance'] ?? 1) >= 0.8 ? 'up' : 'down' ?>"><?= e(pct($rs['compliance'], 0)) ?></b></div>
+        <div><small>Trades</small><b><?= (int) $rs['trades'] ?></b></div>
+      </div>
+      <?php if (!$rs['trades'] && !$rv['lessons']): ?><p class="muted small">No trades or journal lessons in this period yet.</p><?php else:
+        $win = []; $lose = []; $next = [];
+        foreach (array_slice(array_filter($rv['dims']), 0, 2, true) as $k => $g) { $win[] = [preg_replace('/ \(.*/', '', $k) . ': ' . $g['key'], money($g['s']['net'], $cur, true)]; }
+        if ($rv['best_window']) { $win[] = ['Best window: ' . Edge::windowName($rv['best_window']) . ' · ' . $rv['best_window']['best_hours']['label'], money($rv['best_window']['s']['net'], $cur, true)]; }
+        foreach (array_slice($rv['leak']['by'], 0, 2) as $b) { $lose[] = [$b['label'] . ' (' . (int) $b['trades'] . ((int) $b['trades'] === 1 ? ' trade)' : ' trades)'), '−' . money($b['leak'], $cur)]; }
+        if ($rv['worst_window']) { $lose[] = ['Weak window: ' . Edge::windowName($rv['worst_window']), money($rv['worst_window']['s']['net'], $cur)]; }
+        if (!$lose && $rv['mistakes']) { foreach (array_slice($rv['mistakes'], 0, 2, true) as $k => $n) { $lose[] = [$k, '×' . (int) $n]; } }
+        $next = array_slice($rv['improve'], 0, 3);
+      ?>
+      <?php if ($win): ?><div class="rv-block good"><h3><?= icon('trend-up', 'icon icon-xs') ?> What worked</h3><ul><?php foreach (array_slice($win, 0, 3) as [$t, $v]): ?><li><span><?= e($t) ?></span><mark class="up"><?= e($v) ?></mark></li><?php endforeach; ?></ul></div><?php endif; ?>
+      <?php if ($lose): ?><div class="rv-block bad"><h3><?= icon('trend-down', 'icon icon-xs') ?> What cost you</h3><ul><?php foreach (array_slice($lose, 0, 3) as [$t, $v]): ?><li><span><?= e($t) ?></span><mark class="down"><?= e($v) ?></mark></li><?php endforeach; ?></ul></div><?php endif; ?>
+      <?php if ($next): ?><div class="rv-block next"><h3><?= icon('target', 'icon icon-xs') ?> Focus next</h3><ol><?php foreach ($next as $x): ?><li><?= e($x) ?></li><?php endforeach; ?></ol></div><?php endif; ?>
+      <?php if ($rv['lessons']): ?><p class="rv-lesson"><?= icon('star', 'icon icon-xs') ?> “<?= e($rv['lessons'][0]['key_lesson']) ?>”</p><?php endif; ?>
       <?php endif; ?>
-      <p class="muted small" style="margin-top:10px">Historical analysis only — not a forecast and not financial advice.</p>
+      <p class="muted small" style="margin-top:8px">Historical analysis — not financial advice.</p>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button type="button" class="tm-btn tm-btn-sm" data-copy-target="#review-doc">Copy</button>

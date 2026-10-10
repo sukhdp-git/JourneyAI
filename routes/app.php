@@ -14,6 +14,8 @@ use App\Controllers\Terminal\NotepadController;
 use App\Controllers\Terminal\SettingsController;
 use App\Controllers\Terminal\StrategyController;
 use App\Controllers\Terminal\TradeController;
+use App\Controllers\Terminal\UniversityController;
+use App\Controllers\Terminal\AffiliateController;
 use App\Controllers\WebhookController;
 
 $router->get('/login', [A::class, 'loginForm']);
@@ -73,6 +75,11 @@ $router->post('/terminal/edge/runner', [EdgeController::class, 'runner']);
 $router->get('/terminal/notepad', [NotepadController::class, 'index']);
 $router->post('/terminal/notepad', [NotepadController::class, 'save']);
 
+$router->get('/terminal/affiliate', [AffiliateController::class, 'index']);
+$router->post('/terminal/affiliate/payout', [AffiliateController::class, 'payout']);
+$router->get('/terminal/university', [UniversityController::class, 'index']);
+$router->get('/terminal/university/{slug}', [UniversityController::class, 'show']);
+
 $router->get('/terminal/coach', [CoachController::class, 'index']);
 $router->get('/terminal/coach/{id}', [CoachController::class, 'index']);
 $router->post('/terminal/coach/send', [CoachController::class, 'send']);
@@ -98,6 +105,7 @@ $router->get('/terminal/billing', [BillingController::class, 'billing']);
 $router->get('/pricing', [BillingController::class, 'pricing']);
 $router->get('/checkout/{plan}', [BillingController::class, 'checkout']);
 $router->post('/checkout/{plan}', [BillingController::class, 'startPayment']);
+$router->post('/checkout/{plan}/coupon', [BillingController::class, 'applyCoupon']);
 $router->post('/checkout/razorpay/verify', [BillingController::class, 'razorpayVerify']);
 $router->get('/checkout/stripe/success', [BillingController::class, 'stripeSuccess']);
 $router->post('/webhooks/razorpay', [WebhookController::class, 'razorpay']);

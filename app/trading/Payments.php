@@ -140,6 +140,7 @@ final class Payments
             return self::extend((int) $p['user_id'], (int) $p['plan_id'], (int) $p['period_days'], (int) $p['id']);
         });
         if ($done) {
+            Affiliates::onPayment((int) $p['id']);
             self::notify((int) $p['id']);
         }
     }
@@ -205,6 +206,7 @@ final class Payments
             Database::update('payments', ['status' => 'failed', 'note' => mb_substr((string) ($pay['error_description'] ?? 'Payment failed'), 0, 255)], 'id = :id', ['id' => $p['id']]);
         } elseif ($event === 'refund.processed' || $event === 'payment.refunded') {
             Database::update('payments', ['status' => 'refunded'], 'id = :id', ['id' => $p['id']]);
+            Affiliates::voidForPayment((int) $p['id']);
         }
         return [200, 'ok'];
     }
@@ -240,6 +242,9 @@ final class Payments
             Database::query("UPDATE payments SET status = 'failed' WHERE gateway = 'stripe' AND gateway_order_id = :o AND status = 'created'", ['o' => (string) ($obj['id'] ?? '')]);
         } elseif ($type === 'charge.refunded') {
             Database::query("UPDATE payments SET status = 'refunded' WHERE gateway = 'stripe' AND gateway_payment_id = :g", ['g' => (string) ($obj['payment_intent'] ?? '')]);
+            foreach (Database::all("SELECT id FROM payments WHERE gateway = 'stripe' AND gateway_payment_id = :g", ['g' => (string) ($obj['payment_intent'] ?? '')]) as $r) {
+                Affiliates::voidForPayment((int) $r['id']);
+            }
         }
         return [200, 'ok'];
     }

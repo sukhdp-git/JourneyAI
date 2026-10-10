@@ -35,9 +35,28 @@ final class BillingController extends Controller
         $m = $this->member($req);
         $plan = Payments::plan((string) $req->params['plan']) ?? Response::redirect('/pricing');
         $this->render('billing/checkout', [
+            'coupon' => (string) ($_COOKIE[\App\Trading\Affiliates::COOKIE] ?? ''), 'referred' => (bool) \App\Core\Database::value('SELECT referred_by_affiliate_id FROM users WHERE id = :u', ['u' => $m['id']]),
             'plan' => $plan, 'm' => $m, 'gateway' => Payments::gateway(), 'cancelled' => $req->query('cancelled') === '1',
             'extends' => $m['ent']['paid'] && (int) $m['ent']['plan']['id'] === (int) $plan['id'],
         ], ['title' => 'Checkout — ' . $plan['name'], 'path' => '/checkout/' . $plan['slug'], 'noindex' => true]);
+    }
+
+    /** Links the member to an affiliate code without starting a payment (used when payments are activated manually). */
+    public function applyCoupon(Request $req): never
+    {
+        Csrf::verify($req);
+        $m = $this->member($req);
+        $plan = Payments::plan((string) $req->params['plan']) ?? Response::redirect('/pricing');
+        if (!RateLimiter::hit('coupon:' . $m['id'], 10, 3600)) {
+            Session::flash('error', 'Too many attempts. Please wait a while and try again.');
+        } elseif (trim((string) $req->post('coupon', '')) === '') {
+            Session::flash('error', 'Enter a coupon code.');
+        } elseif (($err = \App\Trading\Affiliates::attach((int) $m['id'], (string) $req->post('coupon', ''))) !== null) {
+            Session::flash('error', $err);
+        } else {
+            Session::flash('success', 'Code applied.');
+        }
+        Response::redirect('/checkout/' . $plan['slug']);
     }
 
     public function startPayment(Request $req): never
@@ -57,6 +76,9 @@ final class BillingController extends Controller
         }
         if (!RateLimiter::hit('checkout:' . $m['id'], 10, 3600)) {
             $fail('Too many checkout attempts. Please wait a while and try again.');
+        }
+        if (($couponErr = \App\Trading\Affiliates::attach((int) $m['id'], (string) $req->post('coupon', ''))) !== null) {
+            $fail($couponErr);
         }
         $r = Payments::start($m, $plan);
         if (!$r['ok']) {

@@ -146,7 +146,7 @@ final class CoachController extends TerminalController
         [$from, $to, $pl] = Edge::periodRange($key, $this->tz);
         $period = str_contains($key, 'month') ? 'monthly' : 'weekly';
         $label = strtolower($pl) . ' (' . $from . ' to ' . $to . ')';
-        $prompt = 'Write my ' . $period . ' trading review for ' . $label . '. Use language like "based on your historical journal and trading data". Structure: 1) Summary in 3 lines, 2) Behaviours associated with my strongest performance (setups, sessions, instruments, hours), 3) What leaked money (discipline, emotions, repeated mistakes, weak windows), 4) My key lessons from the journal and how they connect to the numbers, 5) Three specific focus points for the next ' . ($period === 'weekly' ? 'week' : 'month') . '. Never promise results. If there were no trades in this period, say so and give a short plan for getting quality data.';
+        $prompt = 'Write my ' . $period . ' trading review for ' . $label . '. Use language like "based on your historical journal and trading data". Keep it short and scannable: "Summary:" 2 lines; "Strengths:" max 3 bullets; "Leaks:" max 3 bullets (discipline, emotions, mistakes, weak windows); "Next ' . ($period === 'weekly' ? 'week' : 'month') . ':" exactly 3 focus bullets. Each bullet under 20 words with the key number in **bold**. Never promise results. If there were no trades in this period, say so and give a short plan for getting quality data.';
         // The review prompt is fixed server-side; it counts toward the daily limit like a chat message.
         $res = AiCoach::complete($this->context((string) $req->post('lang', $this->m['language']), $from, $to, $label), [['role' => 'user', 'content' => $prompt]]);
         if (!$res['ok']) {

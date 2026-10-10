@@ -5,6 +5,7 @@ use App\Core\Database;
 $path = (new App\Core\Request())->path;
 $rel = trim(substr($path, strlen('/' . ADMIN_PREFIX)), '/');
 $newMembers = can('members') || can('members.view') ? (int) Database::value('SELECT COUNT(*) FROM users WHERE created_at >= UTC_DATE()') : 0;
+$newAff = can('billing') ? (int) Database::value("SELECT COUNT(*) FROM affiliates WHERE status = 'pending'") : 0;
 $newMsgs = can('messages') ? (int) Database::value("SELECT COUNT(*) FROM contact_messages WHERE status = 'new'") : 0;
 $nav = [
     '' => [['dashboard', 'Dashboard', 'dashboard', null]],
@@ -21,7 +22,7 @@ $nav = [
     ],
     'Members' => [
         ['members', 'All members', 'users', can('members') ? 'members' : 'members.view', $newMembers], ['member-logins', 'Sign-in log', 'activity', can('members') ? 'members' : 'members.view'],
-        ['payments', 'Payments', 'zap', 'billing'], ['plans', 'Plans & pricing', 'star', 'billing'], ['instruments', 'Instruments', 'bars', 'instruments'], ['integrations', 'Integrations', 'key', 'integrations'],
+        ['payments', 'Payments', 'zap', 'billing'], ['affiliates', 'Affiliates', 'link', 'billing', $newAff], ['plans', 'Plans & pricing', 'star', 'billing'], ['instruments', 'Instruments', 'bars', 'instruments'], ['integrations', 'Integrations', 'key', 'integrations'],
         ['messages', 'Contact messages', 'message', 'messages', $newMsgs],
     ],
     'Media' => [['media', 'Media library', 'image', 'media']],

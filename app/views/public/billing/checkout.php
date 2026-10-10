@@ -11,12 +11,15 @@
         <dt>Access</dt><dd><?= (int) $plan['interval_days'] ?> days<?= $extends ? ' — added to your current access (until ' . e(fmt_date($m['plan_expires_at'], 'M j, Y')) . ')' : ' from today' ?></dd>
         <dt>Account</dt><dd><?= e($m['email']) ?></dd>
         <dt>Total</dt><dd class="total"><?= e(money($plan['price'], $plan['currency'])) ?></dd>
+        <?php if ($referred): ?><dt>Partner code</dt><dd>Applied ✓</dd><?php endif; ?>
       </dl>
       <?php if ($gateway === 'none'): ?>
         <div class="alert alert-info" role="status">Online payments are not switched on yet. <a href="<?= e(url('/contact')) ?>">Contact us</a> to upgrade — an administrator can activate your plan manually.</div>
+        <?php if (!$referred): ?><form method="post" action="<?= e(url('/checkout/' . $plan['slug'] . '/coupon')) ?>" class="coupon-form"><?= csrf_field() ?><div class="field"><label for="co-coupon">Coupon / affiliate code <span class="muted">(optional)</span></label><div class="coupon-row"><input id="co-coupon" name="coupon" maxlength="32" autocomplete="off" value="<?= e(preg_replace('/[^A-Za-z0-9]/', '', $coupon)) ?>" placeholder="e.g. ARJUN25" style="text-transform:uppercase"><button class="btn btn-secondary" type="submit">Apply</button></div></div></form><?php endif; ?>
       <?php else: ?>
         <form method="post" action="<?= e(url('/checkout/' . $plan['slug'])) ?>" data-checkout="<?= e($gateway) ?>">
           <?= csrf_field() ?>
+          <?php if (!$referred): ?><div class="field"><label for="co-coupon">Coupon / affiliate code <span class="muted">(optional)</span></label><input id="co-coupon" name="coupon" maxlength="32" autocomplete="off" value="<?= e(preg_replace('/[^A-Za-z0-9]/', '', $coupon)) ?>" placeholder="e.g. ARJUN25" style="text-transform:uppercase"></div><?php endif; ?>
           <label class="check"><input type="checkbox" name="terms" value="1" required> I agree to the <a href="<?= e(url('/terms-and-conditions')) ?>" target="_blank">Terms</a> and understand journzey.ai is a journal and analytics tool, not financial advice.</label>
           <button class="btn btn-primary btn-lg btn-block" type="submit" data-loading-text="Starting secure checkout…">Pay <?= e(money($plan['price'], $plan['currency'])) ?> securely with <?= $gateway === 'razorpay' ? 'Razorpay' : 'Stripe' ?></button>
           <p class="form-note">Payment is processed by <?= $gateway === 'razorpay' ? 'Razorpay' : 'Stripe' ?>. journzey.ai never sees or stores your card details. One-time payment, no auto-renewal.</p>

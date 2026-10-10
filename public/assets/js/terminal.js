@@ -94,11 +94,18 @@
     (function upd() { var s = Math.max(0, Math.round((end - Date.now()) / 1000)); c.textContent = Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); if (s > 0) setTimeout(upd, 1000); else location.reload(); })();
   });
 
+  // AI text: plain text with **key phrase** shown highlighted (built with DOM nodes, never innerHTML)
+  function setCoachText(el, text) {
+    el.textContent = '';
+    String(text || '').split(/(\*\*[^*]+\*\*)/).forEach(function (part) {
+      if (/^\*\*[^*]+\*\*$/.test(part)) el.appendChild(txt('mark', '', part.slice(2, -2))); else if (part) el.appendChild(d.createTextNode(part));
+    });
+  }
   // AI Coach chat
   var chat = $('[data-chat-form]');
   if (chat) {
     var log = $('[data-chat-log]'), ta = $('textarea', chat);
-    var add = function (role, text, meta) { var m = txt('div', 'msg ' + role, text); if (meta) m.appendChild(txt('small', '', meta)); log.appendChild(m); log.scrollTop = log.scrollHeight; return m; };
+    var add = function (role, text, meta) { var m = txt('div', 'msg ' + role); setCoachText(m, text); if (meta) m.appendChild(txt('small', '', meta)); log.appendChild(m); log.scrollTop = log.scrollHeight; return m; };
     $$('[data-prompt]').forEach(function (b) { b.addEventListener('click', function () { ta.value = b.dataset.prompt; ta.focus(); }); });
     ta.addEventListener('keydown', function (e) { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) chat.requestSubmit(); });
     chat.addEventListener('submit', function (e) {
@@ -118,7 +125,7 @@
     b.addEventListener('click', function () {
       var out = $('[data-review-out]'); out.hidden = false; b.classList.add('busy'); out.textContent = 'Writing your AI review narrative…';
       post(base + '/coach/review', { period: b.dataset.review }).then(function (r) {
-        b.classList.remove('busy'); out.textContent = r.ok ? r.text : (r.error || 'Could not generate the review.');
+        b.classList.remove('busy'); setCoachText(out, r.ok ? r.text : (r.error || 'Could not generate the review.'));
         $$('[data-review-actions]').forEach(function (a) { a.hidden = !r.ok; });
       });
     });
