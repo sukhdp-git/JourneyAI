@@ -10,6 +10,7 @@ use App\Trading\Domain;
 use App\Trading\Ingest;
 use App\Trading\Ledger;
 use App\Trading\Members;
+use App\Trading\PropRules;
 
 /** Trading accounts, capital flows, CSV statement import and signed webhook connections. */
 final class AccountsController extends TerminalController
@@ -61,28 +62,58 @@ final class AccountsController extends TerminalController
         ];
     }
 
+    /**
+     * Adds a broker account or a prop-firm account (from the "Add account" dialog or the Accounts page).
+     * Live accounts need a paid plan; "practice" saves the same account as a free demo account.
+     */
     public function store(Request $req): never
     {
         $d = $this->input($req);
+        $kind = $req->post('kind') === 'prop' ? 'prop' : 'broker';
         $live = $req->post('mode') === 'live';
-        if ($d['name'] === '' || $d['starting_capital'] === null) {
-            $this->back('/terminal/accounts', 'error', 'Give the account a name and a starting capital of zero or more.');
+        $back = $this->safeBack((string) $req->post('return', '/terminal/accounts'));
+        if ($kind === 'prop') {
+            $d = PropRules::input(fn ($k) => $req->post($k)) + $d;
+            if (!$d['prop_firm']) {
+                $this->back($back, 'error', 'Enter the prop firm name.');
+            }
+            $preset = PropRules::PRESETS[$d['prop_preset'] ?? 'custom'];
+            $d['account_type'] = $preset[1];
+            $d['broker_name'] = $d['broker_name'] ?? $d['prop_firm'];
+            if ($d['name'] === '' && $d['starting_capital']) {
+                $size = $d['starting_capital'] >= 1000 ? rtrim(rtrim(number_format($d['starting_capital'] / 1000, 1), '0'), '.') . 'k' : (string) $d['starting_capital'];
+                $d['name'] = mb_substr($d['prop_firm'] . ' ' . $size . ($d['prop_preset'] && $d['prop_preset'] !== 'custom' ? ' · ' . explode(' · ', $preset[0])[count(explode(' · ', $preset[0])) - 1] : ''), 0, 80);
+            }
+            // The prop daily loss rule drives the terminal's daily-limit banner and beep.
+            $daily = trim((string) $req->post('prop_daily_pct', ''));
+            if (is_numeric($daily) && (float) $daily > 0 && (float) $daily <= 100) {
+                $d['max_daily_loss'] = round((float) $daily, 2);
+                $d['daily_limit_type'] = 'percent';
+            }
+        } else {
+            $d['account_type'] = 'PERSONAL';
+            if ($d['name'] === '' && $d['broker_name']) {
+                $d['name'] = $d['broker_name'];
+            }
+        }
+        if ($d['name'] === '' || $d['starting_capital'] === null || ($kind === 'prop' && $d['starting_capital'] <= 0)) {
+            $this->back($back, 'error', $kind === 'prop' ? 'Enter the account size (capital) for the prop account.' : 'Give the account a name and a starting equity of zero or more.');
         }
         if ($live) {
             if (!$this->m['ent']['live']) {
-                $this->back('/terminal/billing', 'error', 'Live accounts need an active paid plan. Demo accounts are free.');
+                $this->back('/terminal/billing', 'error', 'Live accounts need an active paid plan. Practice (demo) accounts are free.');
             }
             if (Ledger::liveCount($this->uid) >= (int) $this->m['ent']['max_live']) {
-                $this->back('/terminal/accounts', 'error', 'Your plan allows ' . (int) $this->m['ent']['max_live'] . ' live account(s). Archive one or upgrade your plan.');
+                $this->back($back, 'error', 'Your plan allows ' . (int) $this->m['ent']['max_live'] . ' live account(s). Archive one or upgrade your plan.');
             }
         }
         if ((int) Database::value('SELECT COUNT(*) FROM trading_accounts WHERE user_id = :u', ['u' => $this->uid]) >= 25) {
-            $this->back('/terminal/accounts', 'error', 'You can keep up to 25 accounts. Archive or delete unused ones first.');
+            $this->back($back, 'error', 'You can keep up to 25 accounts. Archive or delete unused ones first.');
         }
         $id = Database::insert('trading_accounts', $d + ['user_id' => $this->uid, 'is_demo' => $live ? 0 : 1]);
         Database::update('user_settings', ['active_account_id' => $id], 'user_id = :u', ['u' => $this->uid]);
-        Members::audit($this->uid, 'account_created', ($live ? 'Live' : 'Demo') . ' account #' . $id);
-        $this->back('/terminal/accounts', 'success', 'Account created and selected.');
+        Members::audit($this->uid, 'account_created', ($live ? 'Live' : 'Practice') . ' ' . $kind . ' account #' . $id);
+        $this->back($kind === 'prop' ? '/terminal/dashboard' : $back, 'success', ($kind === 'prop' ? 'Prop firm account added — its rules are tracked on the Dashboard.' : 'Broker account added') . ' “' . $d['name'] . '” is now active.');
     }
 
     public function update(Request $req): never
@@ -94,6 +125,9 @@ final class AccountsController extends TerminalController
         }
         if ((int) $acc['has_demo_data']) {
             unset($d['currency']); // demo dataset prices are in USD
+        }
+        if ($req->post('has_prop_rules') === '1') {
+            $d = PropRules::input(fn ($k) => $req->post($k)) + $d;
         }
         Database::update('trading_accounts', $d, 'id = :id AND user_id = :u', ['id' => $acc['id'], 'u' => $this->uid]);
         $this->back('/terminal/accounts', 'success', 'Account updated.');

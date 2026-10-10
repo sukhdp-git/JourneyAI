@@ -11,7 +11,7 @@ use App\Controllers\SetupController;
  */
 final class Migrator
 {
-    public const VERSION = 7;
+    public const VERSION = 8;
 
     public static function ensure(): void
     {

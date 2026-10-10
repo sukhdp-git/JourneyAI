@@ -6,7 +6,7 @@ use App\Trading\Domain;
 $theme = isset(Domain::THEMES[$m['theme']]) ? $m['theme'] : Domain::DEFAULT_THEME;
 $links = [
     ['home', '/terminal', 'nav.home', 'home'], ['dashboard', '/terminal/dashboard', 'nav.dashboard', 'dashboard'], ['calendar', '/terminal/calendar', 'nav.calendar', 'calendar'],
-    ['trades', '/terminal/trades', 'nav.trades', 'list'], ['calculator', '/terminal/calculator', 'nav.calculator', 'scale'], ['strategies', '/terminal/strategies', 'nav.strategies', 'target'], ['edge', '/terminal/edge', 'nav.edge', 'grid'],
+    ['trades', '/terminal/trades', 'nav.trades', 'list'], ['calculator', '/terminal/calculator', 'nav.calculator', 'scale'], ['strategies', '/terminal/strategies', 'nav.strategies', 'target'], ['edge', '/terminal/edge', 'nav.edge', 'radar'],
     ['notepad', '/terminal/notepad', 'nav.notepad', 'journal'], ['coach', '/terminal/coach', 'nav.coach', 'sparkles'], ['university', '/terminal/university', 'nav.university', 'book'], ['markets', '/terminal/markets', 'nav.markets', 'globe'],
 ];
 if (!App\Trading\MarketWidgets::enabled()) {
@@ -39,12 +39,14 @@ $initials = mb_strtoupper(mb_substr($m['name'], 0, 1));
       <form method="post" action="<?= e(url('/terminal/account/switch')) ?>" class="tm-acc-switch">
         <?= csrf_field() ?>
         <label class="sr-only" for="acc-switch">Active account</label>
-        <select id="acc-switch" name="account_id" data-autosubmit>
-          <?php foreach ($accounts as $a): ?><option value="<?= (int) $a['id'] ?>"<?= (int) $a['id'] === (int) $acc['id'] ? ' selected' : '' ?>><?= e(($a['is_demo'] ? '◇ ' : '◆ ') . $a['name']) ?></option><?php endforeach; ?>
+        <select id="acc-switch" name="account_id" data-acc-switch>
+          <?php foreach ($accounts as $a): ?><option value="<?= (int) $a['id'] ?>"<?= (int) $a['id'] === (int) $acc['id'] ? ' selected' : '' ?>><?= e((App\Trading\PropRules::isProp($a) ? '◈ ' : ($a['is_demo'] ? '◇ ' : '◆ ')) . $a['name']) ?></option><?php endforeach; ?>
+          <option value="add">＋ Add account…</option>
         </select>
       </form>
       <div class="tm-hud-row">
         <span class="mode <?= $acc['is_demo'] ? 'demo' : 'live' ?>"><?= e($acc['is_demo'] ? t('hud.demo') : t('hud.live')) ?></span>
+        <?php if (App\Trading\PropRules::isProp($acc)): ?><span class="mode prop">PROP</span><?php endif; ?>
         <?php if ((int) $acc['has_demo_data']): ?><span class="mode demo-data"><?= e(t('common.demo_data')) ?></span><?php endif; ?>
         <?php if (!$acc['writable']): ?><span class="mode locked" title="Upgrade to write to live accounts">READ-ONLY</span><?php endif; ?>
       </div>
@@ -57,7 +59,11 @@ $initials = mb_strtoupper(mb_substr($m['name'], 0, 1));
     <nav class="tm-nav">
       <ul>
         <?php foreach ($links as [$key, $href, $label, $ic]): ?>
+        <?php if ($key === 'edge'): ?>
+        <li><a href="<?= e(url($href)) ?>" class="nav-edge<?= $nav === $key ? ' on' : '' ?>"<?= $nav === $key ? ' aria-current="page"' : '' ?>><span class="nav-edge-ic"><?= icon($ic, 'icon') ?></span><span><?= e(t($label)) ?></span><b class="nav-edge-tag">EDGE</b></a></li>
+        <?php else: ?>
         <li><a href="<?= e(url($href)) ?>"<?= $nav === $key ? ' class="on" aria-current="page"' : '' ?>><?= icon($ic, 'icon') ?><span><?= e(t($label)) ?></span></a></li>
+        <?php endif; ?>
         <?php endforeach; ?>
       </ul>
       <ul class="tm-nav-2">
@@ -121,6 +127,7 @@ $initials = mb_strtoupper(mb_substr($m['name'], 0, 1));
   <div class="tm-modal-card sm"><h2 id="tm-confirm-title">Are you sure?</h2><p data-confirm-text></p><div class="tm-modal-actions"><button type="button" class="tm-btn" data-close>Cancel</button><button type="button" class="tm-btn tm-btn-danger" data-confirm-ok>Delete</button></div></div>
 </div>
 <?= App\Core\View::partial('terminal/partials/equity-modal', ['acc' => $acc, 'balance' => $balance, 'history' => $capitalHistory]) ?>
+<?= App\Core\View::partial('terminal/partials/add-account-modal', ['m' => $m]) ?>
 <?= App\Core\View::partial('terminal/partials/share-modal') ?>
 <?= App\Core\View::partial('terminal/partials/flex-modal') ?>
 <div class="tm-toasts" aria-live="polite" data-toasts></div>

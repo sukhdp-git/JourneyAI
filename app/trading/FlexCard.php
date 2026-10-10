@@ -51,12 +51,33 @@ final class FlexCard
             'lesson' => $entry && $entry['key_lesson'] ? mb_strimwidth((string) $entry['key_lesson'], 0, 90, '…') : null,
             'demo' => (int) $acc['has_demo_data'] === 1, 'account_type' => (int) $acc['is_demo'] ? 'Demo account' : 'Live account',
         ];
-        $row = Database::one('SELECT code FROM share_cards WHERE user_id = :u AND account_id = :a AND card_date = :d', ['u' => $m['id'], 'a' => $acc['id'], 'd' => $date]);
+        return [$payload, self::store($m, $acc, $date, 0, $payload)];
+    }
+
+    /** Card for one closed trade (Trade Log "Share"): same verification QR as the daily card. */
+    public static function forTrade(array $m, array $acc, array $t, string $tz): array
+    {
+        $local = (new \DateTimeImmutable($t['executed_at'], new \DateTimeZone('UTC')))->setTimezone(new \DateTimeZone($tz));
+        $first = trim(explode(' ', trim((string) $m['name']))[0] ?? '');
+        $num = fn ($v) => $v === null ? null : rtrim(rtrim(number_format((float) $v, 5, '.', ''), '0'), '.');
+        $payload = [
+            'kind' => 'trade', 'date' => $local->format('Y-m-d'), 'date_label' => $local->format('D, j M Y · H:i'), 'name' => $first, 'currency' => $acc['currency'],
+            'symbol' => $t['symbol'], 'side' => $t['side'], 'pnl' => round((float) $t['pnl'], 2), 'r' => $t['rr'] === null ? null : round((float) $t['rr'], 2),
+            'entry' => $num($t['entry_price']), 'exit' => $num($t['exit_price']), 'lots' => $num($t['lot_size']), 'strategy' => $t['strategy_name'] ?: ($t['setup_tag'] ?: null),
+            'session' => Domain::SESSIONS[$t['session'] ?? ''] ?? null,
+            'demo' => (int) $acc['has_demo_data'] === 1, 'account_type' => (int) $acc['is_demo'] ? 'Demo account' : 'Live account',
+        ];
+        return [$payload, self::store($m, $acc, $payload['date'], (int) $t['id'], $payload)];
+    }
+
+    private static function store(array $m, array $acc, string $date, int $ref, array $payload): string
+    {
+        $row = Database::one('SELECT code FROM share_cards WHERE user_id = :u AND account_id = :a AND card_date = :d AND card_ref = :r', ['u' => $m['id'], 'a' => $acc['id'], 'd' => $date, 'r' => $ref]);
         $code = $row['code'] ?? substr(strtr(base64_encode(random_bytes(9)), '+/', 'Kz'), 0, 12);
-        Database::query('INSERT INTO share_cards (code, user_id, account_id, card_date, payload) VALUES (:c, :u, :a, :d, :p)
+        Database::query('INSERT INTO share_cards (code, user_id, account_id, card_date, card_ref, payload) VALUES (:c, :u, :a, :d, :r, :p)
             ON DUPLICATE KEY UPDATE payload = VALUES(payload), updated_at = CURRENT_TIMESTAMP',
-            ['c' => $code, 'u' => $m['id'], 'a' => $acc['id'], 'd' => $date, 'p' => json_encode($payload)]);
-        return [$payload, $code];
+            ['c' => $code, 'u' => $m['id'], 'a' => $acc['id'], 'd' => $date, 'r' => $ref, 'p' => json_encode($payload)]);
+        return $code;
     }
 
     /** Public lookup for the verification page. */

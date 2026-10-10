@@ -71,6 +71,7 @@ $router->post('/terminal/strategies/{id}/delete', [StrategyController::class, 'd
 
 $router->get('/terminal/edge', [EdgeController::class, 'index']);
 $router->post('/terminal/flex', [FlexController::class, 'day']);
+$router->post('/terminal/trades/{id}/card', [FlexController::class, 'trade']);
 $router->post('/terminal/edge/runner', [EdgeController::class, 'runner']);
 
 $router->get('/terminal/notepad', [NotepadController::class, 'index']);

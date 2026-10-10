@@ -8,6 +8,8 @@ use App\Core\Request;
 use App\Trading\Analytics;
 use App\Trading\Domain;
 use App\Trading\Ledger;
+use App\Trading\PropRules;
+use App\Trading\RiskLimits;
 
 /** Dashboard (date-filtered performance) and the monthly P&L calendar. */
 final class InsightsController extends TerminalController
@@ -29,6 +31,7 @@ final class InsightsController extends TerminalController
         $this->render('dashboard', [
             'sum' => $sum, 'eq' => $eq, 'start' => $start, 'range' => $key, 'from' => $from, 'to' => $to,
             'equity' => $equity, 'cum' => $cum, 'dd' => $dd,
+            'prop' => PropRules::isProp($this->acc) ? PropRules::status($this->acc, $bal = Ledger::balance($this->acc), RiskLimits::status($this->m, $this->acc, $bal, $this->tz), $this->tz) : null,
             'byWeekday' => $bars(Analytics::byWeekday($trades, $this->tz)),
             'bySession' => $bars(Analytics::groupBy($trades, fn ($t) => $t['session']), fn ($k) => Domain::SESSIONS[$k] ?? $k),
             'bySymbol' => $bars(Analytics::groupBy($trades, fn ($t) => $t['symbol'])),

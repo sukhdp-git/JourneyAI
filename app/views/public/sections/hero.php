@@ -40,29 +40,18 @@ $showVisual = $type === 'visual' && $align === 'left';
       <?php endif; ?>
     </div>
     <?php if ($showVisual): ?>
-    <div class="hero-visual" aria-hidden="true">
-      <div class="terminal">
-        <div class="terminal-bar"><span></span><span></span><span></span><em>Illustrative interface · sample data</em></div>
-        <div class="terminal-body">
-          <div class="t-head">
-            <div><small>Equity curve</small><strong>All accounts</strong></div>
-            <div class="t-tabs"><b>1W</b><b class="on">1M</b><b>3M</b></div>
-          </div>
-          <svg class="t-chart" viewBox="0 0 320 120" preserveAspectRatio="none">
-            <defs><linearGradient id="hg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--primary)" stop-opacity=".45"/><stop offset="1" stop-color="var(--primary)" stop-opacity="0"/></linearGradient></defs>
-            <path class="t-area" d="M0 98 L20 92 L40 95 L60 84 L80 86 L100 74 L120 78 L140 66 L160 70 L180 58 L200 61 L220 49 L240 52 L260 40 L280 43 L300 30 L320 26 L320 120 L0 120Z" fill="url(#hg)"/>
-            <path class="t-line" d="M0 98 L20 92 L40 95 L60 84 L80 86 L100 74 L120 78 L140 66 L160 70 L180 58 L200 61 L220 49 L240 52 L260 40 L280 43 L300 30 L320 26" fill="none" stroke="var(--primary)" stroke-width="2"/>
-          </svg>
-          <div class="t-rules">
-            <div class="t-rule ok"><span><?= icon('check-circle', 'icon icon-sm') ?>Daily loss limit</span><b>Within plan</b></div>
-            <div class="t-rule ok"><span><?= icon('check-circle', 'icon icon-sm') ?>Max trades per session</span><b>3 / 5</b></div>
-            <div class="t-rule warn"><span><?= icon('alert', 'icon icon-sm') ?>Entered before confirmation</span><b>Review</b></div>
-          </div>
-          <div class="t-coach"><?= icon('sparkles', 'icon icon-sm') ?><p>Pattern noticed: trade frequency rises after a losing trade. Consider a pause rule.</p></div>
-        </div>
+    <div class="hero-visual hero-shot" data-tilt>
+      <?php $pi = fn ($f) => e(asset('images/product/' . $f)); ?>
+      <div class="shot-frame">
+        <div class="shot-bar" aria-hidden="true"><span></span><span></span><span></span><em>journzey.ai · terminal</em></div>
+        <img src="<?= $pi('dashboard.webp') ?>" srcset="<?= $pi('dashboard-sm.webp') ?> 800w, <?= $pi('dashboard.webp') ?> 1600w" sizes="(max-width: 999px) 92vw, 640px" width="1600" height="1000" alt="journzey.ai dashboard: equity curve, win rate, profit factor and drawdown (demo data)" fetchpriority="high">
+        <span class="shot-sweep" aria-hidden="true"></span>
       </div>
-      <div class="float-chip chip-a"><?= icon('layers', 'icon icon-sm') ?>Multi-broker</div>
-      <div class="float-chip chip-b"><?= icon('shield', 'icon icon-sm') ?>Rules engine</div>
+      <img class="shot-float f-voice" src="<?= $pi('voice.webp') ?>" width="1000" height="349" alt="Voice logging: a spoken trade logged in one sentence" loading="lazy">
+      <img class="shot-float f-flex" src="<?= $pi('flexcard.webp') ?>" width="720" height="900" alt="Verified flex card with QR code" loading="lazy">
+      <div class="float-chip chip-a" aria-hidden="true"><?= icon('mic', 'icon icon-sm') ?>Speak your trades</div>
+      <div class="float-chip chip-b" aria-hidden="true"><?= icon('shield', 'icon icon-sm') ?>Prop firm rules</div>
+      <p class="shot-caption">Real product screens · demo data</p>
     </div>
     <?php endif; ?>
   </div>

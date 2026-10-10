@@ -4,6 +4,11 @@
   <div class="container">
     <?= View::partial('public/partials/flash', ['flash' => $flash]) ?>
     <?= View::partial('public/partials/pricing-cards') ?>
+  </div>
+</section>
+<?= View::partial('public/partials/product-band', ['title' => 'What you are paying for', 'text' => 'The same terminal on every plan — voice logging, edge analytics, prop-firm rules and verified flex cards.']) ?>
+<section class="section section-tight">
+  <div class="container">
     <div class="pricing-compare reveal">
       <h2 class="h3">What is included</h2>
       <div class="table-scroll"><table class="compare">

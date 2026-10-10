@@ -3,7 +3,7 @@ use App\Trading\Domain;
 use App\Trading\Instruments as I;
 $cur = $tacc['currency'];
 $fmt = fn ($v) => I::format($t['symbol'], $v);
-$share = ['symbol' => $t['symbol'], 'side' => $t['side'], 'pnl' => $t['pnl'] === null ? 'OPEN' : money($t['pnl'], $cur, true), 'positive' => $t['pnl'] === null || (float) $t['pnl'] >= 0, 'r' => $t['rr'] === null ? '' : ((float) $t['rr'] > 0 ? '+' : '') . number_format((float) $t['rr'], 2) . 'R',
+$share = ['id' => (int) $t['id'], 'symbol' => $t['symbol'], 'side' => $t['side'], 'pnl' => $t['pnl'] === null ? 'OPEN' : money($t['pnl'], $cur, true), 'positive' => $t['pnl'] === null || (float) $t['pnl'] >= 0, 'r' => $t['rr'] === null ? '' : ((float) $t['rr'] > 0 ? '+' : '') . number_format((float) $t['rr'], 2) . 'R',
   'entry' => $fmt($t['entry_price']), 'exit' => $fmt($t['exit_price']), 'stop' => $fmt($t['stop_loss']), 'lots' => rtrim(rtrim((string) $t['lot_size'], '0'), '.'), 'strategy' => $t['strategy_name'] ?: ($t['setup_tag'] ?: '—'),
   'session' => Domain::SESSIONS[$t['session']] ?? '—', 'brand' => setting('site_name', 'journzey.ai'), 'demo' => (bool) $tacc['has_demo_data']];
 $writable = App\Trading\Ledger::writable($m, $tacc);

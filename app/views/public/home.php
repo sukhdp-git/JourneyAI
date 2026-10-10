@@ -2,7 +2,7 @@
 /** @var array $sections */
 use App\Core\View;
 
-$known = ['hero', 'intro', 'about', 'services', 'benefits', 'stats', 'process', 'featured', 'testimonials', 'faq', 'cta', 'contact', 'pricing'];
+$known = ['hero', 'showcase', 'intro', 'about', 'services', 'benefits', 'stats', 'process', 'featured', 'testimonials', 'faq', 'cta', 'contact', 'pricing'];
 $customDone = false;
 foreach ($sections as $s) {
     if ($s['section_key'] === 'cta' && !$customDone) {

@@ -1,5 +1,5 @@
 <?php use App\Trading\Domain; $o = fn ($k, $d = '') => old($k, $d);
-$GLOBALS['__old'] += ['starting_capital' => '10000', 'currency' => $m['base_currency'] ?: 'USD', 'risk_pct' => '1', 'target_rr' => '2', 'timezone' => $m['timezone'] ?: 'UTC', 'account_name' => 'Practice account', '_tz_auto' => '1']; ?>
+$GLOBALS['__old'] += ['starting_capital' => '10000', 'currency' => $m['base_currency'] ?: 'USD', 'risk_pct' => '1', 'target_rr' => '2', 'timezone' => $m['timezone'] ?: 'UTC', '_tz_auto' => '1']; ?>
 <div class="auth-card wide onboarding" data-stepper>
   <ol class="steps-bar" aria-hidden="true"><li class="on">Welcome</li><li>Markets</li><li>Account</li><li>Risk</li><li>Timezone</li><li>Finish</li></ol>
   <?= App\Core\View::partial('public/partials/flash', ['flash' => $flash]) ?>
@@ -17,16 +17,13 @@ $GLOBALS['__old'] += ['starting_capital' => '10000', 'currency' => $m['base_curr
       </div>
     </section>
     <section class="ob-step" data-step="2">
-      <h2>Your first trading account</h2>
-      <div class="form-row">
-        <?= App\Core\View::partial('public/partials/field', ['name' => 'account_name', 'label' => 'Account name', 'max' => 80, 'hint' => 'e.g. Practice account']) ?>
-        <?= App\Core\View::partial('public/partials/field', ['name' => 'broker_name', 'label' => 'Broker (optional)', 'max' => 80]) ?>
-      </div>
+      <h2>Your demo account</h2>
+      <p class="muted">You start with one demo account. Add your broker and prop-firm accounts anytime from the account menu → <strong>＋ Add account</strong>.</p>
       <div class="form-row">
         <?= App\Core\View::partial('public/partials/field', ['name' => 'starting_capital', 'label' => 'Starting capital', 'type' => 'number', 'required' => true]) ?>
         <?= App\Core\View::partial('public/partials/field', ['name' => 'currency', 'label' => 'Currency', 'type' => 'select', 'options' => array_combine(Domain::CURRENCIES, Domain::CURRENCIES)]) ?>
       </div>
-      <p class="muted small">Account mode: <strong>Demo</strong>. Add live accounts after upgrading.</p>
+      <p class="muted small">Used for the empty demo account. If you load the demo journal (last step) it uses its own $25,000 sample balance.</p>
     </section>
     <section class="ob-step" data-step="3">
       <h2>Risk settings</h2>
@@ -46,7 +43,7 @@ $GLOBALS['__old'] += ['starting_capital' => '10000', 'currency' => $m['base_curr
     </section>
     <section class="ob-step" data-step="5">
       <h2>Finish setup</h2>
-      <label class="ob-demo"><input type="checkbox" name="load_demo" value="1" checked> <span><strong>Load the demo journal</strong> — 42 sample trades and 13 journal entries (Aug–Oct 2026), clearly marked <em>DEMO DATA</em>, in a separate demo account. Great for exploring the analytics.</span></label>
+      <label class="ob-demo"><input type="checkbox" name="load_demo" value="1" checked> <span><strong>Load the demo journal</strong> — 42 sample trades and 13 journal entries (Aug–Oct 2026), clearly marked <em>DEMO DATA</em>, as your demo account. Great for exploring the analytics.</span></label>
       <p class="muted small">Untick to start with an empty account.</p>
     </section>
     <div class="ob-nav">

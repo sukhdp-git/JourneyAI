@@ -44,6 +44,19 @@ $limFields = function (?array $a) use ($sel): string {
                 <div class="f"><label>Currency</label><select name="currency"<?= (int) $a['has_demo_data'] ? ' disabled' : '' ?>><?php foreach (Domain::CURRENCIES as $c): ?><option<?= $sel($c, $a['currency']) ?>><?= e($c) ?></option><?php endforeach; ?></select></div>
                 <div class="f"><label>Starting capital</label><input name="starting_capital" type="number" step="0.01" min="0" value="<?= e($a['starting_capital']) ?>" required></div>
                 <?= $limFields($a) ?>
+                <?php if (App\Trading\PropRules::isProp($a)): ?>
+                <fieldset class="lim-fields"><legend>Prop firm rules</legend><input type="hidden" name="has_prop_rules" value="1"><input type="hidden" name="prop_preset" value="<?= e($a['prop_preset'] ?? '') ?>">
+                  <div class="f"><label>Prop firm</label><input name="prop_firm" maxlength="80" value="<?= e($a['prop_firm'] ?? '') ?>"></div>
+                  <div class="grid-form">
+                    <div class="f"><label>Profit target %</label><input name="profit_target_pct" type="number" step="0.01" min="0" value="<?= e((string) ($a['profit_target_pct'] ?? '')) ?>"></div>
+                    <div class="f"><label>Max overall loss %</label><input name="max_total_loss_pct" type="number" step="0.01" min="0" value="<?= e((string) ($a['max_total_loss_pct'] ?? '')) ?>"></div>
+                    <div class="f"><label>Overall loss type</label><select name="total_loss_mode"><option value="static"<?= $sel('static', $a['total_loss_mode'] ?? 'static') ?>>Static</option><option value="trailing"<?= $sel('trailing', $a['total_loss_mode'] ?? '') ?>>Trailing</option></select></div>
+                    <div class="f"><label>Min trading days</label><input name="min_trading_days" type="number" step="1" min="0" value="<?= e((string) ($a['min_trading_days'] ?? '')) ?>"></div>
+                    <div class="f"><label>Consistency %</label><input name="consistency_pct" type="number" step="0.01" min="0" value="<?= e((string) ($a['consistency_pct'] ?? '')) ?>"></div>
+                  </div>
+                  <p class="f-hint">The daily loss rule is the “Daily max loss” above.</p>
+                </fieldset>
+                <?php endif; ?>
                 <button class="tm-btn tm-btn-sm tm-btn-primary">Save</button>
               </form>
               <form method="post" action="<?= e(url('/terminal/accounts/' . $a['id'] . '/archive')) ?>"><?= csrf_field() ?><button class="tm-btn tm-btn-sm"><?= (int) $a['is_archived'] ? 'Restore' : 'Archive' ?></button></form>
@@ -62,23 +75,11 @@ $limFields = function (?array $a) use ($sel): string {
 
 <div class="grid g-3" style="margin-bottom:12px">
   <section class="panel stack">
-    <h2>New account</h2>
-    <form method="post" action="<?= e(url('/terminal/accounts')) ?>" class="stack"><?= csrf_field() ?>
-      <div class="seg" role="radiogroup" aria-label="Mode">
-        <label style="padding:6px 11px"><input type="radio" name="mode" value="demo" checked> Demo (free)</label>
-        <label style="padding:6px 11px"><input type="radio" name="mode" value="live"<?= $ent['live'] ? '' : ' disabled' ?>> Live<?= $ent['live'] ? '' : ' — paid plan' ?></label>
-      </div>
-      <div class="f"><label for="na-n">Name</label><input id="na-n" name="name" maxlength="80" required placeholder="e.g. FTMO 100k challenge"></div>
-      <div class="f"><label for="na-b">Broker</label><input id="na-b" name="broker_name" maxlength="80"></div>
-      <div class="grid-form">
-        <div class="f"><label for="na-t">Type</label><select id="na-t" name="account_type"><?php foreach (Domain::ACCOUNT_TYPES as $k => $l): ?><option value="<?= e($k) ?>"><?= e($l) ?></option><?php endforeach; ?></select></div>
-        <div class="f"><label for="na-c">Currency</label><select id="na-c" name="currency"><?php foreach (Domain::CURRENCIES as $c): ?><option<?= $sel($c, $m['base_currency'] ?: 'USD') ?>><?= e($c) ?></option><?php endforeach; ?></select></div>
-      </div>
-      <div class="f"><label for="na-s">Starting capital</label><input id="na-s" name="starting_capital" type="number" step="0.01" min="0" value="10000" required></div>
-      <?= $limFields(null) ?>
-      <button class="tm-btn tm-btn-primary">Create account</button>
-      <?php if (!$ent['live']): ?><p class="muted small">Demo accounts are free and unlimited in features. <a href="<?= e(url('/pricing')) ?>">Upgrade</a> to journal live accounts.</p><?php endif; ?>
-    </form>
+    <h2>Add an account</h2>
+    <p class="muted small">Add as many broker and prop-firm accounts as you trade. Each keeps its own trades, equity and limits.</p>
+    <button type="button" class="aa-kind" data-open-add-account="broker"><?= icon('link', 'icon') ?><span><b>Broker account</b><small>Name, broker and starting equity</small></span></button>
+    <button type="button" class="aa-kind" data-open-add-account="prop"><?= icon('shield', 'icon') ?><span><b>Prop firm account</b><small>Firm, account size and challenge rules</small></span></button>
+    <?php if (!$ent['live']): ?><p class="muted small">On the free plan accounts are added in Practice (demo) mode. <a href="<?= e(url('/pricing')) ?>">Upgrade</a> to journal live accounts.</p><?php endif; ?>
   </section>
 
   <section class="panel stack">

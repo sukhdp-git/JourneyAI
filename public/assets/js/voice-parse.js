@@ -69,8 +69,9 @@
     }
     function normalize(text, locale) {
       var lang = (locale || 'en-US').slice(0, 2), t = String(text);
-      if (lang === 'zh') return zhToDigits(t).replace(/\s+/g, ' ').trim().toLowerCase();
+      if (lang === 'zh') return zhToDigits(t.replace(/百分之([零〇一二两三四五六七八九十点\d.]+)/g, '$1%')).replace(/\s+%/g, '%').replace(/\s+/g, ' ').trim().toLowerCase();
       if (lang === 'en') t = t.replace(/\b(a )?half (a )?lots?\b/gi, '0.5 lot').replace(/\ba quarter (of )?(a )?lots?\b/gi, '0.25 lot');
+      if (lang === 'pt') t = t.replace(/\bpor ?cento\b/gi, ' % ');
       if (lang === 'pt' || lang === 'ru') t = t.replace(/(\d),(\d)/g, '$1.$2');
       else t = t.replace(/(\d),(?=\d{3}\b)/g, '$1');
       return wordsToDigits(t, lang).toLowerCase();
@@ -136,6 +137,23 @@
       if (f.lots !== null) p.push(f.lots + ' lots');
       return p.join(' ');
     }
-    return { normalize: normalize, extract: extractWith, findAsset: findAsset, toCommand: toCommand };
+    /** Localised field words → English keywords, so keyword-based forms (calculator) work in every language. */
+    var EN_KW = [
+      [/цена входа|входа|вход|入场价|入场|进场|开仓价|开仓|preço de entrada|entrada/g, ' entry '],
+      [/тейк-профит|тейк профит|тейк|止盈|alvo|цель|目标/g, ' target '], [/стоп-лосс|стоп лосс|стоп|止损/g, ' stop '],
+      [/выход|закрыл по|出场价|出场|平仓|saída|saida/g, ' exit '], [/лотов|лота|лот|lotes|lote|手/g, ' lots '],
+      [/риск|风险|risco/g, ' risk '], [/процентов|процента|процент|por cento|porcento|%/g, ' percent ']
+    ];
+    function toEnglish(norm) { var t = ' ' + norm + ' '; EN_KW.forEach(function (r) { t = t.replace(r[0], r[1]); }); return t.replace(/\s+/g, ' ').trim(); }
+    /** Whole-utterance voice commands in every language: 'stop' | 'skip' | 'back' | null. */
+    function command(raw) {
+      var t = String(raw).toLowerCase().replace(/[.!?。！？]+$/, '').trim();
+      if (/^(stop|cancel|finish|done|that's all|that is all|стоп|хватит|отмена|готово|停止|取消|结束|完成|parar|pare|cancelar|pronto|terminar)( listening| voice| voice log)?$/.test(t)) return 'stop';
+      if (/^(skip|next|none|nothing|no|not yet|open|пропустить|пропусти|дальше|далее|нет|pular|pule|próximo|proximo|nenhum|não|nao)(?=\s|$)/.test(t) || /^(跳过|下一个|没有|无)/.test(t)) return 'skip';
+      if (/^(back|previous|go back|назад|вернись|voltar|volta|anterior)(?=\s|$)/.test(t) || /^(返回|上一个)/.test(t)) return 'back';
+      return null;
+    }
+    function side(norm) { return pick(SIDES, norm); }
+    return { normalize: normalize, extract: extractWith, findAsset: findAsset, toCommand: toCommand, toEnglish: toEnglish, command: command, side: side };
   };
 })();

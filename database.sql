@@ -984,7 +984,7 @@ INSERT INTO `pages` (`title`, `slug`, `template`, `hero_eyebrow`, `hero_title`, 
 INSERT INTO `smtp_settings` (`id`, `host`, `port`, `username`, `password_enc`, `encryption`, `from_email`, `from_name`, `reply_to`, `is_enabled`) VALUES (1, '', 587, '', NULL, 'tls', '', 'journzey.ai', '', 0);
 
 -- ---------------------------------------------------------------------------------------------
--- journzey.ai — database update (schema versions 2 to 7)
+-- journzey.ai — database update (schema versions 2 to 8)
 -- Safe to run on an existing database: it only ADDS columns, tables and rows. Nothing is dropped,
 -- reset or overwritten, and running it twice is harmless. Import it with phpMyAdmin → Import.
 -- (The website also applies these changes automatically on the first request after updating.)
@@ -1391,5 +1391,59 @@ INSERT IGNORE INTO `settings` (`key`, `value`, `group_name`) VALUES
   ('tv_ticker_symbols', 'OANDA:XAUUSD | Gold\nOANDA:XAGUSD | Silver\nFX:EURUSD | EUR/USD\nFX:GBPUSD | GBP/USD\nFX:USDJPY | USD/JPY\nFX:AUDUSD | AUD/USD\nFX:USDCAD | USD/CAD\nOANDA:NAS100USD | Nasdaq 100\nOANDA:SPX500USD | S&P 500\nOANDA:US30USD | Dow 30\nOANDA:DE30EUR | DAX 40\nTVC:USOIL | WTI Crude\nBITSTAMP:BTCUSD | Bitcoin\nBITSTAMP:ETHUSD | Ethereum\nBINANCE:SOLUSDT | Solana', 'general'),
   ('tv_calendar_countries', 'us,eu,gb,jp,cn,in,au,ca,ch', 'general');
 
--- Record the schema version
+-- Schema version 7 reached
 INSERT INTO `settings` (`key`, `value`, `group_name`) VALUES ('schema_version', '7', 'system') ON DUPLICATE KEY UPDATE `value` = IF(CAST(`value` AS UNSIGNED) < 7, '7', `value`);
+
+-- ---------------------------------------------------------------------------------------------
+-- Schema version 8: prop-firm account rules (target, overall loss, trading days, consistency)
+-- ---------------------------------------------------------------------------------------------
+SET @s := (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `trading_accounts` ADD COLUMN `prop_firm` VARCHAR(80) NULL AFTER `account_type`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'trading_accounts' AND COLUMN_NAME = 'prop_firm');
+PREPARE jz_stmt FROM @s;
+EXECUTE jz_stmt;
+DEALLOCATE PREPARE jz_stmt;
+SET @s := (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `trading_accounts` ADD COLUMN `prop_preset` VARCHAR(40) NULL AFTER `prop_firm`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'trading_accounts' AND COLUMN_NAME = 'prop_preset');
+PREPARE jz_stmt FROM @s;
+EXECUTE jz_stmt;
+DEALLOCATE PREPARE jz_stmt;
+SET @s := (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `trading_accounts` ADD COLUMN `profit_target_pct` DECIMAL(7,2) NULL AFTER `prop_preset`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'trading_accounts' AND COLUMN_NAME = 'profit_target_pct');
+PREPARE jz_stmt FROM @s;
+EXECUTE jz_stmt;
+DEALLOCATE PREPARE jz_stmt;
+SET @s := (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `trading_accounts` ADD COLUMN `max_total_loss_pct` DECIMAL(6,2) NULL AFTER `profit_target_pct`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'trading_accounts' AND COLUMN_NAME = 'max_total_loss_pct');
+PREPARE jz_stmt FROM @s;
+EXECUTE jz_stmt;
+DEALLOCATE PREPARE jz_stmt;
+SET @s := (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `trading_accounts` ADD COLUMN `total_loss_mode` ENUM(''static'',''trailing'') NOT NULL DEFAULT ''static'' AFTER `max_total_loss_pct`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'trading_accounts' AND COLUMN_NAME = 'total_loss_mode');
+PREPARE jz_stmt FROM @s;
+EXECUTE jz_stmt;
+DEALLOCATE PREPARE jz_stmt;
+SET @s := (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `trading_accounts` ADD COLUMN `min_trading_days` SMALLINT UNSIGNED NULL AFTER `total_loss_mode`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'trading_accounts' AND COLUMN_NAME = 'min_trading_days');
+PREPARE jz_stmt FROM @s;
+EXECUTE jz_stmt;
+DEALLOCATE PREPARE jz_stmt;
+SET @s := (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `trading_accounts` ADD COLUMN `consistency_pct` DECIMAL(6,2) NULL AFTER `min_trading_days`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'trading_accounts' AND COLUMN_NAME = 'consistency_pct');
+PREPARE jz_stmt FROM @s;
+EXECUTE jz_stmt;
+DEALLOCATE PREPARE jz_stmt;
+
+-- Share cards for single trades (card_ref = trade id; 0 = daily flex card). New unique key first, then drop the old one.
+SET @s := (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `share_cards` ADD COLUMN `card_ref` INT UNSIGNED NOT NULL DEFAULT 0 AFTER `card_date`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'share_cards' AND COLUMN_NAME = 'card_ref');
+PREPARE jz_stmt FROM @s;
+EXECUTE jz_stmt;
+DEALLOCATE PREPARE jz_stmt;
+SET @s := (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `share_cards` ADD UNIQUE KEY `uq_share_ref` (`user_id`, `account_id`, `card_date`, `card_ref`)', 'DO 0') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'share_cards' AND INDEX_NAME = 'uq_share_ref');
+PREPARE jz_stmt FROM @s;
+EXECUTE jz_stmt;
+DEALLOCATE PREPARE jz_stmt;
+SET @s := (SELECT IF(COUNT(*) > 0, 'ALTER TABLE `share_cards` DROP INDEX `uq_share_day`', 'DO 0') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'share_cards' AND INDEX_NAME = 'uq_share_day');
+PREPARE jz_stmt FROM @s;
+EXECUTE jz_stmt;
+DEALLOCATE PREPARE jz_stmt;
+
+-- Homepage product showcase with real terminal screenshots (placed right after the hero; edit or hide it in Content → Homepage)
+INSERT INTO `homepage_sections` (`section_key`, `label`, `is_enabled`, `sort_order`, `eyebrow`, `heading`, `subheading`, `background`)
+SELECT 'showcase', 'Product showcase', 1, 15, 'Inside the terminal', 'Everything a serious trader needs — in one terminal', 'Voice logging, prop-firm rules, edge analytics and verified flex cards. These are real screens from journzey.ai.', 'default'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM `homepage_sections` WHERE `section_key` = 'showcase');
+
+-- Record the schema version
+INSERT INTO `settings` (`key`, `value`, `group_name`) VALUES ('schema_version', '8', 'system') ON DUPLICATE KEY UPDATE `value` = IF(CAST(`value` AS UNSIGNED) < 8, '8', `value`);

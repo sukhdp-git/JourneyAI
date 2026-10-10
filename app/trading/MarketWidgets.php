@@ -57,6 +57,11 @@ final class MarketWidgets
         $light = $theme === 'clean-light';
         $common = ['colorTheme' => $light ? 'light' : 'dark', 'isTransparent' => $light, 'locale' => self::locale($lang)];
         $map = [
+            'chart' => ['advanced-chart', ['autosize' => true, 'symbol' => preg_match('/^[A-Z0-9_.!]{1,20}:[A-Z0-9_.!]{1,30}$/', (string) ($opt['symbol'] ?? '')) ? $opt['symbol'] : 'OANDA:XAUUSD',
+                'interval' => '15', 'timezone' => in_array($opt['tz'] ?? '', \DateTimeZone::listIdentifiers(), true) ? $opt['tz'] : 'Etc/UTC', 'theme' => $light ? 'light' : 'dark', 'style' => '1', 'allow_symbol_change' => true, 'hide_side_toolbar' => false,
+                'hide_top_toolbar' => false, 'withdateranges' => true, 'details' => true, 'hotlist' => false, 'calendar' => false, 'save_image' => true,
+                'backgroundColor' => $light ? 'rgba(255, 255, 255, 1)' : 'rgba(15, 15, 15, 1)', 'gridColor' => $light ? 'rgba(46, 46, 46, 0.06)' : 'rgba(242, 242, 242, 0.06)',
+                'support_host' => 'https://www.tradingview.com']],
             'ticker' => ['ticker-tape', ['symbols' => self::tickerSymbols(), 'showSymbolLogo' => true, 'displayMode' => 'adaptive']],
             'stocks' => ['stock-heatmap', ['exchanges' => [], 'dataSource' => in_array($opt['source'] ?? '', ['SPX500', 'NASDAQ100'], true) ? $opt['source'] : 'SPX500', 'grouping' => 'sector',
                 'blockSize' => 'market_cap_basic', 'blockColor' => 'change', 'symbolUrl' => '', 'hasTopBar' => true, 'isDataSetEnabled' => false, 'isZoomEnabled' => true,

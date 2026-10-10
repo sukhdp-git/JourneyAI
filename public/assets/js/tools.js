@@ -113,7 +113,7 @@
 
   /* ---------------------------------------------------------------- Voice input (Web Speech API) */
   // <button data-voice-into="#textarea" [data-voice-append]> — speech becomes editable text; nothing is sent automatically.
-  function voiceLang() { return ($('[data-voice-lang]') || {}).value || d.documentElement.dataset.voiceLang || 'en-US'; }
+  function voiceLang() { return ($('select[data-voice-lang]') || {}).value || d.documentElement.dataset.voiceLang || 'en-US'; }
   $$('[data-voice-into]').forEach(function (b) {
     var target = $(b.dataset.voiceInto), label = b.innerHTML, rec = null;
     if (!SR) { b.disabled = true; b.title = 'Voice input needs a browser with speech recognition (Chrome, Edge or Safari).'; var n = $(b.dataset.voiceNote || '[data-voice-note]'); if (n) n.hidden = false; return; }
@@ -161,6 +161,15 @@
   $$('[data-voice-guide]').forEach(function (form) {
     var steps = $$('[data-vg-step]', form), startB = $('[data-vg-start]', form), stopB = $('[data-vg-stop]', form);
     var promptEl = $('[data-vg-prompt]', form), heardEl = $('[data-vg-heard]', form), labelEl = $('[data-vg-label]', form);
+    // Multilingual: numbers, buy/sell, instruments, field words and skip/back/stop in EN / RU / ZH / PT.
+    var symSel = $('[data-vg-step=symbol] select', form), vgSpecs = {};
+    if (symSel) $$('option', symSel).forEach(function (o) { if (o.value) vgSpecs[o.value] = { a: ((o.dataset.search || '') + ' ' + o.textContent).toLowerCase().split(/\s+/).filter(function (w) { return w.length > 2; }) }; });
+    var VP = window.jzVoiceParser ? window.jzVoiceParser(vgSpecs, []) : null;
+    var vgLoc = function () { return form.dataset.vgLocale || voiceLang(); };
+    $$('[data-vg-locale]', form).forEach(function (b) {
+      b.classList.toggle('on', b.dataset.vgLocale === vgLoc());
+      b.addEventListener('click', function () { form.dataset.vgLocale = b.dataset.vgLocale; $$('[data-vg-locale]', form).forEach(function (x) { x.classList.toggle('on', x === b); }); if (rec) { try { rec.abort(); } catch (e) {} } });
+    });
     var idx = -1, rec = null, active = false, handled = false, retries = 0;
     if (!startB) return;
     if (!SR) { startB.disabled = true; var un = $('[data-vg-unsupported]', form); if (un) un.hidden = false; return; }
@@ -181,7 +190,7 @@
     }
     function listen() {
       if (!active) return;
-      handled = false; rec = new SR(); rec.lang = voiceLang(); rec.interimResults = true; rec.continuous = false;
+      handled = false; rec = new SR(); rec.lang = vgLoc(); rec.interimResults = true; rec.continuous = false;
       rec.onresult = function (ev) {
         var res = ev.results[ev.results.length - 1], t = res[0].transcript.trim();
         heardEl.textContent = '“' + t + '”';
@@ -194,10 +203,11 @@
     function again(msg) { heardEl.textContent = msg; handled = false; setTimeout(listen, 250); }
     function advance() { setTimeout(next, 450); }
     function handle(t) {
-      var low = t.toLowerCase(), st = steps[idx], kind = st.dataset.vgStep, el = field(st);
-      if (/^(stop|cancel|finish|done|that's all|that is all)( listening| voice| voice log)?[.!]?$/.test(low)) { stopAll('Voice log stopped.'); return; }
-      if (/^(skip|next|none|nothing|no|not yet|open)\b/.test(low)) { advance(); return; }
-      if (/^(back|previous|go back)\b/.test(low)) { idx = Math.max(-1, idx - 2); advance(); return; }
+      var norm = VP ? VP.normalize(t, vgLoc()) : t.toLowerCase(), low = VP ? VP.toEnglish(norm) : norm, st = steps[idx], kind = st.dataset.vgStep, el = field(st);
+      var cmd = VP ? VP.command(t) : null;
+      if (cmd === 'stop' || /^(stop|cancel|finish|done|that's all|that is all)( listening| voice| voice log)?[.!]?$/.test(low)) { stopAll('Voice log stopped.'); return; }
+      if (cmd === 'skip' || /^(skip|next|none|nothing|no|not yet|open)\b/.test(low)) { advance(); return; }
+      if (cmd === 'back' || /^(back|previous|go back)\b/.test(low)) { idx = Math.max(-1, idx - 2); advance(); return; }
       var nums = spokenNumbers(low);
       if (kind === 'number' && nums.length >= 2 && !$('#t-entry', form)) {
         // "entry 2645 stop 2639 target 2660 risk 1 percent" — fill the matching boxes by keyword
@@ -220,9 +230,9 @@
         });
         return;
       }
-      if (kind === 'symbol') { var o = pickOption(el, low); if (!o) { again('Instrument not recognised — try “gold”, “nasdaq”, “euro dollar”…'); return; } el.value = o.value; el.dispatchEvent(new Event('change', { bubbles: true })); }
+      if (kind === 'symbol') { var vs = VP && VP.findAsset(norm), o = vs ? $('option[value="' + vs + '"]', el) : null; o = o || pickOption(el, low); if (!o) { again('Instrument not recognised — try “gold”, “nasdaq”, “euro dollar”…'); return; } el.value = o.value; el.dispatchEvent(new Event('change', { bubbles: true })); }
       else if (kind === 'side') {
-        var sv = /\b(buy|long|bought|bullish)\b/.test(low) ? 'LONG' : /\b(sell|short|sold|bearish)\b/.test(low) ? 'SHORT' : null;
+        var sv = (VP && VP.side(norm)) || (/\b(buy|long|bought|bullish)\b/.test(low) ? 'LONG' : /\b(sell|short|sold|bearish)\b/.test(low) ? 'SHORT' : null);
         if (!sv) { again('Say “buy” or “sell”.'); return; }
         if (el.type === 'radio') { var rb = $('input[type=radio][value="' + sv + '"]', st); rb.checked = true; rb.dispatchEvent(new Event('change', { bubbles: true })); el = rb.parentNode; } else el.value = sv;
       }
@@ -238,50 +248,125 @@
     stopB.addEventListener('click', function () { stopAll(); });
   });
 
-  /* ---------------------------------------------------------------- Share / flex cards */
-  function drawCard(canvas, data, style) {
-    var cx = canvas.getContext('2d'), W = canvas.width, H = canvas.height, win = data.positive;
-    var pal = style === 'light'
-      ? { bg: '#f7f9fb', grid: '#e2e8ef', text: '#0f172a', mute: '#5b6676', main: win ? '#047857' : '#b42318', glow: win ? '#10b98133' : '#ef444433' }
-      : { bg: '#060b10', grid: '#121c26', text: '#f1f5f9', mute: '#8b97a8', main: win ? '#34d399' : '#f87171', glow: win ? '#10b98140' : '#ef444440' };
+  /* ---------------------------------------------------------------- Share / flex cards (one clean design) */
+  // Trade cards (Trade Log) and day cards (Calendar, Home, Notepad) share the same layout: flat background, P&L in
+  // green/red without glow, four stat tiles and a footer with "Verified by journzey.ai" and a QR code to /verify/{code}.
+  function rr(cx, x, y, w, h, r) { cx.beginPath(); cx.moveTo(x + r, y); cx.arcTo(x + w, y, x + w, y + h, r); cx.arcTo(x + w, y + h, x, y + h, r); cx.arcTo(x, y + h, x, y, r); cx.arcTo(x, y, x + w, y, r); cx.closePath(); }
+  var CARD_PAL = {
+    dark: { bg: '#0b0d12', tile: '#13161e', line: 'rgba(255,255,255,.08)', text: '#f4f5f8', mute: '#8a91a5', pos: '#3ddc97', neg: '#ff6b6b', chip: 'rgba(255,255,255,.06)', mark: '#7c6cff' },
+    light: { bg: '#f6f7f9', tile: '#ffffff', line: '#e3e6eb', text: '#0d111a', mute: '#5d6576', pos: '#059669', neg: '#d92d20', chip: '#eef0f4', mark: '#5b4ff0' }
+  };
+  function fitFont(cx, text, weight, size, family, maxW, min) { cx.font = weight + ' ' + size + 'px ' + family; while (cx.measureText(text).width > maxW && size > min) { size -= 4; cx.font = weight + ' ' + size + 'px ' + family; } return size; }
+  function drawRecap(canvas, o, style) {
+    var cx = canvas.getContext('2d'), W = canvas.width, H = canvas.height, P = 84, pal = CARD_PAL[style] || CARD_PAL.dark, MONO = '"JetBrains Mono", monospace', SANS = 'Inter, sans-serif';
+    var main = o.net >= 0 ? pal.pos : pal.neg;
+    cx.textAlign = 'left'; cx.shadowBlur = 0;
     cx.fillStyle = pal.bg; cx.fillRect(0, 0, W, H);
-    var g = cx.createRadialGradient(W * 0.25, H * 0.35, 10, W * 0.25, H * 0.35, W * 0.9); g.addColorStop(0, pal.glow); g.addColorStop(1, 'transparent'); cx.fillStyle = g; cx.fillRect(0, 0, W, H);
-    cx.strokeStyle = pal.grid; cx.lineWidth = 1; for (var x = 0; x <= W; x += 54) { cx.beginPath(); cx.moveTo(x, 0); cx.lineTo(x, H); cx.stroke(); } for (var y = 0; y <= H; y += 54) { cx.beginPath(); cx.moveTo(0, y); cx.lineTo(W, y); cx.stroke(); }
-    cx.fillStyle = pal.main; cx.fillRect(0, 0, W, 10);
-    var pad = 80;
-    cx.fillStyle = pal.text; cx.font = '700 52px "JetBrains Mono", monospace'; cx.fillText(data.symbol, pad, 150);
-    var sw = cx.measureText(data.symbol).width + 28; cx.font = '700 34px "JetBrains Mono", monospace';
-    var side = data.side === 'LONG' ? 'BUY' : 'SELL', bw = cx.measureText(side).width + 36;
-    cx.fillStyle = data.side === 'LONG' ? (style === 'light' ? '#047857' : '#34d399') : (style === 'light' ? '#b42318' : '#f87171'); cx.globalAlpha = 0.16; cx.fillRect(pad + sw, 108, bw, 54); cx.globalAlpha = 1; cx.fillText(side, pad + sw + 18, 148);
-    cx.fillStyle = pal.mute; cx.font = '600 30px Inter, sans-serif'; cx.fillText(data.positive ? 'PROFIT' : 'LOSS', pad, 300);
-    cx.fillStyle = pal.main; var size = 170; cx.font = '800 ' + size + 'px "JetBrains Mono", monospace'; while (cx.measureText(data.pnl).width > W - pad * 2 && size > 60) { size -= 8; cx.font = '800 ' + size + 'px "JetBrains Mono", monospace'; } cx.fillText(data.pnl, pad, 300 + size * 0.95);
-    if (data.r) { cx.font = '700 64px "JetBrains Mono", monospace'; cx.fillText(data.r, pad, 300 + size * 0.95 + 96); }
-    var rows = [['ENTRY', data.entry], ['EXIT', data.exit], ['LOT SIZE', data.lots], ['STRATEGY', data.strategy]];
-    var top = H - 330;
-    cx.strokeStyle = pal.grid; cx.lineWidth = 2; cx.beginPath(); cx.moveTo(pad, top - 40); cx.lineTo(W - pad, top - 40); cx.stroke();
-    rows.forEach(function (r, i) {
-      var xx = pad + (i % 2) * ((W - pad * 2) / 2), yy = top + Math.floor(i / 2) * 110;
-      cx.fillStyle = pal.mute; cx.font = '600 24px Inter, sans-serif'; cx.fillText(r[0], xx, yy);
-      cx.fillStyle = pal.text; cx.font = '600 38px "JetBrains Mono", monospace'; cx.fillText(String(r[1] || '—').slice(0, 20), xx, yy + 48);
+    cx.fillStyle = main; cx.fillRect(0, 0, W, 8);
+    // header: brand + date
+    rr(cx, P, 70, 52, 52, 14); cx.fillStyle = pal.mark; cx.fill();
+    cx.fillStyle = '#fff'; cx.font = '800 30px ' + SANS; cx.textAlign = 'center'; cx.fillText('j', P + 26, 106); cx.textAlign = 'left';
+    cx.fillStyle = pal.text; cx.font = '700 32px ' + SANS; cx.fillText(o.site, P + 70, 107);
+    cx.fillStyle = pal.mute; cx.font = '500 26px ' + SANS; cx.textAlign = 'right'; cx.fillText(o.dateLabel, W - P, 106); cx.textAlign = 'left';
+    // kicker + title
+    cx.fillStyle = pal.mute; cx.font = '600 24px ' + MONO; cx.fillText(o.kicker, P, 220);
+    var ty = 292;
+    if (o.symbol) {
+      fitFont(cx, o.symbol, '800', 64, SANS, W - P * 2 - 200, 40); cx.fillStyle = pal.text; cx.fillText(o.symbol, P, ty);
+      var sw = cx.measureText(o.symbol).width + 24, side = o.side === 'LONG' ? 'BUY' : 'SELL', sc = o.side === 'LONG' ? pal.pos : pal.neg;
+      cx.font = '700 26px ' + MONO; var bw = cx.measureText(side).width + 32;
+      rr(cx, P + sw, ty - 42, bw, 50, 25); cx.strokeStyle = sc; cx.lineWidth = 2; cx.stroke(); cx.fillStyle = sc; cx.fillText(side, P + sw + 16, ty - 8);
+    } else {
+      fitFont(cx, o.title, '800', 52, SANS, W - P * 2, 34); cx.fillStyle = pal.text; cx.fillText(o.title, P, ty);
+    }
+    // P&L
+    cx.fillStyle = pal.mute; cx.font = '600 26px ' + SANS; cx.fillText(o.net >= 0 ? 'NET PROFIT' : 'NET LOSS', P, 388);
+    var size = fitFont(cx, o.pnl, '800', 150, MONO, W - P * 2, 64); cx.fillStyle = main; cx.fillText(o.pnl, P, 388 + size * 0.98);
+    if (o.sub) { cx.fillStyle = pal.mute; cx.font = '600 30px ' + MONO; cx.fillText(o.sub, P, 388 + size * 0.98 + 58); }
+    // tiles
+    var tY = 650, gap = 24, tw = (W - P * 2 - gap) / 2, th = 128;
+    o.tiles.forEach(function (t, i) {
+      var x = P + (i % 2) * (tw + gap), y = tY + Math.floor(i / 2) * (th + gap);
+      rr(cx, x, y, tw, th, 20); cx.fillStyle = pal.tile; cx.fill(); cx.strokeStyle = pal.line; cx.lineWidth = 2; cx.stroke();
+      cx.fillStyle = pal.mute; cx.font = '600 21px ' + MONO; cx.fillText(t[0], x + 26, y + 44);
+      fitFont(cx, String(t[1]), '700', 40, MONO, tw - 52, 22); cx.fillStyle = t[2] === 'pos' ? pal.pos : t[2] === 'neg' ? pal.neg : pal.text; cx.fillText(String(t[1]), x + 26, y + 98);
     });
-    cx.fillStyle = pal.text; cx.font = '800 36px "Plus Jakarta Sans", Inter, sans-serif'; cx.fillText(data.brand, pad, H - 60);
-    cx.fillStyle = pal.mute; cx.font = '500 22px Inter, sans-serif'; var tag = data.demo ? 'DEMO DATA' : 'Trading journal'; cx.fillText(tag, W - pad - cx.measureText(tag).width, H - 64);
+    // extras (mood chips / best trade / lesson / session)
+    var y = tY + 2 * (th + gap) + 30;
+    if (o.chips && o.chips.length) {
+      var x = P; cx.font = '600 26px ' + SANS;
+      o.chips.forEach(function (c) { var w = cx.measureText(c).width + 40; if (x + w > W - P) return; rr(cx, x, y, w, 46, 23); cx.fillStyle = pal.chip; cx.fill(); cx.fillStyle = pal.text; cx.fillText(c, x + 20, y + 32); x += w + 12; });
+      y += 72;
+    }
+    (o.lines || []).forEach(function (l) { cx.fillStyle = l[1] === 'mute' ? pal.mute : pal.text; cx.font = (l[2] || '500') + ' 27px ' + SANS; var tx = l[0]; while (cx.measureText(tx).width > W - P * 2 && tx.length > 4) tx = tx.slice(0, -2); if (tx !== l[0]) tx += '…'; cx.fillText(tx, P, y + 26); y += 46; });
+    // footer: verified + QR
+    var fy = H - 236; cx.fillStyle = pal.line; cx.fillRect(P, fy - 28, W - P * 2, 2);
+    var qs = 168, qx = W - P - qs, qy = fy;
+    rr(cx, qx - 14, qy - 14, qs + 28, qs + 28, 18); cx.fillStyle = '#ffffff'; cx.fill(); cx.strokeStyle = pal.line; cx.lineWidth = 2; cx.stroke();
+    if (window.qrcode && o.url) { var q = window.qrcode(0, 'M'); q.addData(o.url); q.make(); var n = q.getModuleCount(), m = qs / n; cx.fillStyle = '#0b0d12'; for (var r = 0; r < n; r++) for (var k = 0; k < n; k++) if (q.isDark(r, k)) cx.fillRect(qx + k * m, qy + r * m, Math.ceil(m), Math.ceil(m)); }
+    cx.fillStyle = pal.pos; cx.beginPath(); cx.arc(P + 20, fy + 48, 20, 0, Math.PI * 2); cx.fill();
+    cx.strokeStyle = pal.bg; cx.lineWidth = 5; cx.lineCap = 'round'; cx.lineJoin = 'round'; cx.beginPath(); cx.moveTo(P + 11, fy + 49); cx.lineTo(P + 18, fy + 56); cx.lineTo(P + 30, fy + 41); cx.stroke();
+    cx.fillStyle = pal.text; cx.font = '800 36px ' + SANS; cx.fillText('Verified by ' + o.site, P + 54, fy + 61);
+    cx.fillStyle = pal.mute; cx.font = '500 25px ' + SANS; cx.fillText('Scan the code to check this card', P, fy + 116); cx.fillText('against the trader’s journal.', P, fy + 150);
+    if (o.demo) { cx.fillStyle = pal.mute; cx.font = '600 22px ' + MONO; cx.fillText('DEMO DATA', P, fy + 192); }
   }
-  var shareModal = $('#tm-share');
-  function openShare(data) {
-    if (!shareModal) return;
-    var canvas = $('canvas', shareModal), style = ($('[name=card_style]:checked', shareModal) || {}).value || 'dark';
-    shareModal._data = data; drawCard(canvas, data, style); window.tmOpen(shareModal);
+  function tradeRecap(c, url, site) {
+    var num = function (v) { return v === null || v === undefined ? '—' : String(v); };
+    return {
+      kicker: 'TRADE RECAP' + (c.session ? ' · ' + c.session.toUpperCase() : ''), symbol: c.symbol, side: c.side, net: c.pnl, demo: c.demo,
+      pnl: (c.pnl > 0 ? '+' : c.pnl < 0 ? '−' : '') + curSym(c.currency) + Math.abs(c.pnl).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      sub: c.r === null ? '' : (c.r > 0 ? '+' : '') + c.r.toFixed(2) + 'R', dateLabel: c.date_label, url: url, site: site,
+      tiles: [['ENTRY', num(c.entry)], ['EXIT', num(c.exit)], ['LOT SIZE', num(c.lots)], ['STRATEGY', c.strategy || '—']]
+    };
   }
-  if (shareModal) {
-    var canvas = $('canvas', shareModal);
-    $$('[name=card_style]', shareModal).forEach(function (r) { r.addEventListener('change', function () { if (shareModal._data) drawCard(canvas, shareModal._data, r.value); }); });
-    $('[data-card-download]', shareModal).addEventListener('click', function () { var a = d.createElement('a'); a.download = 'journzey-' + shareModal._data.symbol + '-trade.png'; a.href = canvas.toDataURL('image/png'); a.click(); });
-    var cp = $('[data-card-copy]', shareModal);
-    if (!window.ClipboardItem || !navigator.clipboard || !navigator.clipboard.write) { cp.disabled = true; cp.title = 'Copying images is not supported in this browser — use Download.'; }
-    else cp.addEventListener('click', function () { canvas.toBlob(function (b) { navigator.clipboard.write([new ClipboardItem({ 'image/png': b })]).then(function () { toast('Card copied — paste it into Instagram, X, Telegram, Discord or WhatsApp.', 'success'); }, function () { toast('Your browser blocked clipboard access. Use Download instead.', 'error'); }); }); });
+  function dayRecap(c, url, site) {
+    var lines = [];
+    if (c.best) lines.push(['Best trade  ' + c.best.symbol + '  ' + signedMoney(c.best.pnl, c.currency), '', '600']);
+    if (c.lesson) lines.push(['“' + c.lesson + '”', 'mute', 'italic 500']);
+    return {
+      kicker: 'DAY RECAP' + (c.demo ? ' · DEMO DATA' : ''), title: (c.name ? c.name + '’s' : 'My') + ' trading day', net: c.net, demo: false,
+      pnl: (c.net > 0 ? '+' : c.net < 0 ? '−' : '') + curSym(c.currency) + Math.abs(c.net).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      dateLabel: c.date_label, url: url, site: site, chips: c.emotions || [], lines: lines,
+      tiles: [['TRADES', c.trades + '  (' + c.wins + 'W · ' + c.losses + 'L)'], ['WIN RATE', c.win_rate === null ? '—' : Math.round(c.win_rate * 100) + '%', c.win_rate === null ? '' : (c.win_rate >= 0.5 ? 'pos' : 'neg')],
+        ['TOTAL R', c.total_r === null ? '—' : (c.total_r > 0 ? '+' : '') + c.total_r.toFixed(2) + 'R', c.total_r === null ? '' : (c.total_r >= 0 ? 'pos' : 'neg')], ['DISCIPLINE', c.discipline === null ? '—' : c.discipline + '/10']]
+    };
   }
-  $$('[data-share-trade]').forEach(function (b) { b.addEventListener('click', function () { openShare(JSON.parse(b.dataset.shareTrade)); }); });
+  function cardStyle(m) { var r = $('[name^=card_style]:checked', m); return r ? r.value : (d.documentElement.dataset.theme === 'clean-light' ? 'light' : 'dark'); }
+  function syncStyle(m) { var want = d.documentElement.dataset.theme === 'clean-light' ? 'light' : 'dark'; var r = $('[name^=card_style][value=' + want + ']', m); if (r && !m._styled) { r.checked = true; m._styled = true; } }
+  function wireCardModal(m, getRecap, fileName, shareText) {
+    if (!m) return null;
+    var cv = $('canvas', m), state = { data: null };
+    var redraw = function () { if (state.data) drawRecap(cv, getRecap(state.data), cardStyle(m)); };
+    $$('[name^=card_style]', m).forEach(function (r) { r.addEventListener('change', redraw); });
+    var download = function () { var a = d.createElement('a'); a.download = fileName(state.data); a.href = cv.toDataURL('image/png'); a.click(); };
+    $$('[data-card-download]', m).forEach(function (b) { b.addEventListener('click', download); });
+    $$('[data-card-copy]', m).forEach(function (cp) {
+      if (!window.ClipboardItem || !navigator.clipboard || !navigator.clipboard.write) { cp.hidden = true; return; }
+      cp.addEventListener('click', function () { cv.toBlob(function (bl) { navigator.clipboard.write([new ClipboardItem({ 'image/png': bl })]).then(function () { toast('Card copied — paste it into your post.', 'success'); }, function () { toast('Copy was blocked — use Download.', 'error'); }); }); });
+    });
+    $$('[data-card-share]', m).forEach(function (b) {
+      b.addEventListener('click', function () {
+        if (!state.data) return; var text = shareText(state.data);
+        cv.toBlob(function (bl) {
+          var file = new File([bl], fileName(state.data), { type: 'image/png' });
+          if (navigator.canShare && navigator.canShare({ files: [file] })) { navigator.share({ files: [file], text: text, url: state.data.url }).catch(function () {}); return; }
+          download(); window.open('https://x.com/intent/post?text=' + encodeURIComponent(text) + '&url=' + encodeURIComponent(state.data.url), '_blank', 'noopener');
+          toast('Image downloaded — attach it to your post on X.', 'success');
+        });
+      });
+    });
+    return function (r) { state.data = r; syncStyle(m); var go = function () { redraw(); window.tmOpen(m); }; if (d.fonts && d.fonts.ready) d.fonts.ready.then(go); else go(); };
+  }
+  var showTradeCard = wireCardModal($('#tm-share'), function (r) { return tradeRecap(r.card, r.url, r.site); },
+    function (r) { return 'journzey-' + (r ? r.card.symbol + '-' + r.card.date : 'trade') + '.png'; },
+    function (r) { return 'My ' + r.card.symbol + ' trade: ' + signedMoney(r.card.pnl, r.card.currency) + (r.card.r !== null ? ' (' + (r.card.r > 0 ? '+' : '') + r.card.r.toFixed(2) + 'R)' : '') + ' — journaled with ' + r.site; });
+  $$('[data-share-trade]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var info = JSON.parse(b.dataset.shareTrade || '{}'); if (!info.id || !showTradeCard) return;
+      b.classList.add('busy');
+      post(base + '/trades/' + info.id + '/card', {}).then(function (r) { b.classList.remove('busy'); if (!r || !r.ok) { toast((r && r.error) || 'Could not build the card.', 'error'); return; } showTradeCard(r); });
+    });
+  });
 
   /* ---------------------------------------------------------------- Strategy builder list editors */
   $$('[data-list-editor]').forEach(function (box) {
@@ -313,88 +398,19 @@
   $$('[data-open-modal]').forEach(function (b) { b.addEventListener('click', function () { var m = $(b.dataset.openModal); if (m) { d.body.classList.remove('side-open'); window.tmOpen(m); } }); });
 
   /* ---------------------------------------------------------------- Daily flex card (+ QR "Verified by journzey") */
-  function rr(cx, x, y, w, h, r) { cx.beginPath(); cx.moveTo(x + r, y); cx.arcTo(x + w, y, x + w, y + h, r); cx.arcTo(x + w, y + h, x, y + h, r); cx.arcTo(x, y + h, x, y, r); cx.arcTo(x, y, x + w, y, r); cx.closePath(); }
-  function drawFlex(canvas, c, url, site) {
-    var cx = canvas.getContext('2d'), W = canvas.width, H = canvas.height, up = c.net >= 0, main = up ? '#34d399' : '#f87171', P = 80;
-    cx.fillStyle = '#07080d'; cx.fillRect(0, 0, W, H);
-    var g1 = cx.createRadialGradient(W * 0.15, H * 0.12, 20, W * 0.15, H * 0.12, W); g1.addColorStop(0, up ? 'rgba(52,211,153,.30)' : 'rgba(248,113,113,.30)'); g1.addColorStop(1, 'rgba(0,0,0,0)'); cx.fillStyle = g1; cx.fillRect(0, 0, W, H);
-    var g2 = cx.createRadialGradient(W, H * 0.75, 20, W, H * 0.75, W * 0.9); g2.addColorStop(0, 'rgba(124,108,255,.28)'); g2.addColorStop(1, 'rgba(0,0,0,0)'); cx.fillStyle = g2; cx.fillRect(0, 0, W, H);
-    var bar = cx.createLinearGradient(0, 0, W, 0); bar.addColorStop(0, '#7c6cff'); bar.addColorStop(1, '#22d3ee'); cx.fillStyle = bar; cx.fillRect(0, 0, W, 12);
-    // header
-    rr(cx, P, 64, 56, 56, 14); cx.fillStyle = bar; cx.fill(); cx.fillStyle = '#fff'; cx.font = '800 34px Inter, sans-serif'; cx.textAlign = 'center'; cx.fillText('j', P + 28, 104); cx.textAlign = 'left';
-    cx.fillStyle = '#f5f6fb'; cx.font = '700 36px Inter, sans-serif'; cx.fillText(site, P + 74, 104);
-    cx.fillStyle = '#9aa1ba'; cx.font = '600 28px Inter, sans-serif'; cx.textAlign = 'right'; cx.fillText(c.date_label, W - P, 104); cx.textAlign = 'left';
-    // title
-    cx.fillStyle = '#9aa1ba'; cx.font = '700 26px "JetBrains Mono", monospace'; cx.fillText('DAY RECAP' + (c.demo ? ' · DEMO DATA' : ''), P, 214);
-    cx.fillStyle = '#f5f6fb'; cx.font = '800 50px Inter, sans-serif'; cx.fillText((c.name ? c.name + '’s' : 'My') + ' trading day', P, 278);
-    // P&L
-    cx.fillStyle = '#9aa1ba'; cx.font = '700 28px Inter, sans-serif'; cx.fillText(up ? 'NET PROFIT' : 'NET LOSS', P, 372);
-    var pnl = (c.net > 0 ? '+' : c.net < 0 ? '−' : '') + curSym(c.currency) + Math.abs(c.net).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    var size = 150; cx.font = '800 ' + size + 'px "JetBrains Mono", monospace'; while (cx.measureText(pnl).width > W - P * 2 && size > 60) { size -= 6; cx.font = '800 ' + size + 'px "JetBrains Mono", monospace'; }
-    cx.shadowColor = main; cx.shadowBlur = 40; cx.fillStyle = main; cx.fillText(pnl, P, 372 + size * 0.95); cx.shadowBlur = 0;
-    // stat tiles
-    var tiles = [['TRADES', c.trades + '  (' + c.wins + 'W·' + c.losses + 'L)'], ['WIN RATE', c.win_rate === null ? '—' : Math.round(c.win_rate * 100) + '%'], ['TOTAL R', c.total_r === null ? '—' : (c.total_r > 0 ? '+' : '') + c.total_r.toFixed(2) + 'R'], ['DISCIPLINE', c.discipline === null ? '—' : c.discipline + '/10']];
-    var ty = 600, tw = (W - P * 2 - 30) / 2, th = 130;
-    tiles.forEach(function (t, i) {
-      var x = P + (i % 2) * (tw + 30), y = ty + Math.floor(i / 2) * (th + 26);
-      rr(cx, x, y, tw, th, 24); cx.fillStyle = 'rgba(255,255,255,.05)'; cx.fill(); cx.strokeStyle = 'rgba(255,255,255,.10)'; cx.lineWidth = 2; cx.stroke();
-      cx.fillStyle = '#9aa1ba'; cx.font = '700 22px "JetBrains Mono", monospace'; cx.fillText(t[0], x + 28, y + 46);
-      var col = '#f5f6fb'; if (i === 2 && c.total_r !== null) col = c.total_r >= 0 ? '#34d399' : '#f87171'; if (i === 1 && c.win_rate !== null) col = c.win_rate >= 0.5 ? '#34d399' : '#f87171';
-      cx.fillStyle = col; cx.font = '800 44px "JetBrains Mono", monospace'; cx.fillText(t[1], x + 28, y + 102);
-    });
-    // emotions + best trade + lesson
-    var y = ty + 2 * (th + 26) + 34;
-    if (c.emotions && c.emotions.length) {
-      cx.fillStyle = '#9aa1ba'; cx.font = '700 22px "JetBrains Mono", monospace'; cx.fillText('MOOD', P, y + 30);
-      var x = P + 100; cx.font = '700 28px Inter, sans-serif';
-      c.emotions.forEach(function (em) { var w = cx.measureText(em).width + 44; rr(cx, x, y, w, 48, 24); cx.fillStyle = 'rgba(124,108,255,.22)'; cx.fill(); cx.fillStyle = '#e6e3ff'; cx.fillText(em, x + 22, y + 34); x += w + 12; });
-      y += 78;
-    }
-    if (c.best) { cx.fillStyle = '#9aa1ba'; cx.font = '600 28px Inter, sans-serif'; cx.fillText('Best trade  ', P, y + 24); var bw = cx.measureText('Best trade  ').width; cx.fillStyle = '#f5f6fb'; cx.font = '700 28px Inter, sans-serif'; cx.fillText(c.best.symbol, P + bw, y + 24); var sw = cx.measureText(c.best.symbol + '  ').width; cx.fillStyle = c.best.pnl >= 0 ? '#34d399' : '#f87171'; cx.font = '700 28px "JetBrains Mono", monospace'; cx.fillText(signedMoney(c.best.pnl, c.currency), P + bw + sw, y + 24); y += 52; }
-    if (c.lesson) { cx.fillStyle = '#c8cde0'; cx.font = 'italic 500 28px Inter, sans-serif'; cx.fillText('“' + c.lesson + '”', P, y + 24); }
-    // footer with QR
-    var fy = H - 230; cx.fillStyle = 'rgba(255,255,255,.08)'; cx.fillRect(P, fy - 30, W - P * 2, 2);
-    var qs = 170, qx = W - P - qs, qy = fy;
-    rr(cx, qx - 12, qy - 12, qs + 24, qs + 24, 18); cx.fillStyle = '#ffffff'; cx.fill();
-    if (window.qrcode) { var q = window.qrcode(0, 'M'); q.addData(url); q.make(); var n = q.getModuleCount(), m = qs / n; cx.fillStyle = '#07080d'; for (var r = 0; r < n; r++) for (var k = 0; k < n; k++) if (q.isDark(r, k)) cx.fillRect(qx + k * m, qy + r * m, Math.ceil(m), Math.ceil(m)); }
-    cx.fillStyle = '#34d399'; cx.beginPath(); cx.arc(P + 22, fy + 52, 22, 0, Math.PI * 2); cx.fill(); cx.strokeStyle = '#07080d'; cx.lineWidth = 6; cx.beginPath(); cx.moveTo(P + 11, fy + 52); cx.lineTo(P + 19, fy + 61); cx.lineTo(P + 34, fy + 43); cx.stroke();
-    cx.fillStyle = '#f5f6fb'; cx.font = '800 40px Inter, sans-serif'; cx.fillText('Verified by ' + site, P + 60, fy + 66);
-    cx.fillStyle = '#9aa1ba'; cx.font = '500 26px Inter, sans-serif'; cx.fillText('Scan the code to check this card', P, fy + 124);
-    cx.fillText('against the trader’s journal.', P, fy + 160);
-  }
-  var flexState = null;
+  var showDayCard = wireCardModal($('#tm-flex'), function (r) { return dayRecap(r.card, r.url, r.site); },
+    function (r) { return 'journzey-day-' + (r ? r.card.date : 'card') + '.png'; },
+    function (r) { var c = r.card; return 'My trading day: ' + signedMoney(c.net, c.currency) + ' · ' + c.trades + ' trades' + (c.win_rate === null ? '' : ' · ' + Math.round(c.win_rate * 100) + '% win rate') + ' — journaled with ' + r.site; });
   $$('[data-flex-day]').forEach(function (b) {
     b.addEventListener('click', function () {
       b.classList.add('busy');
       post(base + '/flex', { date: b.dataset.flexDay }).then(function (r) {
         b.classList.remove('busy');
         if (!r || !r.ok) { toast((r && r.error) || 'Could not build the card.', 'error'); return; }
-        var m = $('#tm-flex'), cv = $('canvas', m); flexState = r;
-        var go = function () { drawFlex(cv, r.card, r.url, r.site); window.tmOpen(m); };
-        if (d.fonts && d.fonts.ready) d.fonts.ready.then(go); else go();
+        if (showDayCard) showDayCard(r);
       });
     });
   });
-  (function () {
-    var m = $('#tm-flex'); if (!m) return; var cv = $('canvas', m);
-    var name = function () { return 'journzey-day-' + (flexState ? flexState.card.date : 'card') + '.png'; };
-    var download = function () { var a = d.createElement('a'); a.download = name(); a.href = cv.toDataURL('image/png'); a.click(); };
-    $('[data-flex-download]', m).addEventListener('click', download);
-    var cp = $('[data-flex-copy]', m);
-    if (!window.ClipboardItem || !navigator.clipboard || !navigator.clipboard.write) cp.hidden = true;
-    else cp.addEventListener('click', function () { cv.toBlob(function (bl) { navigator.clipboard.write([new ClipboardItem({ 'image/png': bl })]).then(function () { toast('Card copied — paste it into your post.', 'success'); }, function () { toast('Copy was blocked — use Download.', 'error'); }); }); });
-    $('[data-flex-share]', m).addEventListener('click', function () {
-      if (!flexState) return;
-      var c = flexState.card, text = 'My trading day: ' + signedMoney(c.net, c.currency) + ' · ' + c.trades + ' trades · ' + (c.win_rate === null ? '' : Math.round(c.win_rate * 100) + '% win rate') + ' — journaled with ' + flexState.site;
-      cv.toBlob(function (bl) {
-        var file = new File([bl], name(), { type: 'image/png' });
-        if (navigator.canShare && navigator.canShare({ files: [file] })) { navigator.share({ files: [file], text: text, url: flexState.url }).catch(function () {}); return; }
-        download();
-        window.open('https://x.com/intent/post?text=' + encodeURIComponent(text) + '&url=' + encodeURIComponent(flexState.url), '_blank', 'noopener');
-        toast('Image downloaded — attach it to your post on X.', 'success');
-      });
-    });
-  })();
 
   /* ---------------------------------------------------------------- Blow-up radar what-if + runner audit */
   $$('[data-radar] [data-scen]').forEach(function (b) {
@@ -526,6 +542,7 @@
     }
     tabs.forEach(function (t) { t.addEventListener('click', function () { show(t.dataset.mkTab, true); }); });
   });
+  $$('[data-mk-symbol]').forEach(function (b) { b.addEventListener('click', function () { var box = $('.tv-chart'); if (!box) return; $$('[data-mk-symbol]').forEach(function (x) { x.classList.toggle('on', x === b); }); window.jzTvReload(box, { symbol: b.dataset.mkSymbol }); }); });
   $$('[data-mk-source]').forEach(function (sel) { sel.addEventListener('change', function () { var box = $('.tv-stocks'); if (box) window.jzTvReload(box, { dataSource: sel.value }); }); });
 
   /* ---------------------------------------------------------------- Segmented radio styling helper */

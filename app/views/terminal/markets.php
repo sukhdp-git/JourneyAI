@@ -6,6 +6,12 @@ $w = fn (string $type, int $h, string $label, array $opt = []) => View::partial(
 <div class="mk-tabs" role="tablist" aria-label="Market widgets" data-mk-tabs>
   <?php foreach ($tabs as $k => [$label, $ic]): ?><button type="button" role="tab" data-mk-tab="<?= e($k) ?>" aria-selected="<?= $k === $tab ? 'true' : 'false' ?>"<?= $k === $tab ? ' class="on"' : '' ?>><?= icon($ic, 'icon icon-sm') ?><?= e($label) ?></button><?php endforeach; ?>
 </div>
+<section class="panel mk-panel mk-chart" data-mk-panel="chart"<?= $tab === 'chart' ? '' : ' hidden' ?>>
+  <div class="panel-head"><h2>Live chart</h2>
+    <span class="mk-syms" role="group" aria-label="Quick symbols"><?php foreach (['OANDA:XAUUSD' => 'Gold', 'FX:EURUSD' => 'EUR/USD', 'FX:GBPUSD' => 'GBP/USD', 'OANDA:NAS100USD' => 'Nasdaq', 'OANDA:SPX500USD' => 'S&P 500', 'BITSTAMP:BTCUSD' => 'Bitcoin'] as $sym => $lbl): ?><button type="button" class="lt-chip<?= $sym === 'OANDA:XAUUSD' ? ' on' : '' ?>" data-mk-symbol="<?= e($sym) ?>"><?= e($lbl) ?></button><?php endforeach; ?></span></div>
+  <?= $w('chart', 680, 'Live chart', ['tz' => $tz]) ?>
+  <p class="muted small mk-note">Full TradingView chart: indicators, timeframes and the drawing tools on the left (trend lines, Fibonacci, rectangles, measure…). Search any symbol in the top bar. Drawings are not saved when you leave the page.</p>
+</section>
 <section class="panel mk-panel" data-mk-panel="stocks"<?= $tab === 'stocks' ? '' : ' hidden' ?>>
   <div class="panel-head"><h2>Stock heatmap</h2><label class="sr-only" for="mk-src">Index</label><select id="mk-src" data-mk-source><option value="SPX500">S&amp;P 500</option><option value="NASDAQ100">Nasdaq 100</option></select></div>
   <?= $w('stocks', 600, 'Stock heatmap') ?>

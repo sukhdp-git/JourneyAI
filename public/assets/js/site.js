@@ -71,6 +71,45 @@
     els.forEach(function (el) { el.classList.add('is-visible'); });
   }
 
+  // Hero product shot: gentle 3D tilt that follows the pointer
+  if (!reduce) d.querySelectorAll('[data-tilt]').forEach(function (el) {
+    el.addEventListener('pointermove', function (e) { var r = el.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - 0.5, y = (e.clientY - r.top) / r.height - 0.5; el.style.setProperty('--ry', (x * 8).toFixed(2) + 'deg'); el.style.setProperty('--rx', (-y * 6).toFixed(2) + 'deg'); });
+    el.addEventListener('pointerleave', function () { el.style.setProperty('--ry', '0deg'); el.style.setProperty('--rx', '0deg'); });
+  });
+  // Showcase stage: the tilted screen straightens and the cards slide in as it scrolls into view
+  var stages = d.querySelectorAll('[data-sc-stage]');
+  if (stages.length) {
+    var ticking = false, upd = function () {
+      ticking = false;
+      stages.forEach(function (st) { var r = st.getBoundingClientRect(), vh = window.innerHeight; var p = reduce ? 1 : Math.max(0, Math.min(1, (vh - r.top) / (vh * 0.75))); st.style.setProperty('--p', p.toFixed(3)); });
+    };
+    window.addEventListener('scroll', function () { if (!ticking) { ticking = true; requestAnimationFrame(upd); } }, { passive: true });
+    window.addEventListener('resize', upd); upd();
+  }
+  // Product tour: auto-plays through the tabs; pauses on hover/focus; click to jump
+  d.querySelectorAll('[data-sc-tour]').forEach(function (tour) {
+    var tabs = tour.querySelectorAll('[data-sc-tab]'), panels = tour.querySelectorAll('.sc-panel'), cur = 0, timer = null, DUR = 7000, paused = false;
+    tour.style.setProperty('--sc-dur', DUR / 1000 + 's');
+    function show(i, focus) {
+      cur = (i + tabs.length) % tabs.length;
+      tabs.forEach(function (t, k) { var on = k === cur; t.classList.toggle('on', on); t.setAttribute('aria-selected', on ? 'true' : 'false'); t.tabIndex = on ? 0 : -1; var pr = t.querySelector('.sc-progress'); if (pr) { pr.style.animation = 'none'; void pr.offsetWidth; pr.style.animation = ''; } });
+      panels.forEach(function (p, k) { p.hidden = k !== cur; p.classList.toggle('on', k === cur); });
+      if (focus) tabs[cur].focus();
+      schedule();
+    }
+    function schedule() { clearTimeout(timer); if (!reduce && !paused) timer = setTimeout(function () { show(cur + 1); }, DUR); }
+    tabs.forEach(function (t, k) {
+      t.addEventListener('click', function () { show(k); });
+      t.addEventListener('keydown', function (e) { if (e.key === 'ArrowDown' || e.key === 'ArrowRight') { e.preventDefault(); show(cur + 1, true); } if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') { e.preventDefault(); show(cur - 1, true); } });
+    });
+    tour.addEventListener('pointerenter', function () { paused = true; tour.classList.add('paused'); clearTimeout(timer); });
+    tour.addEventListener('pointerleave', function () { paused = false; tour.classList.remove('paused'); schedule(); });
+    if (!reduce) {
+      if ('IntersectionObserver' in window) { var tio = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { tour.classList.add('playing'); show(cur); } else { clearTimeout(timer); } }); }, { threshold: 0.3 }); tio.observe(tour); }
+      else { tour.classList.add('playing'); schedule(); }
+    }
+  });
+
   // Card spotlight follows the pointer
   if (!reduce) {
     d.querySelectorAll('.service-card').forEach(function (c) {

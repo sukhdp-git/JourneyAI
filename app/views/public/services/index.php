@@ -9,6 +9,7 @@
     <?php endif; ?>
   </div>
 </section>
+<?= View::partial('public/partials/product-band', ['title' => 'See it in action', 'text' => 'Every capability lives in one fast terminal — here is what it looks like.']) ?>
 <?php if ($process): ?>
 <section class="section bg-muted">
   <div class="container">

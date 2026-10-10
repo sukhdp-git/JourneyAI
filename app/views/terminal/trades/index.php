@@ -48,7 +48,7 @@ $sortLink = function (string $col, string $label) use ($f, $qs) { $on = ($f['sor
     <tbody>
     <?php foreach ($rows as $t): $pnl = $t['pnl']; $fmt = fn ($x) => App\Trading\Instruments::format($t['symbol'], $x); $lots = rtrim(rtrim(number_format((float) $t['lot_size'], 4, '.', ''), '0'), '.');
       $rTxt = $t['rr'] === null ? '' : ((float) $t['rr'] > 0 ? '+' : '') . number_format((float) $t['rr'], 2) . 'R';
-      $share = ['symbol' => $t['symbol'], 'side' => $t['side'], 'pnl' => $pnl === null ? 'OPEN' : money($pnl, $cur, true), 'positive' => $pnl === null || (float) $pnl >= 0, 'r' => $rTxt,
+      $share = ['id' => (int) $t['id'], 'symbol' => $t['symbol'], 'side' => $t['side'], 'pnl' => $pnl === null ? 'OPEN' : money($pnl, $cur, true), 'positive' => $pnl === null || (float) $pnl >= 0, 'r' => $rTxt,
         'entry' => $fmt($t['entry_price']), 'exit' => $fmt($t['exit_price']), 'lots' => $lots, 'strategy' => $t['strategy_name'] ?: ($t['setup_tag'] ?: '—'), 'brand' => setting('site_name', 'journzey.ai'), 'demo' => (bool) $acc['has_demo_data']]; ?>
       <tr>
         <td class="dt hide-m" data-label="Date"><?= e(fmt_date($t['executed_at'], 'Y-m-d')) ?><small class="num"><?= e(fmt_date($t['executed_at'], 'H:i')) ?></small></td>

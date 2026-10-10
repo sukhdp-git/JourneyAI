@@ -4,6 +4,25 @@ $cur = $acc['currency'];
 $c = fn ($type, $data, $label, $area = null, $h = null) => View::partial('terminal/partials/chart', ['type' => $type, 'series' => $data, 'format' => 'money:' . $cur, 'label' => $label, 'area' => $area, 'height' => $h]);
 ?>
 <?= View::partial('terminal/partials/range', ['action' => url('/terminal/dashboard'), 'range' => $range, 'from' => $from, 'to' => $to, 'acc' => $acc]) ?>
+<?php if ($prop): $st = ['active' => 'IN PROGRESS', 'passed' => 'TARGET MET', 'breached' => 'RULE BREACHED'][$prop['status']]; ?>
+<section class="panel prop-panel" aria-label="Prop firm rules">
+  <div class="panel-head"><h2><?= icon('shield', 'icon icon-sm') ?> <?= e($prop['firm'] ?: 'Prop firm') ?> rules<?= $prop['preset'] ? ' <span class="muted small">· ' . e($prop['preset']) . '</span>' : '' ?></h2><span class="prop-status <?= e($prop['status']) ?>"><?= $st ?></span></div>
+  <?php if ($prop['items']): ?>
+  <div class="prop-rules">
+    <?php foreach ($prop['items'] as $it): ?>
+    <div class="prop-rule <?= e($it['tone']) ?>" data-rule="<?= e($it['key']) ?>">
+      <small><?= e($it['label']) ?></small>
+      <strong class="<?= e($it['cls'] ?? '') ?>"><?= e($it['value']) ?></strong>
+      <div class="bar" role="progressbar" aria-label="<?= e($it['label']) ?>" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<?= (int) round($it['progress'] * 100) ?>"><span style="width:<?= round($it['progress'] * 100, 1) ?>%"></span></div>
+      <span class="rule"><?= e($it['rule']) ?></span>
+      <em><?= e($it['note']) ?></em>
+    </div>
+    <?php endforeach; ?>
+  </div>
+  <p class="panel-note">Measured on closed trades all-time for this account (not the date range above). Your prop firm's own dashboard is the official record. <a href="<?= e(url('/terminal/accounts')) ?>">Edit rules</a></p>
+  <?php else: ?><p class="muted">No rules set for this account yet. <a href="<?= e(url('/terminal/accounts')) ?>">Add the firm's rules</a> to track them here.</p><?php endif; ?>
+</section>
+<?php endif; ?>
 <?php if (!$sum['trades']): ?>
   <div class="panel empty"><?= icon('chart', 'icon') ?><p>No closed trades in this period for <strong><?= e($acc['name']) ?></strong>.</p><p><a class="tm-btn tm-btn-primary" href="<?= e(url('/terminal/trades/new')) ?>">Log a trade</a></p></div>
 <?php else: ?>

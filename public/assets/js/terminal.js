@@ -39,6 +39,32 @@
   });
   window.tmOpen = open; window.tmClose = close;
 
+  // Account switcher: "＋ Add account…" opens the dialog instead of switching
+  $$('[data-acc-switch]').forEach(function (sel) {
+    var cur = sel.value;
+    sel.addEventListener('change', function () {
+      if (sel.value === 'add') { sel.value = cur; var m = $('#tm-add-account'); if (m) open(m); return; }
+      sel.form.submit();
+    });
+  });
+  $$('[data-open-add-account]').forEach(function (b) { b.addEventListener('click', function () { var m = $('#tm-add-account'); if (m) { open(m); if (b.dataset.openAddAccount) { var t = $('[data-aa-kind="' + b.dataset.openAddAccount + '"]', m); if (t) t.click(); } } }); });
+  $$('#tm-add-account').forEach(function (m) {
+    $$('[data-aa-kind]', m).forEach(function (t) {
+      t.addEventListener('click', function () {
+        $$('[data-aa-kind]', m).forEach(function (x) { var on = x === t; x.classList.toggle('on', on); x.setAttribute('aria-selected', on ? 'true' : 'false'); });
+        $$('[data-aa-form]', m).forEach(function (f) { f.hidden = f.dataset.aaForm !== t.dataset.aaKind; });
+        var first = $('[data-aa-form="' + t.dataset.aaKind + '"] input:not([type=hidden])', m); if (first) first.focus();
+      });
+    });
+    var pf = $('[data-aa-form=prop]', m), presets = pf ? JSON.parse(pf.dataset.presets || '{}') : {};
+    function fill(key) {
+      var p = presets[key]; if (!p) return;
+      $$('[data-rule]', pf).forEach(function (inp) { var v = p[inp.dataset.rule]; inp.value = v === null || v === undefined ? (inp.tagName === 'SELECT' ? 'static' : '') : v; });
+    }
+    var ps = pf && $('[data-aa-preset]', pf);
+    if (ps) { ps.addEventListener('change', function () { fill(ps.value); }); fill(ps.value); }
+  });
+
   // Confirm dialogs for destructive forms: <form data-confirm="…">
   var cm = $('#tm-confirm'), pending = null;
   d.addEventListener('submit', function (e) {

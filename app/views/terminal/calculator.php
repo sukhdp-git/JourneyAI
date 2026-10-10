@@ -31,6 +31,7 @@ $rateField = fn () => '<div class="f" data-rate-field hidden><label>Conversion r
       <button type="button" class="tm-btn tm-btn-primary vg-start" data-vg-start><?= icon('mic', 'icon icon-sm') ?> <span data-vg-label>Voice mode</span></button>
       <div class="vg-status" aria-live="polite"><strong data-vg-prompt>Speak instead of typing.</strong><span class="muted small" data-vg-heard>e.g. “gold”, “buy”, “entry 2645”, “stop 2639” — or all at once.</span></div>
       <button type="button" class="tm-btn tm-btn-sm" data-vg-stop hidden>Stop</button>
+      <span class="hub-locales" role="group" aria-label="Voice language"><?php foreach (['en-US' => 'EN', 'ru-RU' => 'RU', 'zh-CN' => '中文', 'pt-BR' => 'PT'] as $code => $lbl): ?><button type="button" class="lt-chip" data-vg-locale="<?= $code ?>"><?= $lbl ?></button><?php endforeach; ?></span>
     </div>
     <p class="muted small" data-vg-unsupported hidden>Voice needs Chrome, Edge or Safari with microphone access.</p>
     <div class="f"><label for="cs-acc">Account</label>
@@ -77,6 +78,7 @@ $rateField = fn () => '<div class="f" data-rate-field hidden><label>Conversion r
       <button type="button" class="tm-btn tm-btn-primary vg-start" data-vg-start><?= icon('mic', 'icon icon-sm') ?> <span data-vg-label>Voice mode</span></button>
       <div class="vg-status" aria-live="polite"><strong data-vg-prompt>Speak instead of typing.</strong><span class="muted small" data-vg-heard>e.g. “gold”, “buy”, “entry 2645”, “stop 2639” — or all at once.</span></div>
       <button type="button" class="tm-btn tm-btn-sm" data-vg-stop hidden>Stop</button>
+      <span class="hub-locales" role="group" aria-label="Voice language"><?php foreach (['en-US' => 'EN', 'ru-RU' => 'RU', 'zh-CN' => '中文', 'pt-BR' => 'PT'] as $code => $lbl): ?><button type="button" class="lt-chip" data-vg-locale="<?= $code ?>"><?= $lbl ?></button><?php endforeach; ?></span>
     </div>
     <p class="muted small" data-vg-unsupported hidden>Voice needs Chrome, Edge or Safari with microphone access.</p>
     <div class="f" data-vg-step="symbol" data-vg-ask="Which instrument?"><label for="cp-sym">Instrument</label><?= $instSelect('cp-sym') ?></div>

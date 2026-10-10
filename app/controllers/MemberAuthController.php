@@ -255,24 +255,30 @@ final class MemberAuthController
         if ($risk < 0.05 || $risk > 10) {
             $errors['risk_pct'] = 'Risk per trade must be between 0.05% and 10%.';
         }
-        $name = mb_substr(trim((string) $req->post('account_name', '')), 0, 80) ?: 'My Demo Account';
+        $name = 'Demo account';
+        $withDemo = $req->post('load_demo') === '1';
         if ($errors) {
             Session::withErrors($errors, $_POST);
             Response::redirect('/onboarding');
         }
         $dec = fn ($k) => is_numeric($req->post($k)) && (float) $req->post($k) > 0 ? round((float) $req->post($k), 2) : null;
-        Database::transaction(function () use ($m, $markets, $currency, $tz, $capital, $risk, $name, $dec, $req) {
+        // One account to start: the demo journal (sample data) or, without it, an empty demo account. Broker and
+        // prop-firm accounts are added later from the account menu ("＋ Add account").
+        Database::transaction(function () use ($m, $markets, $currency, $tz, $capital, $risk, $name, $dec, $withDemo) {
             $uid = (int) $m['id'];
             Ledger::ensureTemplates($uid);
-            $accId = Database::insert('trading_accounts', ['user_id' => $uid, 'name' => $name, 'broker_name' => mb_substr((string) $req->post('broker_name', ''), 0, 80) ?: null, 'currency' => $currency, 'starting_capital' => round($capital, 2), 'is_demo' => 1, 'max_daily_loss' => $dec('max_daily_loss'), 'max_weekly_loss' => $dec('max_weekly_loss')]);
+            $accId = $withDemo ? null : Database::insert('trading_accounts', ['user_id' => $uid, 'name' => $name, 'currency' => $currency, 'starting_capital' => round($capital, 2), 'is_demo' => 1, 'max_daily_loss' => $dec('max_daily_loss'), 'max_weekly_loss' => $dec('max_weekly_loss')]);
             Database::update('user_settings', [
                 'timezone' => $tz, 'base_currency' => $currency, 'default_risk_pct' => round($risk, 2), 'default_target_rr' => $dec('target_rr') ?? 2, 'active_account_id' => $accId,
             ], 'user_id = :u', ['u' => $uid]);
             Database::update('users', ['onboarded' => 1, 'primary_markets' => implode(',', $markets)], 'id = :id', ['id' => $uid]);
         });
         Members::refresh();
-        if ($req->post('load_demo') === '1') {
+        if ($withDemo) {
             Ledger::loadDemo(Members::current());
+            if ($dec('max_daily_loss') || $dec('max_weekly_loss')) {
+                Database::query("UPDATE trading_accounts SET max_daily_loss = :d, max_weekly_loss = :w WHERE user_id = :u AND has_demo_data = 1", ['d' => $dec('max_daily_loss'), 'w' => $dec('max_weekly_loss'), 'u' => $m['id']]);
+            }
         }
         Members::audit((int) $m['id'], 'onboarded', 'Completed onboarding');
         $to = (string) ($_SESSION['member_intended'] ?? '/terminal');
