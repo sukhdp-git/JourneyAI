@@ -711,14 +711,6 @@ input[type=time]:focus, input[type=url]:focus { outline: none; border-color: var
 .hub-voice-status.good { color: var(--pos); font-weight: 600; } .hub-voice-status.bad { color: var(--neg); }
 .hub-locales { display: inline-flex; gap: 4px; }
 /* University */
-.uni-hero { margin-bottom: 14px; }
-.uni-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
-@media (max-width: 760px) { .uni-steps { grid-template-columns: 1fr 1fr; } }
-.uni-steps div { display: flex; gap: 10px; align-items: center; padding: 12px; border-radius: 12px; border: 1px solid var(--line); background: color-mix(in srgb, var(--panel-2) 80%, transparent); font-size: 12.5px; color: var(--strong); }
-.uni-steps b { width: 26px; height: 26px; flex: none; display: grid; place-items: center; border-radius: 50%; background: var(--brand); color: #fff; }
-.uni-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); }
-.uni-card { display: block; color: var(--text); text-decoration: none !important; transition: transform .15s; } .uni-card:hover { transform: translateY(-2px); }
-.uni-num { color: var(--c); font-family: "JetBrains Mono", monospace; } .uni-sum { font-size: 13px; margin: 0; }
 .uni-detail { display: grid; gap: 14px; } @media (min-width: 1100px) { .uni-detail { grid-template-columns: minmax(0, 1fr) 320px; align-items: start; } }
 .uni-title { font-size: clamp(19px, 2.4vw, 25px); margin-bottom: 6px; } .uni-lead { color: var(--muted); }
 .uni-h { display: flex; align-items: center; gap: 8px; font-size: 14px; margin: 12px 0 8px; } .uni-h .icon { color: var(--c); }
@@ -786,3 +778,37 @@ mark.up { background: color-mix(in srgb, var(--pos) 16%, transparent); } mark.do
 .aff-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-top: 12px; }
 .aff-list { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
 .aff-state p { max-width: 70ch; }
+
+/* Charts draw themselves in ("live" formation) — see charts.js */
+.chart circle.pen { fill: var(--series-1); stroke: var(--panel); stroke-width: 2; filter: drop-shadow(0 0 6px color-mix(in srgb, var(--series-1) 70%, transparent)); pointer-events: none; }
+.sess-bar .track > span { transform-origin: left center; animation: jz-grow-x 1.8s cubic-bezier(.22, .61, .36, 1) both; }
+.sess-bar:nth-child(2) .track > span { animation-delay: .12s; } .sess-bar:nth-child(3) .track > span { animation-delay: .24s; } .sess-bar:nth-child(4) .track > span { animation-delay: .36s; }
+@keyframes jz-grow-x { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@media (prefers-reduced-motion: reduce) { .sess-bar .track > span { animation: none; } }
+
+/* University: one clean column, 01 → 10 */
+.uni-wrap { max-width: 860px; margin: 0 auto; padding: 8px 0 24px; }
+.uni-head { padding: 12px 4px 26px; }
+.uni-kicker { display: inline-flex; align-items: center; gap: 6px; font: 600 11px/1 "JetBrains Mono", monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.uni-head h2 { font-size: clamp(22px, 3vw, 30px); margin: 12px 0 10px; letter-spacing: -.02em; }
+.uni-head p { color: var(--muted); font-size: 14.5px; line-height: 1.65; max-width: 62ch; margin: 0; }
+.uni-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.uni-row { display: grid; grid-template-columns: 64px minmax(0, 1fr) 28px; gap: 18px; align-items: center; padding: 22px 24px; border-radius: 16px; border: 1px solid var(--line-2); background: var(--panel); color: var(--text); text-decoration: none !important; transition: border-color .18s, transform .18s, background .18s; }
+.uni-row:hover, .uni-row:focus-visible { border-color: color-mix(in srgb, var(--c) 55%, var(--line)); background: color-mix(in srgb, var(--c) 5%, var(--panel)); transform: translateX(3px); }
+.uni-n { font: 600 28px/1 "JetBrains Mono", monospace; color: var(--c); letter-spacing: -.04em; opacity: .9; }
+.uni-body { display: grid; gap: 7px; min-width: 0; }
+.uni-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 11.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.uni-meta i { width: 7px; height: 7px; border-radius: 50%; background: var(--c); }
+.uni-owned { display: inline-flex; align-items: center; gap: 4px; text-transform: none; letter-spacing: 0; color: var(--pos); font-weight: 600; }
+.uni-name { font: 700 17px/1.35 "Plus Jakarta Sans", "Inter", sans-serif; color: var(--strong); letter-spacing: -.01em; }
+.uni-sum { font-size: 13.5px; line-height: 1.6; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.uni-facts { display: flex; flex-wrap: wrap; gap: 6px 14px; font: 500 12px "JetBrains Mono", monospace; color: var(--text); margin-top: 2px; }
+.uni-facts span + span::before { content: "·"; margin-right: 14px; color: var(--muted); }
+.uni-go { color: var(--muted); display: grid; place-items: center; transition: color .18s, transform .18s; }
+.uni-row:hover .uni-go { color: var(--c); transform: translateX(3px); }
+@media (max-width: 640px) {
+  .uni-row { grid-template-columns: 40px minmax(0, 1fr); gap: 12px; padding: 18px 16px; }
+  .uni-n { font-size: 20px; align-self: start; padding-top: 2px; } .uni-go { display: none; }
+  .uni-facts { gap: 4px 12px; } .uni-facts span + span::before { content: none; }
+}
+.quick-cmd-box .tm-cmd { flex: 1; min-width: 0; height: 40px; }

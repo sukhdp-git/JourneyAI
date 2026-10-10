@@ -67,6 +67,7 @@
     hit.addEventListener('pointerleave', function () { cross.setAttribute('visibility', 'hidden'); dot.setAttribute('visibility', 'hidden'); t.hidden = true; });
     hit.addEventListener('keydown', function (e) { if (e.key === 'ArrowLeft') { cur = Math.max(0, cur - 1); show(cur); } if (e.key === 'ArrowRight') { cur = Math.min(pts.length - 1, cur + 1); show(cur); } });
     hit.addEventListener('focus', function () { show(cur); }); hit.addEventListener('blur', function () { t.hidden = true; });
+    svg.__pen = { from: pl, to: w - pr, y: function (x) { var u = (x - pl) / ((w - pl - pr) / Math.max(1, pts.length - 1)), i = Math.max(0, Math.min(pts.length - 1, Math.floor(u))), j = Math.min(pts.length - 1, i + 1), k = u - i; return Y(pts[i].y + (pts[j].y - pts[i].y) * Math.max(0, Math.min(1, k))); }, neg: root.dataset.area === 'neg' };
     root.insertBefore(svg, root.firstChild);
   }
 
@@ -77,6 +78,7 @@
     var vals = items.map(function (i) { return i.value; }), max = Math.max(0, Math.max.apply(null, vals)), min = Math.min(0, Math.min.apply(null, vals)), span = (max - min) || 1;
     var x0 = lw + (w - lw - vw) * (-min / span), scale = (w - lw - vw) / span;
     var svg = el('svg', { viewBox: '0 0 ' + w + ' ' + h, role: 'img', 'aria-label': root.dataset.label || 'Bar chart' }, null), t = tip(root);
+    svg.__x0 = x0;
     el('line', { x1: x0, x2: x0, y1: 0, y2: h, class: 'zero' }, svg);
     items.forEach(function (it, i) {
       var y = i * (row + gap), g = el('g', { class: 'b', tabindex: 0 }, svg), bw = Math.max(2, Math.abs(it.value) * scale), bx = it.value >= 0 ? x0 : x0 - bw;
@@ -141,16 +143,81 @@
     root.insertBefore(svg, root.firstChild);
   }
 
-  function render(root) {
+  /* ---- "Live" draw-in animation: lines, areas and bands reveal from left to right; bars grow from zero. ---- */
+  var DURATION = 1800, uid = 0;
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var ease = function (t) { return 1 - Math.pow(1 - t, 3); };
+  function tween(ms, step, done) {
+    var t0 = null;
+    function frame(ts) { if (t0 === null) t0 = ts; var k = Math.min(1, (ts - t0) / ms); step(ease(k), k); if (k < 1) requestAnimationFrame(frame); else if (done) done(); }
+    requestAnimationFrame(frame);
+  }
+  /** Puts the chart in its "not drawn yet" state and returns a function that plays the animation. */
+  function prepare(svg) {
+    var vb = svg.viewBox.baseVal, w = vb.width, h = vb.height;
+    var rects = svg.querySelectorAll('rect.bar-pos, rect.bar-neg');
+    if (rects.length) {
+      var x0 = svg.__x0, labels = svg.querySelectorAll('.bar-label'), n = rects.length, lag = Math.min(110, 700 / n);
+      var fin = [].map.call(rects, function (r) { var bw = +r.getAttribute('width'); r.setAttribute('width', 0); r.setAttribute('x', x0); return bw; });
+      [].forEach.call(labels, function (l) { l.style.opacity = 0; });
+      return function () {
+        [].forEach.call(rects, function (r, i) {
+          var neg = r.classList.contains('bar-neg');
+          setTimeout(function () {
+            tween(DURATION - lag * (n - 1) > 700 ? DURATION - lag * (n - 1) : 900, function (e) { var cw = fin[i] * e; r.setAttribute('width', cw.toFixed(2)); if (neg) r.setAttribute('x', (x0 - cw).toFixed(2)); },
+              function () { if (labels[i]) { labels[i].style.transition = 'opacity .35s'; labels[i].style.opacity = 1; } });
+          }, i * lag);
+        });
+      };
+    }
+    var data = svg.querySelectorAll('.line, .area, .band, circle.mark');
+    if (!data.length) return null;
+    var id = 'jzclip' + (++uid), defs = el('defs', {}, null), cp = el('clipPath', { id: id }, defs), pen = svg.__pen, start = pen ? pen.from : 0;
+    var cr = el('rect', { x: 0, y: 0, width: start, height: h }, cp);
+    svg.insertBefore(defs, svg.firstChild);
+    [].forEach.call(data, function (d) { d.setAttribute('clip-path', 'url(#' + id + ')'); });
+    var dot = null;
+    if (pen) { dot = el('circle', { r: 5, class: 'pen', cx: start, cy: pen.y(start), style: pen.neg ? 'fill: var(--bar-neg)' : '' }, svg); dot.style.opacity = 0; }
+    return function () {
+      if (dot) dot.style.opacity = 1;
+      tween(DURATION, function (e) {
+        var x = start + (w - start) * e; cr.setAttribute('width', x.toFixed(1));
+        if (dot) { var px = Math.min(x, pen.to); dot.setAttribute('cx', px.toFixed(1)); dot.setAttribute('cy', pen.y(px).toFixed(1)); }
+      }, function () { cr.setAttribute('width', w); if (dot) { dot.style.transition = 'opacity .4s'; dot.style.opacity = 0; setTimeout(function () { dot.remove(); }, 450); } });
+    };
+  }
+  var io = 'IntersectionObserver' in window ? new IntersectionObserver(function (es) {
+    es.forEach(function (e) { if (e.isIntersecting && e.target.__play) { var p = e.target.__play; e.target.__play = null; io.unobserve(e.target); p(); } });
+  }, { threshold: 0.25 }) : null;
+  function animateIn(root) {
+    var svg = root.querySelector('svg'); if (!svg || reduce) return;
+    var play = prepare(svg); if (!play) return;
+    if (io) { root.__play = play; io.observe(root); } else play();
+  }
+  // Progress rings (Strategy Analysis) fill up the same way.
+  function rings() {
+    if (reduce) return;
+    document.querySelectorAll('.ring svg circle.fg').forEach(function (c) {
+      var parts = (c.getAttribute('stroke-dasharray') || '0 0').split(' '), v = +parts[0], full = parts[1];
+      c.setAttribute('stroke-dasharray', '0 ' + full);
+      var wrap = c.closest('.ring-wrap') || c, go = function () { tween(DURATION, function (e) { c.setAttribute('stroke-dasharray', (v * e).toFixed(2) + ' ' + full); }); };
+      if (io) { wrap.__play = go; io.observe(wrap); } else go();
+    });
+  }
+
+  function render(root, animate) {
     var data; try { data = JSON.parse(root.dataset.json || '[]'); } catch (e) { return; }
     var f = root.dataset.format || 'num';
     if (root.dataset.chart === 'line') line(root, data, f);
     else if (root.dataset.chart === 'bars') bars(root, data, f);
     else if (root.dataset.chart === 'band') band(root, data, f);
     else if (root.dataset.chart === 'lines') lines(root, data, f);
+    if (animate) animateIn(root);
   }
-  window.jzChart = render;
-  function all() { document.querySelectorAll('.chart[data-chart]').forEach(render); }
-  document.addEventListener('DOMContentLoaded', all);
-  var rt; window.addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(all, 150); });
+  window.jzChart = function (root) { render(root, true); };
+  function all(animate) { document.querySelectorAll('.chart[data-chart]').forEach(function (r) { render(r, animate); }); }
+  document.addEventListener('DOMContentLoaded', function () { all(true); rings(); document.documentElement.classList.add('charts-live'); });
+  // Coming back with the Back button replays the animation too.
+  window.addEventListener('pageshow', function (e) { if (e.persisted) { all(true); } });
+  var rt, lastW = window.innerWidth; window.addEventListener('resize', function () { if (window.innerWidth === lastW) return; lastW = window.innerWidth; clearTimeout(rt); rt = setTimeout(function () { all(false); }, 150); });
 })();
