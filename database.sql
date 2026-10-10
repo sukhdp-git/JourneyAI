@@ -984,7 +984,7 @@ INSERT INTO `pages` (`title`, `slug`, `template`, `hero_eyebrow`, `hero_title`, 
 INSERT INTO `smtp_settings` (`id`, `host`, `port`, `username`, `password_enc`, `encryption`, `from_email`, `from_name`, `reply_to`, `is_enabled`) VALUES (1, '', 587, '', NULL, 'tls', '', 'journzey.ai', '', 0);
 
 -- ---------------------------------------------------------------------------------------------
--- journzey.ai — database update (schema versions 2 to 6)
+-- journzey.ai — database update (schema versions 2 to 7)
 -- Safe to run on an existing database: it only ADDS columns, tables and rows. Nothing is dropped,
 -- reset or overwritten, and running it twice is harmless. Import it with phpMyAdmin → Import.
 -- (The website also applies these changes automatically on the first request after updating.)
@@ -1380,5 +1380,16 @@ INSERT IGNORE INTO `settings` (`key`, `value`, `group_name`) VALUES ('affiliate_
 INSERT INTO `navigation` (`location`, `parent_id`, `label`, `url`, `target`, `sort_order`, `is_enabled`) SELECT 'footer_2', NULL, 'Affiliates', '/affiliates', '_self', 45, 1 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM `navigation` WHERE `url` = '/affiliates' AND `location` = 'footer_2');
 INSERT INTO `navigation` (`location`, `parent_id`, `label`, `url`, `target`, `sort_order`, `is_enabled`) SELECT 'header', NULL, 'Affiliates', '/affiliates', '_self', 27, 1 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM `navigation` WHERE `url` = '/affiliates' AND `location` = 'header');
 
--- Record the schema version
+-- Schema version 6 reached
 INSERT INTO `settings` (`key`, `value`, `group_name`) VALUES ('schema_version', '6', 'system') ON DUPLICATE KEY UPDATE `value` = IF(CAST(`value` AS UNSIGNED) < 6, '6', `value`);
+
+-- ---------------------------------------------------------------------------------------------
+-- Schema version 7: TradingView market widgets (ticker tape on Home, Markets tab). Settings only.
+-- ---------------------------------------------------------------------------------------------
+INSERT IGNORE INTO `settings` (`key`, `value`, `group_name`) VALUES
+  ('tv_widgets_enabled', '1', 'general'),
+  ('tv_ticker_symbols', 'OANDA:XAUUSD | Gold\nOANDA:XAGUSD | Silver\nFX:EURUSD | EUR/USD\nFX:GBPUSD | GBP/USD\nFX:USDJPY | USD/JPY\nFX:AUDUSD | AUD/USD\nFX:USDCAD | USD/CAD\nOANDA:NAS100USD | Nasdaq 100\nOANDA:SPX500USD | S&P 500\nOANDA:US30USD | Dow 30\nOANDA:DE30EUR | DAX 40\nTVC:USOIL | WTI Crude\nBITSTAMP:BTCUSD | Bitcoin\nBITSTAMP:ETHUSD | Ethereum\nBINANCE:SOLUSDT | Solana', 'general'),
+  ('tv_calendar_countries', 'us,eu,gb,jp,cn,in,au,ca,ch', 'general');
+
+-- Record the schema version
+INSERT INTO `settings` (`key`, `value`, `group_name`) VALUES ('schema_version', '7', 'system') ON DUPLICATE KEY UPDATE `value` = IF(CAST(`value` AS UNSIGNED) < 7, '7', `value`);

@@ -16,6 +16,7 @@ use App\Controllers\Terminal\StrategyController;
 use App\Controllers\Terminal\TradeController;
 use App\Controllers\Terminal\UniversityController;
 use App\Controllers\Terminal\AffiliateController;
+use App\Controllers\Terminal\MarketsController;
 use App\Controllers\WebhookController;
 
 $router->get('/login', [A::class, 'loginForm']);
@@ -77,6 +78,7 @@ $router->post('/terminal/notepad', [NotepadController::class, 'save']);
 
 $router->get('/terminal/affiliate', [AffiliateController::class, 'index']);
 $router->post('/terminal/affiliate/payout', [AffiliateController::class, 'payout']);
+$router->get('/terminal/markets', [MarketsController::class, 'index']);
 $router->get('/terminal/university', [UniversityController::class, 'index']);
 $router->get('/terminal/university/{slug}', [UniversityController::class, 'show']);
 

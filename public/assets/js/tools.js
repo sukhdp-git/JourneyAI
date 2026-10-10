@@ -491,6 +491,43 @@
     });
   });
 
+  /* ---------------------------------------------------------------- TradingView widgets (loaded when visible) */
+  // Each .tv-widget carries TradingView's script URL and JSON settings; the script is only added once the widget
+  // scrolls into view or its tab is opened, so pages stay fast. TradingView draws the widget inside the container.
+  function tvLoad(box) {
+    if (box.dataset.tvLoaded) return; box.dataset.tvLoaded = '1';
+    var inner = d.createElement('div'); inner.className = 'tradingview-widget-container__widget';
+    var wrap = d.createElement('div'); wrap.className = 'tradingview-widget-container'; wrap.appendChild(inner);
+    var sc = d.createElement('script'); sc.src = box.dataset.tvSrc; sc.async = true; sc.text = box.dataset.tvConfig;
+    sc.onerror = function () { var l = $('.tv-loading', box); if (l) { l.textContent = 'Market widget could not load — check your connection or ad-blocker.'; l.classList.add('err'); } };
+    wrap.appendChild(sc); box.appendChild(wrap);
+    // Hide the placeholder once TradingView has inserted its frame.
+    var tries = 0, t = setInterval(function () { if ($('iframe', box) || ++tries > 60) { clearInterval(t); if (!$('.tv-loading.err', box)) box.classList.add('ready'); } }, 250);
+  }
+  window.jzTvReload = function (box, patch) {
+    var cfg = JSON.parse(box.dataset.tvConfig); for (var k in patch) cfg[k] = patch[k];
+    box.dataset.tvConfig = JSON.stringify(cfg); delete box.dataset.tvLoaded; box.classList.remove('ready');
+    $$('.tradingview-widget-container', box).forEach(function (n) { n.remove(); }); tvLoad(box);
+  };
+  var tvBoxes = $$('.tv-widget[data-tv-src]');
+  if (tvBoxes.length) {
+    if ('IntersectionObserver' in window) {
+      var tvIo = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { tvIo.unobserve(e.target); tvLoad(e.target); } }); }, { rootMargin: '200px' });
+      tvBoxes.forEach(function (b) { tvIo.observe(b); });
+    } else tvBoxes.forEach(tvLoad);
+  }
+  // Markets page tabs
+  $$('[data-mk-tabs]').forEach(function (bar) {
+    var tabs = $$('[data-mk-tab]', bar);
+    function show(name, push) {
+      tabs.forEach(function (t) { var on = t.dataset.mkTab === name; t.classList.toggle('on', on); t.setAttribute('aria-selected', on ? 'true' : 'false'); });
+      $$('[data-mk-panel]').forEach(function (p) { p.hidden = p.dataset.mkPanel !== name; });
+      if (push && history.replaceState) history.replaceState(null, '', '?tab=' + name);
+    }
+    tabs.forEach(function (t) { t.addEventListener('click', function () { show(t.dataset.mkTab, true); }); });
+  });
+  $$('[data-mk-source]').forEach(function (sel) { sel.addEventListener('change', function () { var box = $('.tv-stocks'); if (box) window.jzTvReload(box, { dataSource: sel.value }); }); });
+
   /* ---------------------------------------------------------------- Segmented radio styling helper */
   $$('.seg input[type=radio]').forEach(function (r) { var sync = function () { $$('input[name="' + r.name + '"]', r.form || d).forEach(function (x) { x.parentNode.classList.toggle('on', x.checked); }); }; r.addEventListener('change', sync); sync(); });
 })();

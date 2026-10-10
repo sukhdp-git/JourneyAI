@@ -113,6 +113,11 @@ return [
         ['name' => 'seo_local_business', 'label' => 'Output LocalBusiness data (only if you have a real, public business address in Contact details)', 'type' => 'checkbox', 'tab' => 'Structured data & robots'],
         ['name' => 'seo_robots_extra', 'label' => 'Extra robots.txt rules', 'type' => 'textarea', 'rules' => 'max:2000', 'rows' => 4, 'tab' => 'Structured data & robots', 'help' => 'Added to the generated /robots.txt, e.g. “Disallow: /private”.'],
     ]],
+    'market-widgets' => ['Market widgets', 'settings.general', 'globe', 'Free TradingView widgets in the member terminal: the ticker tape on Home and the Markets tab (stock and crypto heatmaps, news, economic calendar). TradingView supplies the data; nothing is stored by the website.', [
+        ['name' => 'tv_widgets_enabled', 'label' => 'Show TradingView market widgets in the terminal', 'type' => 'checkbox'],
+        ['name' => 'tv_ticker_symbols', 'label' => 'Ticker tape instruments', 'type' => 'textarea', 'rules' => 'max:2000', 'rows' => 10, 'help' => 'One per line as EXCHANGE:SYMBOL | Name, e.g. OANDA:XAUUSD | Gold. Find the code by searching the symbol on tradingview.com. Up to 30.'],
+        ['name' => 'tv_calendar_countries', 'label' => 'Economic calendar countries', 'type' => 'text', 'rules' => 'max:120', 'help' => 'Two-letter codes separated by commas, e.g. us,eu,gb,jp,cn,in.'],
+    ]],
     'analytics' => ['Analytics & tracking', 'settings.analytics', 'bars', 'Tracking codes are only output when enabled and the ID format is valid.', [
         ['name' => 'ga_enabled', 'label' => 'Enable Google Analytics 4', 'type' => 'checkbox', 'width' => 'half'],
         ['name' => 'ga_id', 'label' => 'Measurement ID', 'type' => 'text', 'rules' => 'max:30', 'width' => 'half', 'help' => 'e.g. G-XXXXXXXXXX'],

@@ -61,6 +61,7 @@ $part = $hour < 5 ? 'Late session' : ($hour < 12 ? 'Good morning' : ($hour < 17 
         <p class="tm-hint">Examples: <code>short us500 5880 sl 5890 2.5r 1.0 silver bullet</code> · <code>long eurusd 1.0850 sl 1.0830 2r</code> · <code>sell btc 62500 sl 63000 tp 61000 0.2</code> · add <code>loss</code>, <code>be</code> or <code>#fomo</code></p>
       </form>
       <?php endif; ?>
+      <?php if (App\Trading\MarketWidgets::enabled()): ?><div class="hub-ticker"><?= App\Core\View::partial('terminal/partials/tv-widget', ['type' => 'ticker', 'm' => $m, 'height' => 46, 'label' => 'Live market ticker']) ?></div><?php endif; ?>
     </section>
     <section class="panel">
       <div class="panel-head"><h2>Today</h2><span class="head-actions"><?php if ($todaySum['trades']): ?><button type="button" class="tm-btn tm-btn-sm flex-btn" data-flex-day="<?= e($today) ?>"><?= icon('share', 'icon icon-sm') ?> Flex card</button><?php endif; ?><a class="small" href="<?= e(url('/terminal/trades')) ?>">Trade log →</a></span></div>

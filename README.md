@@ -69,6 +69,7 @@ All URLs are clean and never end in `.php`.
 | **Daily Notepad** | “How was your trading day?”, rules followed (yes/partially/no), emotional state, own discipline rating plus a separate system discipline score, key lessons library; voice dictation in English, Russian, Chinese and Portuguese. |
 | **AI Coach** | Short and point-based: a highlighted “Today's focus”, top-3 edge and top-3 leaks in one line each, compact weekly/monthly reviews (score, what worked, what cost money, next actions — max 3 points each, key numbers highlighted), and chat with voice input that answers in at most 6 short bullets plus “Next:” actions (Anthropic Claude or Google Gemini). |
 | **University** | All playbook strategies in one clean numbered column (01 → 10), each opening a step-by-step explanation (logic, rules, entry, stop, targets), colour-coded by style; **Add to my strategies** copies one into the member's strategy builder. |
+| **Markets** | Free TradingView widgets in four tabs: **stock heatmap** (S&P 500 / Nasdaq 100), **crypto heatmap**, **market news** and **economic calendar** (medium & high impact). Each loads only when its tab is opened and follows the member's theme and language. The Home Hub's Execution desk also shows a scrolling **TradingView ticker tape** (gold, silver, major FX pairs, US indices, DAX, oil, Bitcoin, Ethereum, Solana) below the command box. |
 | **Affiliate** | Shown only to members who applied to the affiliate programme: personal link and coupon code with copy buttons, clicks, referred and paying customers, earnings (pending / paid), commissions list with masked customer emails, and payout details. |
 | **Accounts** | Manual demo, live equity, prop-firm and custom accounts, each with **its own daily and weekly loss limit** (% or amount); deposits, withdrawals, equity adjustments and capital history; **CSV statement import**. |
 | **Settings / Plan & Billing** | Profile, timezone, language, theme (**Obsidian Pro** dark — default — or **Clean Light**), risk rules, A+ risk tier, tilt rule, password, **Export my data** (JSON/CSV), **Delete account**, plan status and payment history. |
@@ -180,7 +181,7 @@ You can install in one of two ways.
 ### 4.3a Updating an existing installation
 1. Back up the database (phpMyAdmin → Export) and `config/config.php`.
 2. Upload the new ZIP and extract it over the existing files (your `config/config.php`, `uploads/` and `storage/` are not in the ZIP and are kept).
-3. Open the website once. The site applies `database-updated.sql` automatically (it only adds columns, tables and rows — nothing is deleted; schema version 4 also copies each member's old global loss limits onto each of their accounts and switches members on the old Dark Terminal / Clean Light themes to the new Obsidian Pro theme, which they can change back from the user menu; schema version 6 moves anyone on a removed theme to Obsidian Pro, marks the first 3 playbook strategies as free and adds the affiliate tables and “Affiliates” links). If you prefer, import **database-updated.sql** yourself in phpMyAdmin → Import first; running it twice is harmless.
+3. Open the website once. The site applies `database-updated.sql` automatically (it only adds columns, tables and rows — nothing is deleted; schema version 4 also copies each member's old global loss limits onto each of their accounts and switches members on the old Dark Terminal / Clean Light themes to the new Obsidian Pro theme, which they can change back from the user menu; schema version 7 adds the market-widget settings; schema version 6 moves anyone on a removed theme to Obsidian Pro, marks the first 3 playbook strategies as free and adds the affiliate tables and “Affiliates” links). If you prefer, import **database-updated.sql** yourself in phpMyAdmin → Import first; running it twice is harmless.
 
 ### 4.4 Folder permissions
 On cPanel the defaults are usually right: folders `755`, files `644`.
@@ -386,6 +387,13 @@ Influencers apply at **/affiliates** with their member account (name or brand, p
 - **Payouts are manual:** on the affiliate's page, approve commissions, pay the affiliate outside the website using the payout details they entered, then **Mark paid** (or *Mark all approved as paid*). Void removes a commission.
 - **Who sees what:** the affiliate sees only their own dashboard (**Terminal → Affiliate**) with masked customer emails; full details are only in the Control Panel. Suspend pauses an affiliate; reject sends an optional note.
 - Payments are one-time per plan period, so “monthly” commission is earned each time the customer renews.
+
+### Market widgets (TradingView)
+**Website → Market widgets** switches the TradingView widgets on or off for the whole terminal and sets the ticker tape instruments (one per line, `EXCHANGE:SYMBOL | Name`, e.g. `OANDA:XAUUSD | Gold` — search the symbol on tradingview.com to find the code) and the economic-calendar countries.
+- The widgets are free and need no account or API key. The visitor's browser loads them directly from TradingView, which supplies the prices, news and calendar; the website never stores or uses these prices (they cannot fill trades or the calculator).
+- Some exchanges' data is delayed; TradingView marks this inside the widget. Keep the “by TradingView” credit links — the free widget terms require them.
+- TradingView's script can see visitors' IP addresses and may set cookies: mention TradingView in your privacy policy.
+- If TradingView is blocked (network or ad-blocker), the widget shows a short “could not load” message and the rest of the page works normally.
 
 ### Risk alerts sound
 When the daily or weekly loss limit is reached, or the tilt breaker fires (3 losses within 20 minutes), the terminal plays a short beep together with the banner. Browsers only allow sound after the member has clicked or typed on the page, so a beep that is blocked on page load plays on the first click. Each alert beeps at most once every 10 minutes.

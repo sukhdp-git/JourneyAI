@@ -7,8 +7,11 @@ $theme = isset(Domain::THEMES[$m['theme']]) ? $m['theme'] : Domain::DEFAULT_THEM
 $links = [
     ['home', '/terminal', 'nav.home', 'home'], ['dashboard', '/terminal/dashboard', 'nav.dashboard', 'dashboard'], ['calendar', '/terminal/calendar', 'nav.calendar', 'calendar'],
     ['trades', '/terminal/trades', 'nav.trades', 'list'], ['calculator', '/terminal/calculator', 'nav.calculator', 'scale'], ['strategies', '/terminal/strategies', 'nav.strategies', 'target'], ['edge', '/terminal/edge', 'nav.edge', 'grid'],
-    ['notepad', '/terminal/notepad', 'nav.notepad', 'journal'], ['coach', '/terminal/coach', 'nav.coach', 'sparkles'], ['university', '/terminal/university', 'nav.university', 'book'],
+    ['notepad', '/terminal/notepad', 'nav.notepad', 'journal'], ['coach', '/terminal/coach', 'nav.coach', 'sparkles'], ['university', '/terminal/university', 'nav.university', 'book'], ['markets', '/terminal/markets', 'nav.markets', 'globe'],
 ];
+if (!App\Trading\MarketWidgets::enabled()) {
+    $links = array_values(array_filter($links, fn ($l) => $l[0] !== 'markets'));
+}
 $initials = mb_strtoupper(mb_substr($m['name'], 0, 1));
 ?><!doctype html>
 <html lang="<?= e($m['language'] ?: 'en') ?>" data-theme="<?= e($theme) ?>" data-voice-lang="<?= e(Domain::VOICE_LANGUAGES[$m['language'] ?: 'en'] ?? 'en-US') ?>">

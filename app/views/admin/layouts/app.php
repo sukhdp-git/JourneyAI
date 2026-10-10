@@ -13,7 +13,7 @@ $nav = [
         ['settings', 'General settings', 'settings', 'settings.general'], ['homepage', 'Homepage', 'home', 'homepage'], ['header', 'Header', 'menu', 'settings.general'],
         ['footer', 'Footer', 'section', 'settings.general'], ['navigation', 'Navigation', 'navigation', 'navigation'], ['seo', 'SEO', 'search', 'settings.seo'],
         ['social', 'Social links', 'globe', 'settings.general'], ['contact-details', 'Contact details', 'phone', 'settings.general'],
-        ['whatsapp', 'WhatsApp', 'whatsapp', 'settings.whatsapp'], ['analytics', 'Analytics', 'bars', 'settings.analytics'],
+        ['whatsapp', 'WhatsApp', 'whatsapp', 'settings.whatsapp'], ['analytics', 'Analytics', 'bars', 'settings.analytics'], ['market-widgets', 'Market widgets', 'globe', 'settings.general'],
     ],
     'Content' => [
         ['pages', 'Pages', 'file', 'pages'], ['services', 'Services', 'layers', 'services'], ['learn', 'Learning playbook', 'compass', 'pages'], ['blog', 'Blog', 'book', 'blog'],

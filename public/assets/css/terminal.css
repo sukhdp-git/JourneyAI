@@ -812,3 +812,21 @@ mark.up { background: color-mix(in srgb, var(--pos) 16%, transparent); } mark.do
   .uni-facts { gap: 4px 12px; } .uni-facts span + span::before { content: none; }
 }
 .quick-cmd-box .tm-cmd { flex: 1; min-width: 0; height: 40px; }
+
+/* TradingView widgets */
+.tv-widget { position: relative; height: var(--tv-h, 400px); border-radius: 12px; overflow: hidden; }
+.tv-widget .tradingview-widget-container, .tv-widget .tradingview-widget-container__widget { height: 100%; width: 100%; }
+.tv-widget iframe { display: block; }
+.tv-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--muted); font-size: 12.5px; background: var(--panel-2); pointer-events: none; transition: opacity .3s; }
+.tv-loading span { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line); border-top-color: var(--primary); animation: tv-spin .8s linear infinite; }
+.tv-loading.err { color: var(--warn); } .tv-loading.err span { display: none; }
+.tv-widget.ready .tv-loading { opacity: 0; }
+@keyframes tv-spin { to { transform: rotate(360deg); } }
+.tv-credit { margin: 4px 2px 0; font-size: 11px; text-align: right; } .tv-credit a { color: var(--muted); }
+.tv-ticker { border: 1px solid var(--line-2); background: var(--panel-2); }
+.hub-ticker { margin-top: 12px; }
+.mk-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.mk-tabs button { display: inline-flex; align-items: center; gap: 7px; padding: 9px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font: 600 13px inherit; font-family: inherit; cursor: pointer; }
+.mk-tabs button.on { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 14%, var(--panel)); color: var(--strong); }
+.mk-panel .panel-head select { width: auto; }
+.mk-note { margin-top: 10px; }
