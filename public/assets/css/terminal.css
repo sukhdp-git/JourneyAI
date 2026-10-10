@@ -818,6 +818,7 @@ mark.up { background: color-mix(in srgb, var(--pos) 16%, transparent); } mark.do
 .tv-widget { position: relative; height: var(--tv-h, 400px); border-radius: 12px; overflow: hidden; color-scheme: normal; }
 .tv-widget .tradingview-widget-container, .tv-widget .tradingview-widget-container__widget { height: 100%; width: 100%; }
 .tv-widget iframe { display: block; }
+[data-theme="obsidian-pro"] .tv-widget { background: #0f0f0f; }
 .tv-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--muted); font-size: 12.5px; background: var(--panel-2); pointer-events: none; transition: opacity .3s; }
 .tv-loading span { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line); border-top-color: var(--primary); animation: tv-spin .8s linear infinite; }
 .tv-loading.err { color: var(--warn); } .tv-loading.err span { display: none; }

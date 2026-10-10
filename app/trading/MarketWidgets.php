@@ -52,7 +52,10 @@ final class MarketWidgets
     /** @return array{src:string,config:array} */
     public static function widget(string $type, string $theme, string $lang, array $opt = []): array
     {
-        $common = ['colorTheme' => $theme === 'clean-light' ? 'light' : 'dark', 'isTransparent' => true, 'locale' => self::locale($lang)];
+        // Dark theme: TradingView paints its own dark background (opaque), so text contrast never depends on how the
+        // browser composites a transparent cross-site frame. Light theme blends into the panel (transparent).
+        $light = $theme === 'clean-light';
+        $common = ['colorTheme' => $light ? 'light' : 'dark', 'isTransparent' => $light, 'locale' => self::locale($lang)];
         $map = [
             'ticker' => ['ticker-tape', ['symbols' => self::tickerSymbols(), 'showSymbolLogo' => true, 'displayMode' => 'adaptive']],
             'stocks' => ['stock-heatmap', ['exchanges' => [], 'dataSource' => in_array($opt['source'] ?? '', ['SPX500', 'NASDAQ100'], true) ? $opt['source'] : 'SPX500', 'grouping' => 'sector',
