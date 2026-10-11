@@ -17,6 +17,9 @@ use App\Core\Settings;
  */
 final class Members
 {
+    /** Every sign-in lasts at most this long; after that the member must sign in again. */
+    public const SESSION_TTL = 86400;
+
     private static ?array $current = null;
     private static bool $loaded = false;
 
@@ -29,11 +32,21 @@ final class Members
         if (session_status() !== PHP_SESSION_ACTIVE || empty($_SESSION['member_id'])) {
             return null;
         }
+        if (!isset($_SESSION['member_login_at'])) {
+            $_SESSION['member_login_at'] = time(); // sessions created before the 24-hour limit existed
+        }
+        if (time() - (int) $_SESSION['member_login_at'] >= self::SESSION_TTL) {
+            self::audit((int) $_SESSION['member_id'], 'logout', 'Signed out automatically after 24 hours');
+            self::clear();
+            Session::regenerate();
+            Session::flash('info', 'For your security you are signed out 24 hours after each sign-in. Please sign in again.');
+            return null;
+        }
         $u = Database::one('SELECT u.*, s.theme, s.language, s.timezone, s.base_currency, s.default_risk_pct, s.max_daily_loss, s.max_weekly_loss, s.default_target_rr,
                 s.tilt_loss_count, s.tilt_window_minutes, s.tilt_cooldown_minutes, s.active_account_id, s.daily_limit_type, s.weekly_limit_type, s.a_plus_risk_pct
             FROM users u LEFT JOIN user_settings s ON s.user_id = u.id WHERE u.id = :id', ['id' => (int) $_SESSION['member_id']]);
         if (!$u || $u['status'] !== 'active' || (int) ($_SESSION['member_ver'] ?? 0) !== self::version($u)) {
-            unset($_SESSION['member_id'], $_SESSION['member_ver']);
+            self::clear();
             return null;
         }
         unset($u['password_hash']);
@@ -76,6 +89,8 @@ final class Members
         Session::regenerate();
         $_SESSION['member_id'] = (int) $user['id'];
         $_SESSION['member_ver'] = self::version($user);
+        $_SESSION['member_login_at'] = time();
+        $_SESSION['jz_intro'] = 1; // the Home Hub welcome plays once after every sign-in
         $_SESSION['_csrf'] = bin2hex(random_bytes(32));
         Database::query('UPDATE users SET last_login_at = UTC_TIMESTAMP(), last_login_ip = :ip, login_count = login_count + 1 WHERE id = :id', ['ip' => $req->ip(), 'id' => $user['id']]);
         self::logLogin((int) $user['id'], $user['email'], $method, true, null, $req);
@@ -87,9 +102,20 @@ final class Members
         if ($id = self::current()['id'] ?? null) {
             self::audit((int) $id, 'logout', 'Signed out');
         }
-        unset($_SESSION['member_id'], $_SESSION['member_ver']);
+        self::clear();
         Session::regenerate();
         self::refresh();
+    }
+
+    /** When the current sign-in ends (Unix time), or null when nobody is signed in. */
+    public static function expiresAt(): ?int
+    {
+        return isset($_SESSION['member_id'], $_SESSION['member_login_at']) ? (int) $_SESSION['member_login_at'] + self::SESSION_TTL : null;
+    }
+
+    private static function clear(): void
+    {
+        unset($_SESSION['member_id'], $_SESSION['member_ver'], $_SESSION['member_login_at'], $_SESSION['jz_intro'], $_SESSION['jz_brief']);
     }
 
     public static function logLogin(?int $userId, ?string $email, string $method, bool $ok, ?string $reason, Request $req): void

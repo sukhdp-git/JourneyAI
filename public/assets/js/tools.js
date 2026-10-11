@@ -553,12 +553,10 @@
   $$('[data-mk-symbol]').forEach(function (b) { b.addEventListener('click', function () { var box = $('.tv-chart'); if (!box) return; $$('[data-mk-symbol]').forEach(function (x) { x.classList.toggle('on', x === b); }); window.jzTvReload(box, { symbol: b.dataset.mkSymbol }); }); });
   $$('[data-mk-source]').forEach(function (sel) { sel.addEventListener('change', function () { var box = $('.tv-stocks'); if (box) window.jzTvReload(box, { dataSource: sel.value }); }); });
 
-  /* ---------------------------------------------------------------- First visit: welcome intro on the Home Hub */
+  /* ---------------------------------------------------------------- Welcome intro on the Home Hub (rendered by the server once after each sign-in) */
   $$('[data-intro]').forEach(function (el) {
-    var seen = false; try { seen = localStorage.getItem(el.dataset.key) === '1'; } catch (e) {}
     var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if ((seen && !/[?&]intro=1/.test(location.search)) || reduce) return;
-    try { localStorage.setItem(el.dataset.key, '1'); } catch (e) {}
+    if (reduce) { el.remove(); return; }
     el.hidden = false; d.body.classList.add('intro-on');
     var done = false, end = function () { if (done) return; done = true; el.classList.add('out'); d.body.classList.remove('intro-on'); d.body.classList.add('intro-reveal'); setTimeout(function () { el.remove(); }, 900); };
     requestAnimationFrame(function () { el.classList.add('play'); });
@@ -567,6 +565,17 @@
     el.addEventListener('click', function (e) { if (e.target === el) { clearTimeout(t); end(); } });
     d.addEventListener('keydown', function k(e) { if (e.key === 'Escape') { clearTimeout(t); end(); d.removeEventListener('keydown', k); } });
   });
+
+  /* ---------------------------------------------------------------- 24-hour sign-in: leave the terminal when it ends, even if the tab stays open */
+  (function () {
+    // Seconds left according to the server, so a wrong device clock cannot cause early sign-outs.
+    var left = parseInt(d.body.getAttribute('data-session-left') || '0', 10);
+    if (!left) return;
+    var end = Date.now() + left * 1000 + 2000;
+    var check = function () { if (Date.now() >= end) location.href = d.body.getAttribute('data-session-exit') || '/login'; };
+    setInterval(check, 30000);
+    d.addEventListener('visibilitychange', function () { if (!d.hidden) check(); });
+  })();
 
   /* ---------------------------------------------------------------- Weekly brief messenger (Mon/Tue mornings) */
   $$('[data-brief]').forEach(function (box) {

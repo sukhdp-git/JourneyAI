@@ -27,7 +27,7 @@ $initials = mb_strtoupper(mb_substr($m['name'], 0, 1));
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700&display=swap">
 <link rel="stylesheet" href="<?= e(asset('css/terminal.css')) ?>">
 </head>
-<body class="tm" data-page="<?= e($nav) ?>">
+<body class="tm" data-page="<?= e($nav) ?>" data-session-left="<?= max(0, (int) (\App\Trading\Members::expiresAt() ?? 0) - time()) ?>" data-session-exit="<?= e(url('/terminal')) ?>">
 <a class="skip-link" href="#tm-main">Skip to content</a>
 <div class="tm-shell">
   <aside class="tm-side" id="tm-side" aria-label="Terminal navigation">

@@ -6,7 +6,8 @@ $first = trim(explode(' ', trim((string) $m['name']))[0] ?? '') ?: 'trader';
 $hour = (int) (new DateTimeImmutable('now', new DateTimeZone($m['timezone'] ?: 'UTC')))->format('G');
 $part = $hour < 5 ? 'Late session' : ($hour < 12 ? 'Good morning' : ($hour < 17 ? 'Good afternoon' : 'Good evening'));
 ?>
-<div class="jz-intro" data-intro data-key="jz-intro-<?= (int) $m['id'] ?>" hidden aria-hidden="true">
+<?php if (!empty($intro)): ?>
+<div class="jz-intro" data-intro hidden aria-hidden="true">
   <div class="jz-intro-bg"><span></span><span></span><span></span></div>
   <svg class="jz-intro-line" viewBox="0 0 600 160" preserveAspectRatio="none"><path d="M0 130 L60 118 L110 124 L170 96 L220 104 L280 72 L330 82 L390 50 L440 58 L500 30 L600 18" pathLength="1"/></svg>
   <div class="jz-intro-core">
@@ -17,6 +18,7 @@ $part = $hour < 5 ? 'Late session' : ($hour < 12 ? 'Good morning' : ($hour < 17 
   </div>
   <button type="button" class="jz-intro-skip" data-intro-skip>Skip</button>
 </div>
+<?php endif; ?>
 <section class="hello" aria-label="Greeting">
   <span class="hello-wave" aria-hidden="true">👋</span>
   <div><h2>Hi <span><?= e($first) ?></span>,</h2><p><?= e($part) ?> — trade your plan, not your emotions.</p></div>

@@ -402,8 +402,10 @@ Members create them in **Terminal → Settings → Public verified P&L link**: c
 ### Weekly brief (Monday & Tuesday mornings)
 On Monday and Tuesday before noon (member's timezone) a small “journzey Coach” messenger pops up once per day with last week's result and at most three **Don't** and three **Do** points, each with one highlighted number (e.g. “Don't move your stop — 3× · −$420”). It is built from the active account's tagged mistakes, rule breaks, emotional trades, weakest/strongest session, overtrading days and best setup/market. It can be reopened any day from **Weekly brief** on the Home Hub.
 
-### Welcome intro
-The first time a member opens the Home Hub, a short animated welcome plays (about 3 seconds, skippable); after that the Home sections simply rise in. It is skipped for members who turn on *reduce motion*.
+### 24-hour sign-in & welcome intro
+Every member sign-in (email or Google) lasts **24 hours**. After that the next request signs the member out and the login page explains why; a terminal tab left open moves to the login page by itself when the time is up. Signing out manually ends the session straight away. The session cookie also expires after 24 hours.
+
+After **every** sign-in — manual or after the automatic 24-hour sign-out — the first Home Hub visit plays a short animated welcome (about 3 seconds, skippable); later Home visits in the same session simply rise in. It is skipped for members who turn on *reduce motion*. Admin Control Panel sessions are unchanged (30 minutes idle, 12 hours maximum).
 
 ### Risk alerts sound
 When the daily or weekly loss limit is reached, or the tilt breaker fires (3 losses within 20 minutes), the terminal plays a short beep together with the banner. Browsers only allow sound after the member has clicked or typed on the page, so a beep that is blocked on page load plays on the first click. Each alert beeps at most once every 10 minutes.

@@ -26,9 +26,12 @@ final class HomeController extends TerminalController
         $tilt = Analytics::tilt($recent, (int) $this->m['tilt_loss_count'], (int) $this->m['tilt_window_minutes'], (int) $this->m['tilt_cooldown_minutes']);
         $todaySum = Analytics::summarize($trades);
         [$latest] = Ledger::trades($this->uid, (int) $this->acc['id'], [], $this->tz, 6);
+        // The welcome intro plays on the first Home visit after each sign-in (manual or after the 24-hour sign-out).
+        $intro = !empty($_SESSION['jz_intro']) || $req->query('intro') === '1';
+        unset($_SESSION['jz_intro']);
         $this->render('home', [
             'quoteStart' => (int) floor(time() / 3600) % count(Domain::QUOTES), 'sessions' => Sessions::status($this->tz), 'done' => $done, 'today' => $today, 'tilt' => $tilt, 'todaySum' => $todaySum, 'latest' => $latest,
-            
+            'intro' => $intro,
             'hasDemoData' => (bool) Database::value('SELECT id FROM trading_accounts WHERE user_id = :u AND has_demo_data = 1', ['u' => $this->uid]),
         ], 'Home Hub', 'home');
     }
