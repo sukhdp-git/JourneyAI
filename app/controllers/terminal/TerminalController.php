@@ -58,7 +58,24 @@ abstract class TerminalController
             'limits' => RiskLimits::status($this->m, $this->acc, $balance, $this->tz),
             'capitalHistory' => Database::all('SELECT type, amount, note, occurred_at FROM capital_transactions WHERE user_id = :u AND account_id = :a ORDER BY occurred_at DESC, id DESC LIMIT 5', ['u' => $this->uid, 'a' => $this->acc['id']]),
             'flash' => Session::takeFlash(), 'pageTitle' => $title, 'nav' => $nav, 'tz' => $this->tz,
+            'brief' => $this->brief($nav),
         ], 'terminal/layout');
+    }
+
+    /** Weekly do's & don'ts: auto-shown on Monday/Tuesday mornings; on Home it is always available behind a button. */
+    private function brief(string $nav): ?array
+    {
+        $auto = \App\Trading\WeeklyBrief::isBriefTime($this->tz) || (new Request())->query('brief') === '1';
+        if (!$auto && $nav !== 'home') {
+            return null;
+        }
+        $key = $this->acc['id'] . ':' . (new \DateTimeImmutable('now', new \DateTimeZone($this->tz)))->format('Y-m-d');
+        $data = $_SESSION['jz_brief'][$key] ?? null;
+        if (!$data) {
+            $data = \App\Trading\WeeklyBrief::build($this->m, $this->acc, $this->tz);
+            $_SESSION['jz_brief'] = [$key => $data];
+        }
+        return $data + ['auto' => $auto, 'name' => trim(explode(' ', trim((string) $this->m['name']))[0] ?? '')];
     }
 
     /** Blocks writes to live accounts without an active paid plan. */

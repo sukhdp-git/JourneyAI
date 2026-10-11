@@ -45,7 +45,33 @@ final class Domain
     public const DEFAULT_THEME = 'obsidian-pro';
     public const THEMES = ['obsidian-pro' => 'Obsidian Pro (dark)', 'clean-light' => 'Clean Light'];
     public const LANGUAGES = ['en' => 'English', 'ru' => 'Русский', 'zh' => '简体中文', 'pt' => 'Português'];
-    public const VOICE_LANGUAGES = ['en' => 'en-US', 'ru' => 'ru-RU', 'zh' => 'zh-CN', 'pt' => 'pt-BR'];
+    public const VOICE_LANGUAGES = ['en' => 'en-US', 'ru' => 'ru-RU', 'zh' => 'zh-CN', 'pt' => 'pt-BR', 'hi' => 'hi-IN', 'ar' => 'ar-SA'];
+    /** Voice-input languages offered on every mic: locale => [chip label, flag]. */
+    public const VOICE_CHIPS = ['en-US' => ['EN', '🇺🇸'], 'ru-RU' => ['RU', '🇷🇺'], 'zh-CN' => ['中文', '🇨🇳'], 'pt-BR' => ['PT', '🇧🇷'], 'hi-IN' => ['हिंदी', '🇮🇳'], 'ar-SA' => ['عربي', '🇸🇦']];
+    /**
+     * Examples shown in the language the member picks: 'trade' = one-sentence trade (Home desk, Quick trade, Log Trade),
+     * 'sim' = the same trade with numbers in words for the "Try it" button, 'calc' = calculator voice answers.
+     */
+    public const VOICE_EXAMPLES = [
+        'en-US' => ['trade' => 'Sold gold, entry 2860, stop 2870, exit 2840, half a lot', 'say' => 'Tap the mic and say your trade in one sentence',
+            'sim' => 'Bought gold at two thousand eight hundred sixty point five, stop loss two thousand eight hundred fifty five, exit two thousand eight hundred seventy two, zero point five lots, London session', 'sim_label' => 'Gold long',
+            'calc' => '“gold”, “sell”, “1 percent”, “entry 2650 stop 2655 target 2635”'],
+        'ru-RU' => ['trade' => 'Продал золото, вход 2860, стоп 2870, выход 2840, лот 0.5', 'say' => 'Нажмите на микрофон и назовите сделку одной фразой',
+            'sim' => 'Продал золото вход две тысячи восемьсот шестьдесят точка пять стоп две тысячи восемьсот шестьдесят восемь выход две тысячи восемьсот сорок лот ноль точка три сессия Лондон', 'sim_label' => 'Золото шорт',
+            'calc' => '«золото», «продажа», «один процент», «вход 2650 стоп 2655 цель 2635»'],
+        'zh-CN' => ['trade' => '卖出黄金 入场2860 止损2870 出场2840 0.5手', 'say' => '点击麦克风，用一句话说出您的交易',
+            'sim' => '买入黄金 入场两千八百六十点五 止损两千八百五十五 出场两千八百八十 零点二手 伦敦', 'sim_label' => '黄金做多',
+            'calc' => '“黄金”、“卖出”、“百分之一”、“入场2650 止损2655 止盈2635”'],
+        'pt-BR' => ['trade' => 'Vendi ouro, entrada 2860, stop 2870, saída 2840, lote 0,5', 'say' => 'Toque no microfone e diga a operação em uma frase',
+            'sim' => 'Comprei ouro entrada dois mil oitocentos e sessenta vírgula cinco stop dois mil oitocentos e cinquenta e cinco saída dois mil oitocentos e setenta lote zero vírgula três sessão Londres', 'sim_label' => 'Ouro compra',
+            'calc' => '“ouro”, “vender”, “um por cento”, “entrada 2650 stop 2655 alvo 2635”'],
+        'hi-IN' => ['trade' => 'सोना बेचा, एंट्री 2860, स्टॉप 2870, एग्जिट 2840, आधा लॉट', 'say' => 'माइक दबाएँ और अपना ट्रेड एक वाक्य में बोलें',
+            'sim' => 'सोना खरीदा एंट्री दो हज़ार आठ सौ साठ स्टॉप दो हज़ार आठ सौ पचपन एग्जिट दो हज़ार आठ सौ अस्सी लॉट शून्य दशमलव पांच लंदन', 'sim_label' => 'सोना खरीद',
+            'calc' => '“सोना”, “बेचो”, “एक प्रतिशत”, “एंट्री 2650 स्टॉप 2655 टारगेट 2635”'],
+        'ar-SA' => ['trade' => 'بعت الذهب، دخول 2860، وقف الخسارة 2870، خروج 2840، نصف لوت', 'say' => 'اضغط على الميكروفون وقل صفقتك في جملة واحدة',
+            'sim' => 'اشتريت الذهب دخول ألفان وثمانمائة وستون وقف الخسارة ألفان وثمانمائة وخمسة وخمسون خروج ألفان وثمانمائة وثمانون لوت صفر فاصلة خمسة لندن', 'sim_label' => 'شراء الذهب',
+            'calc' => '“الذهب”، “بيع”، “واحد بالمئة”، “دخول 2650 وقف الخسارة 2655 الهدف 2635”'],
+    ];
     public const CHECKLIST = [
         'PRE_MARKET' => ['news_checked' => 'Economic news checked', 'levels_marked' => 'Key levels marked', 'loss_budget_defined' => 'Daily loss budget defined', 'mental_state_verified' => 'Mental state verified'],
         'IN_TRADE' => ['candle_confirmation' => 'Candle confirmation', 'hard_stop_placed' => 'Hard stop placed', 'stop_not_moved' => 'Stop not emotionally moved'],

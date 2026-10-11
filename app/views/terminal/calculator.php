@@ -25,13 +25,13 @@ $rateField = fn () => '<div class="f" data-rate-field hidden><label>Conversion r
 </div>
 
 <div class="grid g-main calc" data-calc="size">
-  <form class="panel stack" data-calc-form="size" novalidate data-voice-guide>
+  <form class="panel stack" data-calc-form="size" novalidate data-voice-guide data-vg-examples="<?= e(json_encode(array_map(fn ($x) => $x['calc'], App\Trading\Domain::VOICE_EXAMPLES), JSON_UNESCAPED_UNICODE)) ?>">
     <div class="panel-head"><h2>How much should I trade?</h2><span class="muted small">Based on how much you are willing to risk</span></div>
     <div class="vg-bar">
       <button type="button" class="tm-btn tm-btn-primary vg-start" data-vg-start><?= icon('mic', 'icon icon-sm') ?> <span data-vg-label>Voice mode</span></button>
-      <div class="vg-status" aria-live="polite"><strong data-vg-prompt>Speak instead of typing.</strong><span class="muted small" data-vg-heard>e.g. “gold”, “buy”, “entry 2645”, “stop 2639” — or all at once.</span></div>
+      <div class="vg-status" aria-live="polite"><strong data-vg-prompt>Speak instead of typing.</strong><span class="muted small" data-vg-heard dir="auto">e.g. <?= e(App\Trading\Domain::VOICE_EXAMPLES['en-US']['calc']) ?></span></div>
       <button type="button" class="tm-btn tm-btn-sm" data-vg-stop hidden>Stop</button>
-      <span class="hub-locales" role="group" aria-label="Voice language"><?php foreach (['en-US' => 'EN', 'ru-RU' => 'RU', 'zh-CN' => '中文', 'pt-BR' => 'PT'] as $code => $lbl): ?><button type="button" class="lt-chip" data-vg-locale="<?= $code ?>"><?= $lbl ?></button><?php endforeach; ?></span>
+      <span class="hub-locales" role="group" aria-label="Voice language"><?php foreach (App\Trading\Domain::VOICE_CHIPS as $code => [$lbl]): ?><button type="button" class="lt-chip" data-vg-locale="<?= $code ?>"><?= $lbl ?></button><?php endforeach; ?></span>
     </div>
     <p class="muted small" data-vg-unsupported hidden>Voice needs Chrome, Edge or Safari with microphone access.</p>
     <div class="f"><label for="cs-acc">Account</label>
@@ -72,13 +72,13 @@ $rateField = fn () => '<div class="f" data-rate-field hidden><label>Conversion r
 </div>
 
 <div class="grid g-main calc" data-calc="pnl" hidden>
-  <form class="panel stack" data-calc-form="pnl" novalidate data-voice-guide>
+  <form class="panel stack" data-calc-form="pnl" novalidate data-voice-guide data-vg-examples="<?= e(json_encode(array_map(fn ($x) => $x['calc'], App\Trading\Domain::VOICE_EXAMPLES), JSON_UNESCAPED_UNICODE)) ?>">
     <div class="panel-head"><h2>Trade P&amp;L and risk-to-reward</h2></div>
     <div class="vg-bar">
       <button type="button" class="tm-btn tm-btn-primary vg-start" data-vg-start><?= icon('mic', 'icon icon-sm') ?> <span data-vg-label>Voice mode</span></button>
-      <div class="vg-status" aria-live="polite"><strong data-vg-prompt>Speak instead of typing.</strong><span class="muted small" data-vg-heard>e.g. “gold”, “buy”, “entry 2645”, “stop 2639” — or all at once.</span></div>
+      <div class="vg-status" aria-live="polite"><strong data-vg-prompt>Speak instead of typing.</strong><span class="muted small" data-vg-heard dir="auto">e.g. <?= e(App\Trading\Domain::VOICE_EXAMPLES['en-US']['calc']) ?></span></div>
       <button type="button" class="tm-btn tm-btn-sm" data-vg-stop hidden>Stop</button>
-      <span class="hub-locales" role="group" aria-label="Voice language"><?php foreach (['en-US' => 'EN', 'ru-RU' => 'RU', 'zh-CN' => '中文', 'pt-BR' => 'PT'] as $code => $lbl): ?><button type="button" class="lt-chip" data-vg-locale="<?= $code ?>"><?= $lbl ?></button><?php endforeach; ?></span>
+      <span class="hub-locales" role="group" aria-label="Voice language"><?php foreach (App\Trading\Domain::VOICE_CHIPS as $code => [$lbl]): ?><button type="button" class="lt-chip" data-vg-locale="<?= $code ?>"><?= $lbl ?></button><?php endforeach; ?></span>
     </div>
     <p class="muted small" data-vg-unsupported hidden>Voice needs Chrome, Edge or Safari with microphone access.</p>
     <div class="f" data-vg-step="symbol" data-vg-ask="Which instrument?"><label for="cp-sym">Instrument</label><?= $instSelect('cp-sym') ?></div>

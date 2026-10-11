@@ -22,7 +22,7 @@ $emoLabel = fn ($k) => Domain::JOURNAL_EMOTIONS[$k] ?? ucfirst(strtolower((strin
       <textarea id="n-r" name="reflection" rows="7" data-draft-key="<?= e($date . '-' . $acc['id']) ?>" placeholder="e.g. High-conviction day. I waited patiently for my setup and only entered after confirmation. The trade had clean invalidation and strong risk-to-reward."><?= e($v('reflection')) ?></textarea>
       <div class="chat-voice" style="margin-top:6px;align-items:center;flex-wrap:wrap">
         <button type="button" class="tm-btn tm-btn-sm" data-voice-into="#n-r" data-voice-append data-voice-note="#voice-note"><?= icon('mic', 'icon icon-sm') ?> Dictate</button>
-        <label class="sr-only" for="n-l">Voice language</label><select id="n-l" data-voice-lang style="width:auto"><?php foreach (Domain::VOICE_LANGUAGES as $k => $code): ?><option value="<?= e($code) ?>"<?= ($m['language'] ?: 'en') === $k ? ' selected' : '' ?>><?= e(Domain::LANGUAGES[$k]) ?></option><?php endforeach; ?></select>
+        <label class="sr-only" for="n-l">Voice language</label><select id="n-l" data-voice-lang style="width:auto"><?php $vNames = ['en-US' => 'English', 'ru-RU' => 'Русский', 'zh-CN' => '中文', 'pt-BR' => 'Português', 'hi-IN' => 'हिंदी', 'ar-SA' => 'العربية']; foreach (Domain::VOICE_CHIPS as $code => [$lbl, $flag]): ?><option value="<?= e($code) ?>"<?= (Domain::VOICE_LANGUAGES[$m['language'] ?: 'en'] ?? 'en-US') === $code ? ' selected' : '' ?>><?= e($flag . ' ' . $vNames[$code]) ?></option><?php endforeach; ?></select>
         <span class="muted small" id="voice-note" hidden>Voice dictation needs Chrome, Edge or Safari with microphone access.</span>
       </div>
     </div>

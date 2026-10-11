@@ -6,9 +6,21 @@ $first = trim(explode(' ', trim((string) $m['name']))[0] ?? '') ?: 'trader';
 $hour = (int) (new DateTimeImmutable('now', new DateTimeZone($m['timezone'] ?: 'UTC')))->format('G');
 $part = $hour < 5 ? 'Late session' : ($hour < 12 ? 'Good morning' : ($hour < 17 ? 'Good afternoon' : 'Good evening'));
 ?>
+<div class="jz-intro" data-intro data-key="jz-intro-<?= (int) $m['id'] ?>" hidden aria-hidden="true">
+  <div class="jz-intro-bg"><span></span><span></span><span></span></div>
+  <svg class="jz-intro-line" viewBox="0 0 600 160" preserveAspectRatio="none"><path d="M0 130 L60 118 L110 124 L170 96 L220 104 L280 72 L330 82 L390 50 L440 58 L500 30 L600 18" pathLength="1"/></svg>
+  <div class="jz-intro-core">
+    <div class="jz-intro-mark"><b>j</b><i></i><i></i></div>
+    <h2 class="jz-intro-title">Welcome to your terminal<?= $first !== 'trader' ? ', <span>' . e($first) . '</span>' : '' ?></h2>
+    <p class="jz-intro-sub">Journal · Measure · Improve</p>
+    <div class="jz-intro-bar"><span></span></div>
+  </div>
+  <button type="button" class="jz-intro-skip" data-intro-skip>Skip</button>
+</div>
 <section class="hello" aria-label="Greeting">
   <span class="hello-wave" aria-hidden="true">👋</span>
   <div><h2>Hi <span><?= e($first) ?></span>,</h2><p><?= e($part) ?> — trade your plan, not your emotions.</p></div>
+  <?php if (!empty($brief)): ?><button type="button" class="tm-btn tm-btn-sm hello-brief" data-brief-open><?= icon('message', 'icon icon-sm') ?> Weekly brief</button><?php endif; ?>
 </section>
 <section class="quote-hero" data-quotes="<?= e(json_encode(Domain::QUOTES)) ?>" data-start="<?= (int) $quoteStart ?>" aria-label="Trading psychology">
   <?php $q = Domain::QUOTES[$quoteStart]; ?>
@@ -54,11 +66,11 @@ $part = $hour < 5 ? 'Late session' : ($hour < 12 ? 'Good morning' : ($hour < 17 
         <p class="tm-alert tm-alert-error">This live account is read-only without an active plan. <a href="<?= e(url('/pricing')) ?>">Upgrade</a> or switch to a demo account.</p>
       <?php else: ?>
       <?php $hubSpecs = []; foreach (App\Trading\Instruments::all() as $s => $i) { $hubSpecs[$s] = ['a' => array_values($i['aliases'])]; } ?>
-      <form class="tm-quick" data-quick-form data-hub-voice data-specs="<?= e(json_encode($hubSpecs)) ?>">
+      <form class="tm-quick" data-quick-form data-hub-voice data-examples="<?= e(json_encode(array_map(fn ($x) => ['say' => $x['say'], 'trade' => $x['trade']], App\Trading\Domain::VOICE_EXAMPLES), JSON_UNESCAPED_UNICODE)) ?>" data-specs="<?= e(json_encode($hubSpecs)) ?>">
         <div class="cmd-box"><button type="button" class="hub-mic" data-hub-mic aria-pressed="false" aria-label="Speak your trade — it is logged automatically"<?= $tilt['active'] ? ' disabled' : '' ?>><?= icon('mic', 'icon') ?></button><label for="hub-cmd" class="sr-only">Quick trade command</label><input id="hub-cmd" class="tm-cmd" autocomplete="off" spellcheck="false" maxlength="300" placeholder="<?= e(t('quick.placeholder')) ?>" data-quick-input<?= $tilt['active'] ? ' disabled' : '' ?>><button class="tm-btn tm-btn-primary" type="submit"<?= $tilt['active'] ? ' disabled' : '' ?>>Log ↵</button></div>
         <div class="hub-voice-bar" data-hub-voice-bar>
-          <span class="hub-voice-status" data-hub-status>🎙 Tap the mic and say your trade in one sentence — e.g. “Bought gold at 2860, stop 2855, exit 2872, half a lot”. It is logged automatically.</span>
-          <span class="hub-locales" role="group" aria-label="Voice language"><?php foreach (['en-US' => 'EN', 'ru-RU' => 'RU', 'zh-CN' => '中文', 'pt-BR' => 'PT'] as $code => $lbl): ?><button type="button" class="lt-chip" data-hub-locale="<?= $code ?>"><?= $lbl ?></button><?php endforeach; ?></span>
+          <span class="hub-voice-status" data-hub-status dir="auto">🎙 <?= e(App\Trading\Domain::VOICE_EXAMPLES['en-US']['say']) ?> — e.g. “<?= e(App\Trading\Domain::VOICE_EXAMPLES['en-US']['trade']) ?>”</span>
+          <span class="hub-locales" role="group" aria-label="Voice language"><?php foreach (App\Trading\Domain::VOICE_CHIPS as $code => [$lbl]): ?><button type="button" class="lt-chip" data-hub-locale="<?= $code ?>"><?= $lbl ?></button><?php endforeach; ?></span>
         </div>
         <div class="tm-quick-preview" data-quick-preview aria-live="polite"></div>
         <p class="tm-hint">Examples: <code>short us500 5880 sl 5890 2.5r 1.0 silver bullet</code> · <code>long eurusd 1.0850 sl 1.0830 2r</code> · <code>sell btc 62500 sl 63000 tp 61000 0.2</code> · add <code>loss</code>, <code>be</code> or <code>#fomo</code></p>

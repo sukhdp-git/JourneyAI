@@ -24,6 +24,7 @@ final class SettingsController extends TerminalController
         $this->render('settings', [
             'hasPassword' => $this->hasPassword(),
             'logins' => Database::all('SELECT method, success, ip, user_agent, created_at FROM user_logins WHERE user_id = :u ORDER BY id DESC LIMIT 10', ['u' => $this->uid]),
+            'pnl' => PublicPnlController::data($this->uid, $this->tz),
         ], 'Settings', 'settings');
     }
 

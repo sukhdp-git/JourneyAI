@@ -27,7 +27,7 @@ $initials = mb_strtoupper(mb_substr($m['name'], 0, 1));
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700&display=swap">
 <link rel="stylesheet" href="<?= e(asset('css/terminal.css')) ?>">
 </head>
-<body class="tm">
+<body class="tm" data-page="<?= e($nav) ?>">
 <a class="skip-link" href="#tm-main">Skip to content</a>
 <div class="tm-shell">
   <aside class="tm-side" id="tm-side" aria-label="Terminal navigation">
@@ -128,6 +128,7 @@ $initials = mb_strtoupper(mb_substr($m['name'], 0, 1));
 </div>
 <?= App\Core\View::partial('terminal/partials/equity-modal', ['acc' => $acc, 'balance' => $balance, 'history' => $capitalHistory]) ?>
 <?= App\Core\View::partial('terminal/partials/add-account-modal', ['m' => $m]) ?>
+<?php if (!empty($brief)): ?><?= App\Core\View::partial('terminal/partials/brief', ['brief' => $brief, 'm' => $m, 'tz' => $tz]) ?><?php endif; ?>
 <?= App\Core\View::partial('terminal/partials/share-modal') ?>
 <?= App\Core\View::partial('terminal/partials/flex-modal') ?>
 <div class="tm-toasts" aria-live="polite" data-toasts></div>

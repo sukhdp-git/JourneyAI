@@ -47,7 +47,7 @@ if ($editing && $t['pnl'] !== null) {
 }
 ?>
 <div class="lt-stage">
-<form method="post" action="<?= e($action) ?>" class="lt-modal" id="trade-form" enctype="multipart/form-data" novalidate
+<form data-lt-examples="<?= e(json_encode(array_map(fn ($x) => $x['trade'], App\Trading\Domain::VOICE_EXAMPLES), JSON_UNESCAPED_UNICODE)) ?>" method="post" action="<?= e($action) ?>" class="lt-modal" id="trade-form" enctype="multipart/form-data" novalidate
   data-lt data-currency="<?= e($acc['currency']) ?>" data-specs="<?= e(json_encode($specs)) ?>" data-strategies="<?= e(json_encode($stratData)) ?>" data-base="<?= e(url('/terminal')) ?>">
   <?= csrf_field() ?>
 
@@ -67,17 +67,15 @@ if ($editing && $t['pnl'] !== null) {
       <button type="button" class="lt-mic" data-lt-mic="all" aria-pressed="false"><span class="lt-mic-on"><?= icon('mic', 'icon') ?></span><span class="lt-mic-label">Speak trade</span></button>
       <span class="lt-listen" data-lt-listen hidden><i></i> Listening… Speak your trade details</span>
       <div class="lt-locales" role="group" aria-label="Voice language">
-        <?php foreach (['en-US' => '🇺🇸 EN', 'ru-RU' => '🇷🇺 RU', 'zh-CN' => '🇨🇳 中文', 'pt-BR' => '🇧🇷 PT'] as $code => $lbl): ?><button type="button" class="lt-chip" data-lt-locale="<?= $code ?>"><?= $lbl ?></button><?php endforeach; ?>
+        <?php foreach (App\Trading\Domain::VOICE_CHIPS as $code => [$lb, $fl]): $lbl = $fl . ' ' . $lb; ?><button type="button" class="lt-chip" data-lt-locale="<?= $code ?>"><?= $lbl ?></button><?php endforeach; ?>
       </div>
       <button type="button" class="lt-audio" data-lt-audio aria-pressed="true" title="Spoken confirmation"><span data-lt-audio-on><?= icon('volume', 'icon icon-sm') ?> Audio on</span><span data-lt-audio-off hidden><?= icon('volume-off', 'icon icon-sm') ?> Audio off</span></button>
     </div>
     <div class="lt-heard" aria-live="polite"><span class="muted">Heard:</span> <q data-lt-heard>—</q></div>
     <ul class="lt-changes" data-lt-changes aria-live="polite"></ul>
     <div class="lt-sims"><span class="muted small">Try it:</span>
-      <button type="button" class="lt-chip" data-lt-sim="en-US" data-text="Bought gold at two thousand eight hundred sixty point five, stop loss two thousand eight hundred fifty five, exit two thousand eight hundred seventy two, zero point five lots, London session">🇺🇸 Gold long</button>
-      <button type="button" class="lt-chip" data-lt-sim="ru-RU" data-text="Продал золото вход две тысячи восемьсот шестьдесят точка пять стоп две тысячи восемьсот шестьдесят восемь выход две тысячи восемьсот сорок лот ноль точка два Нью-Йорк">🇷🇺 Золото шорт</button>
-      <button type="button" class="lt-chip" data-lt-sim="zh-CN" data-text="买入黄金 入场两千八百六十点五 止损两千八百五十五 出场两千八百八十 零点二手 伦敦">🇨🇳 黄金做多</button>
-      <button type="button" class="lt-chip" data-lt-sim="pt-BR" data-text="Comprei ouro entrada dois mil oitocentos e sessenta vírgula cinco stop dois mil oitocentos e cinquenta e cinco saída dois mil oitocentos e setenta lote zero vírgula três sessão Londres">🇧🇷 Ouro compra</button>
+      <?php foreach (App\Trading\Domain::VOICE_EXAMPLES as $code => $vx): ?><button type="button" class="lt-chip" data-lt-sim="<?= e($code) ?>" data-text="<?= e($vx['sim']) ?>" dir="auto"><?= e(App\Trading\Domain::VOICE_CHIPS[$code][1] . ' ' . $vx['sim_label']) ?></button><?php endforeach; ?>
+      <span class="lt-example muted small" data-lt-example dir="auto"></span>
     </div>
     <p class="muted small" data-lt-unsupported hidden>This browser has no speech recognition — the “Try it” examples and typing still work. Use Chrome, Edge or Safari for voice.</p>
   </section>

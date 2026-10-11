@@ -166,11 +166,14 @@
     if (symSel) $$('option', symSel).forEach(function (o) { if (o.value) vgSpecs[o.value] = { a: ((o.dataset.search || '') + ' ' + o.textContent).toLowerCase().split(/\s+/).filter(function (w) { return w.length > 2; }) }; });
     var VP = window.jzVoiceParser ? window.jzVoiceParser(vgSpecs, []) : null;
     var vgLoc = function () { return form.dataset.vgLocale || voiceLang(); };
+    var VGX = JSON.parse(form.dataset.vgExamples || '{}');
+    function showVgExample() { if (!active && heardEl && VGX[vgLoc()]) heardEl.textContent = 'e.g. ' + VGX[vgLoc()]; }
     $$('[data-vg-locale]', form).forEach(function (b) {
       b.classList.toggle('on', b.dataset.vgLocale === vgLoc());
-      b.addEventListener('click', function () { form.dataset.vgLocale = b.dataset.vgLocale; $$('[data-vg-locale]', form).forEach(function (x) { x.classList.toggle('on', x === b); }); if (rec) { try { rec.abort(); } catch (e) {} } });
+      b.addEventListener('click', function () { form.dataset.vgLocale = b.dataset.vgLocale; $$('[data-vg-locale]', form).forEach(function (x) { x.classList.toggle('on', x === b); }); showVgExample(); if (rec) { try { rec.abort(); } catch (e) {} } });
     });
     var idx = -1, rec = null, active = false, handled = false, retries = 0;
+    showVgExample();
     if (!startB) return;
     if (!SR) { startB.disabled = true; var un = $('[data-vg-unsupported]', form); if (un) un.hidden = false; return; }
     function field(st) { var k = st.dataset.vgStep; return (k === 'symbol' || k === 'emotion' || k === 'select') ? $('select', st) : k === 'side' ? ($('select', st) || $('input[type=radio]', st)) : $('input[type=number], input[type=text], textarea', st); }
@@ -468,7 +471,12 @@
     var mic = $('[data-hub-mic]', form), status = $('[data-hub-status]', form), input = $('[data-quick-input]', form);
     var P = window.jzVoiceParser ? window.jzVoiceParser(JSON.parse(form.dataset.specs || '{}'), []) : null;
     var loc = d.documentElement.dataset.voiceLang || 'en-US', rec = null, timer = null;
-    var mark = function () { $$('[data-hub-locale]', form).forEach(function (b) { b.classList.toggle('on', b.dataset.hubLocale === loc); }); };
+    var EX = JSON.parse(form.dataset.examples || '{}');
+    var mark = function () {
+      $$('[data-hub-locale]', form).forEach(function (b) { b.classList.toggle('on', b.dataset.hubLocale === loc); });
+      // Show the example in the chosen language unless a result is on screen
+      var x = EX[loc] || EX['en-US']; if (x && status && !/good|bad/.test(status.className)) { status.textContent = '🎙 ' + x.say + ' — e.g. “' + x.trade + '”'; }
+    };
     $$('[data-hub-locale]', form).forEach(function (b) { b.addEventListener('click', function () { loc = b.dataset.hubLocale; mark(); }); });
     mark();
     var say = function (text, cls) { status.className = 'hub-voice-status' + (cls ? ' ' + cls : ''); status.textContent = text; };
@@ -544,6 +552,37 @@
   });
   $$('[data-mk-symbol]').forEach(function (b) { b.addEventListener('click', function () { var box = $('.tv-chart'); if (!box) return; $$('[data-mk-symbol]').forEach(function (x) { x.classList.toggle('on', x === b); }); window.jzTvReload(box, { symbol: b.dataset.mkSymbol }); }); });
   $$('[data-mk-source]').forEach(function (sel) { sel.addEventListener('change', function () { var box = $('.tv-stocks'); if (box) window.jzTvReload(box, { dataSource: sel.value }); }); });
+
+  /* ---------------------------------------------------------------- First visit: welcome intro on the Home Hub */
+  $$('[data-intro]').forEach(function (el) {
+    var seen = false; try { seen = localStorage.getItem(el.dataset.key) === '1'; } catch (e) {}
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if ((seen && !/[?&]intro=1/.test(location.search)) || reduce) return;
+    try { localStorage.setItem(el.dataset.key, '1'); } catch (e) {}
+    el.hidden = false; d.body.classList.add('intro-on');
+    var done = false, end = function () { if (done) return; done = true; el.classList.add('out'); d.body.classList.remove('intro-on'); d.body.classList.add('intro-reveal'); setTimeout(function () { el.remove(); }, 900); };
+    requestAnimationFrame(function () { el.classList.add('play'); });
+    var t = setTimeout(end, 3200);
+    $$('[data-intro-skip]', el).forEach(function (b) { b.addEventListener('click', function () { clearTimeout(t); end(); }); });
+    el.addEventListener('click', function (e) { if (e.target === el) { clearTimeout(t); end(); } });
+    d.addEventListener('keydown', function k(e) { if (e.key === 'Escape') { clearTimeout(t); end(); d.removeEventListener('keydown', k); } });
+  });
+
+  /* ---------------------------------------------------------------- Weekly brief messenger (Mon/Tue mornings) */
+  $$('[data-brief]').forEach(function (box) {
+    var store = function (v) { try { if (v) localStorage.setItem(box.dataset.key, '1'); return localStorage.getItem(box.dataset.key) === '1'; } catch (e) { return false; } };
+    function show() {
+      box.hidden = false; box.classList.remove('played'); void box.offsetWidth; box.classList.add('open');
+      setTimeout(function () { box.classList.add('played'); }, 1100);   // typing dots, then messages slide in one by one
+    }
+    function hide() { box.classList.remove('open'); setTimeout(function () { box.hidden = true; }, 250); store(true); }
+    $$('[data-brief-close]', box).forEach(function (b) { b.addEventListener('click', hide); });
+    $$('[data-brief-open]').forEach(function (b) { b.addEventListener('click', show); });
+    if (box.dataset.auto === '1' && (!store(false) || /[?&]brief=1/.test(location.search))) setTimeout(show, 900);
+  });
+
+  /* ---------------------------------------------------------------- Public P&L link: date presets */
+  $$('[data-pp-preset]').forEach(function (b) { b.addEventListener('click', function () { var f = b.closest('form'); $('[data-pp-from]', f).value = b.dataset.from; $('[data-pp-to]', f).value = b.dataset.to; $$('[data-pp-preset]', f).forEach(function (x) { x.classList.toggle('on', x === b); }); }); });
 
   /* ---------------------------------------------------------------- Segmented radio styling helper */
   $$('.seg input[type=radio]').forEach(function (r) { var sync = function () { $$('input[name="' + r.name + '"]', r.form || d).forEach(function (x) { x.parentNode.classList.toggle('on', x.checked); }); }; r.addEventListener('change', sync); sync(); });

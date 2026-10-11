@@ -4,6 +4,7 @@ $v = fn ($k) => (string) old($k, $m[$k] ?? '');
 $sel = fn ($a, $b) => (string) $a === (string) $b ? ' selected' : '';
 $err = fn ($k) => field_error($k);
 ?>
+<p class="settings-jump"><a class="tm-btn tm-btn-sm" href="#public-pnl"><?= icon('share', 'icon icon-sm') ?> Public verified P&amp;L link</a></p>
 <div class="grid g-main">
   <form method="post" action="<?= e(url('/terminal/settings')) ?>" class="panel stack"><?= csrf_field() ?>
     <h2>Profile &amp; preferences</h2>
@@ -77,3 +78,5 @@ $err = fn ($k) => field_error($k);
     </section>
   </div>
 </div>
+<h2 class="settings-sec-title"><?= icon('share', 'icon icon-sm') ?> Public verified P&amp;L link</h2>
+<?= App\Core\View::partial('terminal/partials/public-pnl', $pnl + ['acc' => $acc]) ?>

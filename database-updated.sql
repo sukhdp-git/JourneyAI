@@ -1,5 +1,5 @@
 -- ---------------------------------------------------------------------------------------------
--- journzey.ai — database update (schema versions 2 to 8)
+-- journzey.ai — database update (schema versions 2 to 9)
 -- Safe to run on an existing database: it only ADDS columns, tables and rows. Nothing is dropped,
 -- reset or overwritten, and running it twice is harmless. Import it with phpMyAdmin → Import.
 -- (The website also applies these changes automatically on the first request after updating.)
@@ -460,5 +460,34 @@ INSERT INTO `homepage_sections` (`section_key`, `label`, `is_enabled`, `sort_ord
 SELECT 'showcase', 'Product showcase', 1, 15, 'Inside the terminal', 'Everything a serious trader needs — in one terminal', 'Voice logging, prop-firm rules, edge analytics and verified flex cards. These are real screens from journzey.ai.', 'default'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM `homepage_sections` WHERE `section_key` = 'showcase');
 
--- Record the schema version
+-- Schema version 8 reached
 INSERT INTO `settings` (`key`, `value`, `group_name`) VALUES ('schema_version', '8', 'system') ON DUPLICATE KEY UPDATE `value` = IF(CAST(`value` AS UNSIGNED) < 8, '8', `value`);
+
+-- ---------------------------------------------------------------------------------------------
+-- Schema version 9: public verified P&L links
+-- ---------------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `public_pnl_links` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `code` CHAR(12) NOT NULL,
+  `user_id` INT UNSIGNED NOT NULL,
+  `account_id` INT UNSIGNED NOT NULL,
+  `title` VARCHAR(80) NULL,
+  `date_from` DATE NOT NULL,
+  `date_to` DATE NOT NULL,
+  `show_amounts` TINYINT(1) NOT NULL DEFAULT 1,
+  `show_trades` TINYINT(1) NOT NULL DEFAULT 1,
+  `show_equity` TINYINT(1) NOT NULL DEFAULT 1,
+  `show_name` TINYINT(1) NOT NULL DEFAULT 1,
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `views` INT UNSIGNED NOT NULL DEFAULT 0,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_pnl_code` (`code`),
+  KEY `idx_pnl_user` (`user_id`),
+  CONSTRAINT `fk_pnl_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_pnl_account` FOREIGN KEY (`account_id`) REFERENCES `trading_accounts` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Record the schema version
+INSERT INTO `settings` (`key`, `value`, `group_name`) VALUES ('schema_version', '9', 'system') ON DUPLICATE KEY UPDATE `value` = IF(CAST(`value` AS UNSIGNED) < 9, '9', `value`);

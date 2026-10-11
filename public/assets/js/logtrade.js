@@ -23,7 +23,9 @@
     en: { symbol: 'Asset set to', side: 'Direction set to', entry: 'Entry price set to', exit: 'Exit price set to', stop: 'Stop loss set to', tp: 'Take profit set to', lots: 'Lot size set to', session: 'Session set to', strategy: 'Strategy set to', LONG: 'long', SHORT: 'short' },
     ru: { symbol: 'Актив', side: 'Направление', entry: 'Цена входа', exit: 'Цена выхода', stop: 'Стоп-лосс', tp: 'Тейк-профит', lots: 'Объём лота', session: 'Сессия', strategy: 'Стратегия', LONG: 'покупка', SHORT: 'продажа' },
     zh: { symbol: '品种', side: '方向', entry: '入场价', exit: '出场价', stop: '止损', tp: '止盈', lots: '手数', session: '时段', strategy: '策略', LONG: '做多', SHORT: '做空' },
-    pt: { symbol: 'Ativo', side: 'Direção', entry: 'Preço de entrada', exit: 'Preço de saída', stop: 'Stop loss', tp: 'Alvo', lots: 'Lote', session: 'Sessão', strategy: 'Estratégia', LONG: 'compra', SHORT: 'venda' }
+    pt: { symbol: 'Ativo', side: 'Direção', entry: 'Preço de entrada', exit: 'Preço de saída', stop: 'Stop loss', tp: 'Alvo', lots: 'Lote', session: 'Sessão', strategy: 'Estratégia', LONG: 'compra', SHORT: 'venda' },
+    hi: { symbol: 'एसेट', side: 'दिशा', entry: 'एंट्री प्राइस', exit: 'एग्जिट प्राइस', stop: 'स्टॉप लॉस', tp: 'टारगेट', lots: 'लॉट साइज़', session: 'सेशन', strategy: 'रणनीति', LONG: 'खरीद', SHORT: 'बिक्री' },
+    ar: { symbol: 'الأصل', side: 'الاتجاه', entry: 'سعر الدخول', exit: 'سعر الخروج', stop: 'وقف الخسارة', tp: 'جني الأرباح', lots: 'حجم اللوت', session: 'الجلسة', strategy: 'الاستراتيجية', LONG: 'شراء', SHORT: 'بيع' }
   };
   var LABEL = { symbol: 'Asset', side: 'Direction', entry: 'Entry', exit: 'Exit', stop: 'Stop loss', tp: 'Take profit', lots: 'Lot size', session: 'Session', strategy: 'Strategy' };
   var locale = d.documentElement.dataset.voiceLang || 'en-US', audioOn = store.get('jz-lt-audio') !== 'off';
@@ -61,7 +63,14 @@
 
   /* ------------------------------------------------------------------ voice console */
   var SR = window.SpeechRecognition || window.webkitSpeechRecognition, rec = null, heard = $('[data-lt-heard]'), listenBadge = $('[data-lt-listen]');
-  function markLocale() { $$('[data-lt-locale]').forEach(function (b) { b.classList.toggle('on', b.dataset.ltLocale === locale); b.setAttribute('aria-pressed', String(b.dataset.ltLocale === locale)); }); }
+  var EXAMPLES = JSON.parse(form.dataset.ltExamples || '{}');
+  function markLocale() {
+    $$('[data-lt-locale]').forEach(function (b) { b.classList.toggle('on', b.dataset.ltLocale === locale); b.setAttribute('aria-pressed', String(b.dataset.ltLocale === locale)); });
+    // "Try it" and the example sentence follow the chosen language
+    var any = false; $$('[data-lt-sim]').forEach(function (b) { var on = b.dataset.ltSim === locale; b.hidden = !on; any = any || on; });
+    if (!any) $$('[data-lt-sim]').forEach(function (b) { b.hidden = b.dataset.ltSim !== 'en-US'; });
+    var ex = $('[data-lt-example]'); if (ex) ex.textContent = EXAMPLES[locale] ? 'e.g. “' + EXAMPLES[locale] + '”' : '';
+  }
   $$('[data-lt-locale]').forEach(function (b) { b.addEventListener('click', function () { locale = b.dataset.ltLocale; markLocale(); }); });
   markLocale();
   var audioB = $('[data-lt-audio]');
