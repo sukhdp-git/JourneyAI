@@ -23,8 +23,8 @@ $initials = mb_strtoupper(mb_substr($m['name'], 0, 1));
 <meta name="app-base" content="<?= e(url('/terminal')) ?>">
 <title><?= e($pageTitle) ?> · <?= e(setting('site_name', 'journzey.ai')) ?></title>
 <link rel="icon" href="<?= e(setting('favicon') ? media_url(setting('favicon')) : asset('images/favicon.svg')) ?>">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700&display=swap">
+<link rel="preload" href="<?= e(url('/public/assets/fonts/inter.woff2')) ?>" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="<?= e(asset('fonts/fonts.css')) ?>">
 <link rel="stylesheet" href="<?= e(asset('css/terminal.css')) ?>">
 </head>
 <body class="tm" data-page="<?= e($nav) ?>" data-session-left="<?= max(0, (int) (\App\Trading\Members::expiresAt() ?? 0) - time()) ?>" data-session-exit="<?= e(url('/terminal')) ?>">

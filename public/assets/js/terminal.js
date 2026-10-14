@@ -19,8 +19,12 @@
   window.tmPost = post;
 
   // Sidebar, user menu
-  $$('[data-side-open]').forEach(function (b) { b.addEventListener('click', function () { body.classList.add('side-open'); }); });
-  $$('[data-side-close]').forEach(function (b) { b.addEventListener('click', function () { body.classList.remove('side-open'); }); });
+  // Mobile drawer: focus moves into the drawer when it opens and returns to the button that opened it.
+  var sideOpener = null;
+  function sideOpen(b) { sideOpener = b; body.classList.add('side-open'); $$('[data-side-open]').forEach(function (x) { x.setAttribute('aria-expanded', 'true'); }); var c = $('.tm-side-close'); if (c) setTimeout(function () { c.focus(); }, 30); }
+  function sideClose() { if (!body.classList.contains('side-open')) return; body.classList.remove('side-open'); $$('[data-side-open]').forEach(function (x) { x.setAttribute('aria-expanded', 'false'); }); if (sideOpener && sideOpener.focus && d.activeElement && $('#tm-side').contains(d.activeElement)) sideOpener.focus(); }
+  $$('[data-side-open]').forEach(function (b) { b.setAttribute('aria-expanded', 'false'); b.addEventListener('click', function () { sideOpen(b); }); });
+  $$('[data-side-close]').forEach(function (b) { b.addEventListener('click', sideClose); });
   $$('[data-menu]').forEach(function (m) {
     var b = $('[data-menu-toggle]', m);
     b.addEventListener('click', function (e) { e.stopPropagation(); var o = !m.classList.contains('open'); m.classList.toggle('open', o); b.setAttribute('aria-expanded', String(o)); });
@@ -34,7 +38,7 @@
   function close(m) { m.hidden = true; if (lastFocus && lastFocus.focus) lastFocus.focus(); }
   $$('.tm-modal').forEach(function (m) { $$('[data-close]', m).forEach(function (b) { b.addEventListener('click', function () { close(m); }); }); });
   d.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') { var m = $('.tm-modal:not([hidden])'); if (m) close(m); body.classList.remove('side-open'); }
+    if (e.key === 'Escape') { var m = $('.tm-modal:not([hidden])'); if (m) close(m); sideClose(); }
     if (e.key === '/' && !/INPUT|TEXTAREA|SELECT/.test((d.activeElement || {}).tagName || '') && $('#tm-quick')) { e.preventDefault(); open($('#tm-quick')); }
   });
   window.tmOpen = open; window.tmClose = close;

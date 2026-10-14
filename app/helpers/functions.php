@@ -72,6 +72,24 @@ function setting(string $key, string $default = ''): string
     return Settings::get($key, $default);
 }
 
+/**
+ * Public-site appearance value. Values that still equal the original shipped defaults resolve to the
+ * royal (navy/champagne-gold) design defaults; anything the owner customised in Control Panel → Appearance is used as-is.
+ */
+function appearance(string $key): string
+{
+    static $map = [
+        'color_primary' => ['#7c5cff', '#d8b36a'], 'color_secondary' => ['#22d3ee', '#f0dcaa'], 'color_accent' => ['#34d399', '#34c48c'],
+        'color_text' => ['#c9cfdd', '#d5d2c9'], 'color_heading' => ['#ffffff', '#f7f2e6'], 'color_muted' => ['#8f99ae', '#9aa1b2'],
+        'color_bg' => ['#070a12', '#070b14'], 'color_surface' => ['#0d1220', '#0c1322'], 'color_border' => ['#1c2436', '#1f2b42'],
+        'font_heading' => ['Space Grotesk', 'Plus Jakarta Sans'], 'font_body' => ['Inter', 'Inter'], 'radius' => ['16', '14'],
+        'button_style' => ['pill', 'rounded'], 'heading_weight' => ['600', '600'], 'section_spacing' => ['normal', 'normal'],
+    ];
+    [$legacy, $royal] = $map[$key] ?? ['', ''];
+    $v = setting($key, $legacy);
+    return strcasecmp($v, $legacy) === 0 ? $royal : $v;
+}
+
 function setting_on(string $key, bool $default = false): bool
 {
     return Settings::bool($key, $default);

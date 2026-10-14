@@ -471,6 +471,15 @@ Go to **Appearance**.
 
 Animations always respect the visitor's *reduce motion* setting.
 
+### Royal design system
+The website, sign-in pages and terminal share one visual system: midnight navy and charcoal surfaces, champagne-gold accents for branding and selected states, and emerald/red reserved for gains and losses.
+
+- **Defaults.** Appearance values that are still the original shipped defaults (violet `#7c5cff`, cyan `#22d3ee`, Space Grotesk, pill buttons…) are drawn with the royal defaults instead (gold `#d8b36a`, champagne `#f0dcaa`, Plus Jakarta Sans, rounded buttons). Anything you have changed in **Appearance** is used exactly as saved. To bring back a shipped default exactly, pick a value that differs by one digit (for example `#7c5cfe`).
+- **Fonts** are self-hosted in `public/assets/fonts/` (Inter, Plus Jakarta Sans, Instrument Serif for accents, JetBrains Mono). Other fonts chosen in Appearance still load from Google Fonts.
+- **Tokens** live at the top of the "ROYAL DESIGN SYSTEM" blocks in `public/assets/css/site.css` (website) and `public/assets/css/terminal.css` (terminal, both themes): colours, spacing (4/8/12/16/24/32/48/64), radii, shadows, motion (160 ms small, 420 ms reveals).
+- **Terminal themes.** *Obsidian Pro* is the midnight-navy dark theme; *Clean Light* is warm ivory with navy primary buttons. The theme setting and keys are unchanged.
+- **Motion** is short and state-driven: the hero candles and equity line draw once, sections rise in once, calculated results pulse briefly when they change. Nothing loops on the dashboard, and *reduce motion* switches the decorative motion off.
+
 ---
 
 ## 8. Admin users & roles

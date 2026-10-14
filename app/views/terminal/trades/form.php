@@ -81,7 +81,8 @@ if ($editing && $t['pnl'] !== null) {
   </section>
 
   <!-- C. Primary execution parameters -->
-  <section class="lt-sec">
+  <section class="lt-sec" aria-labelledby="lt-g1">
+    <h3 class="lt-sec-title" id="lt-g1"><span>1</span> Instrument &amp; timing</h3>
     <div class="lt-grid lt-grid-c">
       <div class="<?= $fc('symbol') ?>">
         <label for="t-symbol">Asset / symbol <?= $mini('symbol', 'asset') ?></label>
@@ -104,7 +105,8 @@ if ($editing && $t['pnl'] !== null) {
   </section>
 
   <!-- D. Execution & sizing calculator -->
-  <section class="lt-sec">
+  <section class="lt-sec" aria-labelledby="lt-g2">
+    <h3 class="lt-sec-title" id="lt-g2"><span>2</span> Prices &amp; size <em>· risk, R and P&amp;L are calculated below</em></h3>
     <div class="lt-gold" data-lt-gold hidden><?= icon('sparkles', 'icon icon-sm') ?> <b>Gold formula active</b> — $1 move = $1 on 0.01 lot, $10 on 0.1 lot, $100 on 1.0 lot</div>
     <div class="lt-grid lt-grid-d">
       <div class="<?= $fc('entry_price') ?>"><label for="t-entry">Entry price <?= $mini('entry', 'entry price') ?></label><input id="t-entry" type="number" step="any" name="entry_price" inputmode="decimal" value="<?= e($v('entry_price')) ?>" required><?= $err('entry_price') ?></div>
@@ -128,7 +130,8 @@ if ($editing && $t['pnl'] !== null) {
   </section>
 
   <!-- E. Session, strategy & catalyst -->
-  <section class="lt-sec">
+  <section class="lt-sec" aria-labelledby="lt-g3">
+    <h3 class="lt-sec-title" id="lt-g3"><span>3</span> Session, strategy &amp; setup</h3>
     <div class="f">
       <span class="lbl">Session <?= $mini('session', 'session') ?></span>
       <input type="hidden" name="session" value="<?= e(isset($sessions[$curSession]) ? $curSession : '') ?>" data-lt-session>
@@ -157,8 +160,21 @@ if ($editing && $t['pnl'] !== null) {
     <div class="f"><label for="t-setup">Setup trigger / tags</label><input id="t-setup" type="text" name="setup_tag" maxlength="120" value="<?= e($v('setup_tag')) ?>" placeholder="e.g. VAL Bounce · Previous Day" data-lt-setup></div>
   </section>
 
+  <!-- G. Psychology & discipline -->
+  <section class="lt-sec" aria-labelledby="lt-g4">
+    <h3 class="lt-sec-title" id="lt-g4"><span>4</span> Emotion &amp; discipline</h3>
+    <div class="lt-grid lt-grid-g">
+      <div class="f"><label for="t-emo">Trader mindset / emotion</label><select id="t-emo" name="emotion" data-lt-emotion><option value="">—</option><?php foreach ($emotions as $k => $l): ?><option value="<?= e($k) ?>"<?= $curEmo === $k ? ' selected' : '' ?>><?= e($l) ?></option><?php endforeach; ?></select></div>
+      <div class="f"><label for="t-mis">Discipline leak / mistake</label><select id="t-mis" name="mistake_tag" data-lt-mistake><?php foreach ($mistakes as $k => $l): ?><option value="<?= e($k) ?>"<?= $curMis === $k ? ' selected' : '' ?>><?= e($l) ?></option><?php endforeach; ?></select></div>
+    </div>
+    <input type="hidden" name="rules_followed" value="0">
+    <label class="lt-check"><input type="checkbox" name="rules_followed" value="1" data-lt-rules-box<?= $v('rules_followed', '1') === '1' ? ' checked' : '' ?>> Followed all trading rules &amp; risk limits</label>
+  </section>
+
   <!-- F. Chart screenshot -->
-  <section class="lt-sec">
+  <section class="lt-sec" aria-labelledby="lt-g5">
+    <h3 class="lt-sec-title" id="lt-g5"><span>5</span> Notes &amp; screenshot</h3>
+    <div class="f"><label for="t-notes">Notes</label><textarea id="t-notes" name="notes" rows="3" maxlength="5000" placeholder="Reflection, what went well, what to improve"><?= e($v('notes')) ?></textarea></div>
     <span class="lbl"><?= icon('camera', 'icon icon-xs') ?> Chart screenshot</span>
     <div class="lt-tabs" role="tablist" aria-label="Screenshot source">
       <button type="button" role="tab" class="on" data-lt-shot-tab="paste" aria-selected="true">Paste (Ctrl/⌘+V)</button>
@@ -174,16 +190,6 @@ if ($editing && $t['pnl'] !== null) {
     <p class="small" data-shot-msg aria-live="polite"><?= $err('screenshot') ?></p>
   </section>
 
-  <!-- G. Psychology & discipline -->
-  <section class="lt-sec">
-    <div class="lt-grid lt-grid-g">
-      <div class="f"><label for="t-emo">Trader mindset / emotion</label><select id="t-emo" name="emotion" data-lt-emotion><option value="">—</option><?php foreach ($emotions as $k => $l): ?><option value="<?= e($k) ?>"<?= $curEmo === $k ? ' selected' : '' ?>><?= e($l) ?></option><?php endforeach; ?></select></div>
-      <div class="f"><label for="t-mis">Discipline leak / mistake</label><select id="t-mis" name="mistake_tag" data-lt-mistake><?php foreach ($mistakes as $k => $l): ?><option value="<?= e($k) ?>"<?= $curMis === $k ? ' selected' : '' ?>><?= e($l) ?></option><?php endforeach; ?></select></div>
-    </div>
-    <input type="hidden" name="rules_followed" value="0">
-    <label class="lt-check"><input type="checkbox" name="rules_followed" value="1" data-lt-rules-box<?= $v('rules_followed', '1') === '1' ? ' checked' : '' ?>> Followed all trading rules &amp; risk limits</label>
-    <div class="f"><label for="t-notes">Notes</label><textarea id="t-notes" name="notes" rows="3" maxlength="5000" placeholder="Reflection, what went well, what to improve"><?= e($v('notes')) ?></textarea></div>
-  </section>
 
   <?php if ($editing): // values imported from a broker statement are kept unchanged ?><input type="hidden" name="fees" value="<?= e((string) (float) $t['fees']) ?>"><?php endif; ?>
   <footer class="lt-foot">

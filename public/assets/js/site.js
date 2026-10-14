@@ -66,6 +66,8 @@
     var io = new IntersectionObserver(function (entries) {
       entries.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add('is-visible'); io.unobserve(en.target); } });
     }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
+    // Content is only hidden once the observer is running, so a failed script never leaves sections invisible.
+    d.documentElement.classList.add('motion-ready');
     els.forEach(function (el) { io.observe(el); });
   } else {
     els.forEach(function (el) { el.classList.add('is-visible'); });

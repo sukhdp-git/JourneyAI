@@ -1,19 +1,19 @@
 <?php
 /** Appearance settings → CSS custom properties. Every value is validated so settings cannot inject CSS. */
-$c = fn (string $k, string $d) => safe_color(setting($k, $d), $d);
+$c = fn (string $k, string $d) => safe_color(appearance($k), $d);
 $font = function (string $k, string $d): string {
-    $f = setting($k, $d);
+    $f = appearance($k);
     if (!in_array($f, font_options(), true)) {
         $f = $d;
     }
     return $f === 'System' ? 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif' : '"' . $f . '", system-ui, -apple-system, "Segoe UI", sans-serif';
 };
-$radius = max(0, min(32, (int) setting('radius', '16')));
-$btn = match (setting('button_style', 'pill')) { 'square' => '4px', 'rounded' => max(6, (int) round($radius * 0.6)) . 'px', default => '999px' };
-$spacing = match (setting('section_spacing', 'normal')) { 'compact' => '72px', 'spacious' => '144px', default => '112px' };
+$radius = max(0, min(32, (int) appearance('radius')));
+$btn = match (appearance('button_style')) { 'square' => '4px', 'rounded' => max(6, (int) round($radius * 0.6)) . 'px', default => '999px' };
+$spacing = match (appearance('section_spacing')) { 'compact' => '72px', 'spacious' => '144px', default => '112px' };
 $container = max(960, min(1600, (int) setting('container_width', '1200')));
 $base = max(14, min(20, (int) setting('font_base_size', '16')));
-$hw = in_array(setting('heading_weight', '600'), ['500', '600', '700'], true) ? setting('heading_weight', '600') : '600';
+$hw = in_array(appearance('heading_weight'), ['500', '600', '700'], true) ? appearance('heading_weight') : '600';
 $css = ':root{'
     . '--primary:' . $c('color_primary', '#7c5cff') . ';--secondary:' . $c('color_secondary', '#22d3ee') . ';--accent:' . $c('color_accent', '#34d399') . ';'
     . '--text:' . $c('color_text', '#c9cfdd') . ';--heading:' . $c('color_heading', '#ffffff') . ';--muted:' . $c('color_muted', '#8f99ae') . ';'
@@ -21,6 +21,11 @@ $css = ':root{'
     . '--font-heading:' . $font('font_heading', 'Space Grotesk') . ';--font-body:' . $font('font_body', 'Inter') . ';'
     . '--radius:' . $radius . 'px;--btn-radius:' . $btn . ';--section-y:' . $spacing . ';--container:' . $container . 'px;--base-size:' . $base . 'px;--heading-weight:' . $hw . ';'
     . '--btn-transform:' . (setting_on('button_uppercase') ? 'uppercase' : 'none') . ';--btn-glow:' . (setting_on('button_glow', true) ? '1' : '0') . ';}';
+$lum = function (string $hex): float {
+    [$r, $g, $b] = array_map(fn ($x) => (($v = hexdec($x) / 255) <= .03928 ? $v / 12.92 : (($v + .055) / 1.055) ** 2.4), str_split(ltrim($hex, '#'), 2));
+    return .2126 * $r + .7152 * $g + .0722 * $b;
+};
+$css = substr($css, 0, -1) . '--on-primary:' . ($lum($c('color_primary', '#d8b36a')) > .35 ? '#17120a' : '#ffffff') . ';}';
 $custom = trim(setting('custom_css'));
 ?>
 <style id="theme"><?= $css ?></style>

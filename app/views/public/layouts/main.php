@@ -5,9 +5,10 @@ use App\Models\Navigation;
 
 $siteName = setting('site_name', 'journzey.ai');
 $favicon = setting('favicon');
-$fontH = setting('font_heading', 'Space Grotesk');
-$fontB = setting('font_body', 'Inter');
-$fonts = array_unique(array_filter([$fontH, $fontB], fn ($f) => $f !== '' && $f !== 'System'));
+$fontH = appearance('font_heading');
+$fontB = appearance('font_body');
+// Inter, Plus Jakarta Sans, Instrument Serif and JetBrains Mono are self-hosted; other fonts chosen in Appearance load from Google Fonts.
+$fonts = array_unique(array_filter([$fontH, $fontB], fn ($f) => $f !== '' && !in_array($f, ['System', 'Inter', 'Plus Jakarta Sans', 'JetBrains Mono'], true)));
 $current = (new App\Core\Request())->path;
 $isHome = $current === '/';
 $gtm = setting_on('gtm_enabled') && preg_match('/^GTM-[A-Z0-9]+$/', setting('gtm_id')) ? setting('gtm_id') : '';
@@ -36,13 +37,15 @@ $pixel = setting_on('pixel_enabled') && ctype_digit(setting('pixel_id')) ? setti
 <?php endif; ?>
 <?php if (setting_on('gsc_enabled') && setting('gsc_code') !== ''): ?><meta name="google-site-verification" content="<?= e(preg_replace('/^.*content="([^"]+)".*$/s', '$1', setting('gsc_code'))) ?>">
 <?php endif; ?>
-<meta name="theme-color" content="<?= e(setting('color_bg', '#070a12')) ?>">
+<meta name="theme-color" content="<?= e(safe_color(appearance('color_bg'), '#070b14')) ?>">
 <?php if ($favicon): ?><link rel="icon" href="<?= e(media_url($favicon)) ?>"><?php else: ?><link rel="icon" href="<?= e(asset('images/favicon.svg')) ?>" type="image/svg+xml"><?php endif; ?>
 <?php if ($fonts): ?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?<?= e(implode('&', array_map(fn ($f) => 'family=' . str_replace(' ', '+', $f) . ':wght@400;500;600;700', $fonts))) ?>&display=swap">
 <?php endif; ?>
+<link rel="preload" href="<?= e(url('/public/assets/fonts/inter.woff2')) ?>" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="<?= e(asset('fonts/fonts.css')) ?>">
 <link rel="stylesheet" href="<?= e(asset('css/site.css')) ?>">
 <?= App\Core\View::partial('public/partials/theme') ?>
 <?php foreach (Seo::globals() as $schema): ?>

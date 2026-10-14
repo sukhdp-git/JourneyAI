@@ -256,8 +256,8 @@
   // green/red without glow, four stat tiles and a footer with "Verified by journzey.ai" and a QR code to /verify/{code}.
   function rr(cx, x, y, w, h, r) { cx.beginPath(); cx.moveTo(x + r, y); cx.arcTo(x + w, y, x + w, y + h, r); cx.arcTo(x + w, y + h, x, y + h, r); cx.arcTo(x, y + h, x, y, r); cx.arcTo(x, y, x + w, y, r); cx.closePath(); }
   var CARD_PAL = {
-    dark: { bg: '#0b0d12', tile: '#13161e', line: 'rgba(255,255,255,.08)', text: '#f4f5f8', mute: '#8a91a5', pos: '#3ddc97', neg: '#ff6b6b', chip: 'rgba(255,255,255,.06)', mark: '#7c6cff' },
-    light: { bg: '#f6f7f9', tile: '#ffffff', line: '#e3e6eb', text: '#0d111a', mute: '#5d6576', pos: '#059669', neg: '#d92d20', chip: '#eef0f4', mark: '#5b4ff0' }
+    dark: { bg: '#080c16', tile: '#111a2c', line: 'rgba(255,255,255,.08)', text: '#f6f1e4', mute: '#8f97aa', pos: '#34c48c', neg: '#e2646c', chip: 'rgba(255,255,255,.06)', mark: '#d8b36a', markInk: '#18130a' },
+    light: { bg: '#f7f5f0', tile: '#ffffff', line: '#e4ddcf', text: '#101726', mute: '#5f6676', pos: '#0b7a55', neg: '#b3343d', chip: '#f0ece3', mark: '#15223f', markInk: '#f0dcaa' }
   };
   function fitFont(cx, text, weight, size, family, maxW, min) { cx.font = weight + ' ' + size + 'px ' + family; while (cx.measureText(text).width > maxW && size > min) { size -= 4; cx.font = weight + ' ' + size + 'px ' + family; } return size; }
   function drawRecap(canvas, o, style) {
@@ -268,7 +268,7 @@
     cx.fillStyle = main; cx.fillRect(0, 0, W, 8);
     // header: brand + date
     rr(cx, P, 70, 52, 52, 14); cx.fillStyle = pal.mark; cx.fill();
-    cx.fillStyle = '#fff'; cx.font = '800 30px ' + SANS; cx.textAlign = 'center'; cx.fillText('j', P + 26, 106); cx.textAlign = 'left';
+    cx.fillStyle = pal.markInk || '#fff'; cx.font = '800 30px ' + SANS; cx.textAlign = 'center'; cx.fillText('j', P + 26, 106); cx.textAlign = 'left';
     cx.fillStyle = pal.text; cx.font = '700 32px ' + SANS; cx.fillText(o.site, P + 70, 107);
     cx.fillStyle = pal.mute; cx.font = '500 26px ' + SANS; cx.textAlign = 'right'; cx.fillText(o.dateLabel, W - P, 106); cx.textAlign = 'left';
     // kicker + title
@@ -595,4 +595,12 @@
 
   /* ---------------------------------------------------------------- Segmented radio styling helper */
   $$('.seg input[type=radio]').forEach(function (r) { var sync = function () { $$('input[name="' + r.name + '"]', r.form || d).forEach(function (x) { x.parentNode.classList.toggle('on', x.checked); }); }; r.addEventListener('change', sync); sync(); });
+
+  /* ---------------------------------------------------------------- Result emphasis (visual only): a short gold pulse when a calculated value changes */
+  if ('MutationObserver' in window && !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) {
+    $$('.calc-hero strong, .lt-metric b').forEach(function (el) {
+      var box = el.closest('.calc-hero, .lt-metric');
+      new MutationObserver(function () { if (el.textContent.trim() === '—') return; box.classList.remove('jz-bump'); void box.offsetWidth; box.classList.add('jz-bump'); }).observe(el, { childList: true, characterData: true, subtree: true });
+    });
+  }
 })();
