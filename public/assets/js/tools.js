@@ -336,10 +336,10 @@
   }
   function cardStyle(m) { var r = $('[name^=card_style]:checked', m); return r ? r.value : (d.documentElement.dataset.theme === 'clean-light' ? 'light' : 'dark'); }
   function syncStyle(m) { var want = d.documentElement.dataset.theme === 'clean-light' ? 'light' : 'dark'; var r = $('[name^=card_style][value=' + want + ']', m); if (r && !m._styled) { r.checked = true; m._styled = true; } }
-  function wireCardModal(m, getRecap, fileName, shareText) {
+  function wireCardModal(m, getRecap, fileName, shareText, draw) {
     if (!m) return null;
     var cv = $('canvas', m), state = { data: null };
-    var redraw = function () { if (state.data) drawRecap(cv, getRecap(state.data), cardStyle(m)); };
+    var redraw = function () { if (state.data) (draw || drawRecap)(cv, getRecap(state.data), cardStyle(m)); };
     $$('[name^=card_style]', m).forEach(function (r) { r.addEventListener('change', redraw); });
     var download = function () { var a = d.createElement('a'); a.download = fileName(state.data); a.href = cv.toDataURL('image/png'); a.click(); };
     $$('[data-card-download]', m).forEach(function (b) { b.addEventListener('click', download); });
@@ -358,7 +358,7 @@
         });
       });
     });
-    return function (r) { state.data = r; syncStyle(m); var go = function () { redraw(); window.tmOpen(m); }; if (d.fonts && d.fonts.ready) d.fonts.ready.then(go); else go(); };
+    return function (r) { state.data = r; syncStyle(m); var go = function () { redraw(); if (m.hidden) window.tmOpen(m); }; if (d.fonts && d.fonts.ready) d.fonts.ready.then(go); else go(); };
   }
   var showTradeCard = wireCardModal($('#tm-share'), function (r) { return tradeRecap(r.card, r.url, r.site); },
     function (r) { return 'journzey-' + (r ? r.card.symbol + '-' + r.card.date : 'trade') + '.png'; },
@@ -414,6 +414,126 @@
       });
     });
   });
+
+  /* ---------------------------------------------------------------- Weekly flex card (Trade Log) */
+  // A bolder, brand-gradient design made for Instagram/X: net P&L, win-rate ring, daily bars with the
+  // cumulative curve, key stats, best trade/day, trade-by-trade dots, and the same "Verified" QR footer.
+  var WEEK_PAL = {
+    dark: { bg: '#0a0820', glowA: 'rgba(101,65,233,.55)', glowB: 'rgba(254,178,180,.30)', panel: 'rgba(255,255,255,.045)', line: 'rgba(255,255,255,.11)', text: '#ffffff', mute: '#aaa5cc', pos: '#3ddc97', neg: '#ff6b81', track: 'rgba(255,255,255,.10)', zero: 'rgba(255,255,255,.22)' },
+    light: { bg: '#fbfaff', glowA: 'rgba(101,65,233,.20)', glowB: 'rgba(254,178,180,.40)', panel: 'rgba(255,255,255,.85)', line: '#e4def6', text: '#14112b', mute: '#5f5985', pos: '#0b8a5c', neg: '#c3354a', track: '#ece8f8', zero: '#cfc8e8' }
+  };
+  function brandGrad(cx, x0, y0, x1, y1) { var g = cx.createLinearGradient(x0, y0, x1, y1); g.addColorStop(0, '#6541e9'); g.addColorStop(0.32, '#8a5ddc'); g.addColorStop(0.6, '#b17ace'); g.addColorStop(0.82, '#d996c1'); g.addColorStop(1, '#feb2b4'); return g; }
+  function drawWeek(canvas, o, style) {
+    var cx = canvas.getContext('2d'), W = canvas.width, H = canvas.height, P = 72, pal = WEEK_PAL[style] || WEEK_PAL.dark, c = o.card;
+    var SANS = 'Inter, sans-serif', DISP = '"Plus Jakarta Sans", Inter, sans-serif', MONO = '"JetBrains Mono", monospace', sym = curSym(c.currency);
+    var fmt = function (v, dp) { return sym + Math.abs(v).toLocaleString(undefined, { minimumFractionDigits: dp, maximumFractionDigits: dp }); };
+    var signed = function (v, dp) { return (v > 0 ? '+' : v < 0 ? '−' : '') + fmt(v, dp); };
+    var short = function (v) { var a = Math.abs(v), s = a >= 1e6 ? (a / 1e6).toFixed(1) + 'M' : a >= 1e4 ? (a / 1e3).toFixed(1) + 'k' : a.toLocaleString(undefined, { maximumFractionDigits: 0 }); return (v > 0 ? '+' : v < 0 ? '−' : '') + sym + s; };
+    cx.textAlign = 'left'; cx.textBaseline = 'alphabetic'; cx.shadowBlur = 0; cx.lineCap = 'round'; cx.lineJoin = 'round';
+    // background + glows
+    cx.fillStyle = pal.bg; cx.fillRect(0, 0, W, H);
+    var g1 = cx.createRadialGradient(120, 80, 0, 120, 80, 760); g1.addColorStop(0, pal.glowA); g1.addColorStop(1, 'rgba(0,0,0,0)'); cx.fillStyle = g1; cx.fillRect(0, 0, W, H);
+    var g2 = cx.createRadialGradient(W - 60, H - 380, 0, W - 60, H - 380, 700); g2.addColorStop(0, pal.glowB); g2.addColorStop(1, 'rgba(0,0,0,0)'); cx.fillStyle = g2; cx.fillRect(0, 0, W, H);
+    cx.fillStyle = brandGrad(cx, 0, 0, W, 0); cx.fillRect(0, 0, W, 10);
+    // header
+    rr(cx, P, 58, 54, 54, 15); cx.fillStyle = brandGrad(cx, P, 58, P + 54, 112); cx.fill();
+    cx.fillStyle = '#fff'; cx.font = '800 31px ' + DISP; cx.textAlign = 'center'; cx.fillText('j', P + 27, 95); cx.textAlign = 'left';
+    cx.fillStyle = pal.text; cx.font = '700 32px ' + DISP; cx.fillText(o.site, P + 72, 96);
+    var wk = 'WEEK ' + c.week_no; cx.font = '800 24px ' + MONO; var ww = cx.measureText(wk).width + 44;
+    rr(cx, W - P - ww, 62, ww, 46, 23); cx.fillStyle = brandGrad(cx, W - P - ww, 0, W - P, 0); cx.fill(); cx.fillStyle = '#fff'; cx.fillText(wk, W - P - ww + 22, 94);
+    // kicker + title
+    cx.fillStyle = pal.mute; cx.font = '600 23px ' + MONO; cx.fillText(('WEEKLY RECAP · ' + c.date_label + (c.demo ? ' · DEMO DATA' : '')).toUpperCase(), P, 182);
+    var title = (c.name ? c.name + '’s' : 'My') + ' trading week'; fitFont(cx, title, '800', 54, DISP, W - P * 2, 34); cx.fillStyle = pal.text; cx.fillText(title, P, 246);
+    // hero panel: net P&L + win-rate ring
+    var hx = P, hy = 282, hw = W - P * 2, hh = 222, main = c.net >= 0 ? pal.pos : pal.neg;
+    rr(cx, hx, hy, hw, hh, 28); cx.fillStyle = pal.panel; cx.fill(); cx.lineWidth = 3; cx.strokeStyle = brandGrad(cx, hx, hy, hx + hw, hy + hh); cx.stroke();
+    cx.fillStyle = pal.mute; cx.font = '700 22px ' + MONO; cx.fillText(c.net >= 0 ? 'NET PROFIT' : 'NET LOSS', hx + 40, hy + 58);
+    var pnl = signed(c.net, 2); fitFont(cx, pnl, '800', 100, SANS, hw - 330, 50); cx.fillStyle = main; cx.fillText(pnl, hx + 36, hy + 150);
+    var subs = [c.trades + ' trade' + (c.trades === 1 ? '' : 's')]; if (c.total_r !== null) subs.unshift((c.total_r > 0 ? '+' : '') + c.total_r.toFixed(2) + 'R');
+    cx.fillStyle = pal.mute; cx.font = '600 26px ' + SANS; cx.fillText(subs.join('  ·  '), hx + 40, hy + hh - 24);
+    var rcx = hx + hw - 128, rcy = hy + hh / 2, R = 80, wr = c.win_rate === null ? 0 : c.win_rate;
+    cx.lineWidth = 22; cx.strokeStyle = pal.track; cx.beginPath(); cx.arc(rcx, rcy, R, 0, Math.PI * 2); cx.stroke();
+    if (wr > 0) { cx.strokeStyle = brandGrad(cx, rcx - R, rcy - R, rcx + R, rcy + R); cx.beginPath(); cx.arc(rcx, rcy, R, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(1, wr)); cx.stroke(); }
+    cx.textAlign = 'center'; cx.fillStyle = pal.text; cx.font = '800 44px ' + SANS; cx.fillText(c.win_rate === null ? '—' : Math.round(wr * 100) + '%', rcx, rcy + 10);
+    cx.fillStyle = pal.mute; cx.font = '700 15px ' + MONO; cx.fillText('WIN RATE', rcx, rcy + 38); cx.textAlign = 'left';
+    // chart panel: daily bars + cumulative line (same $ scale)
+    var cxp = P, cyp = 526, cw = W - P * 2, ch = 282;
+    rr(cx, cxp, cyp, cw, ch, 26); cx.fillStyle = pal.panel; cx.fill(); cx.lineWidth = 2; cx.strokeStyle = pal.line; cx.stroke();
+    cx.fillStyle = pal.mute; cx.font = '700 20px ' + MONO; cx.fillText('DAILY P&L', cxp + 32, cyp + 46);
+    cx.textAlign = 'right'; cx.fillText('CUMULATIVE', cxp + cw - 32, cyp + 46); var lgx = cxp + cw - 32 - cx.measureText('CUMULATIVE').width - 50;
+    cx.lineWidth = 6; cx.strokeStyle = brandGrad(cx, lgx, 0, lgx + 36, 0); cx.beginPath(); cx.moveTo(lgx, cyp + 39); cx.lineTo(lgx + 36, cyp + 39); cx.stroke(); cx.textAlign = 'left';
+    var cum = [], run = 0, lastDay = 0; c.days.forEach(function (v, i) { run += v; cum.push(run); if (c.day_trades[i]) lastDay = i; });
+    var mx = 0; c.days.concat(cum).forEach(function (v) { mx = Math.max(mx, Math.abs(v)); }); if (!mx) mx = 1;
+    var top = cyp + 84, bot = cyp + ch - 82, hasNeg = c.days.concat(cum).some(function (v) { return v < 0; }), hasPos = c.days.concat(cum).some(function (v) { return v > 0; });
+    var zeroY = hasNeg && hasPos ? top + (bot - top) * (Math.max.apply(null, c.days.concat(cum, [0])) / (Math.max.apply(null, c.days.concat(cum, [0])) - Math.min.apply(null, c.days.concat(cum, [0])))) : (hasNeg ? top : bot);
+    var span = Math.max.apply(null, c.days.concat(cum, [0])) - Math.min.apply(null, c.days.concat(cum, [0])) || mx;
+    var yOf = function (v) { return zeroY - v / span * (bot - top); };
+    var colW = (cw - 64) / 7, bw = Math.min(64, colW * 0.52), names = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+    cx.strokeStyle = pal.zero; cx.lineWidth = 2; cx.setLineDash([6, 8]); cx.beginPath(); cx.moveTo(cxp + 28, zeroY); cx.lineTo(cxp + cw - 28, zeroY); cx.stroke(); cx.setLineDash([]);
+    var pts = [];
+    c.days.forEach(function (v, i) {
+      var x = cxp + 32 + colW * i + colW / 2, active = c.day_trades[i] > 0;
+      if (active && v !== 0) { var y = yOf(v), h = Math.max(4, Math.abs(y - zeroY)); rr(cx, x - bw / 2, v > 0 ? zeroY - h : zeroY, bw, h, Math.min(10, h / 2)); cx.fillStyle = v > 0 ? pal.pos : pal.neg; cx.globalAlpha = 0.9; cx.fill(); cx.globalAlpha = 1; }
+      cx.textAlign = 'center'; cx.fillStyle = active ? pal.text : pal.mute; cx.font = '700 18px ' + MONO; cx.fillText(names[i], x, cyp + ch - 24);
+      if (i <= lastDay) pts.push([x, yOf(cum[i])]);
+    });
+    cx.textAlign = 'left';
+    cx.lineWidth = 6; cx.strokeStyle = brandGrad(cx, cxp, 0, cxp + cw, 0); cx.beginPath(); pts.forEach(function (p, i) { if (i) cx.lineTo(p[0], p[1]); else cx.moveTo(p[0], p[1]); }); cx.stroke();
+    cx.textAlign = 'center'; cx.font = '700 17px ' + SANS; cx.lineWidth = 6; cx.strokeStyle = pal.bg;
+    c.days.forEach(function (v, i) {
+      if (!c.day_trades[i]) return; var x = cxp + 32 + colW * i + colW / 2, ly = v >= 0 ? Math.min(yOf(v), zeroY) - 12 : Math.max(yOf(v), zeroY) + 24;
+      ly = Math.max(top - 6, Math.min(cyp + ch - 54, ly)); cx.strokeText(short(v), x, ly); cx.fillStyle = v >= 0 ? pal.pos : pal.neg; cx.fillText(short(v), x, ly);
+    });
+    cx.textAlign = 'left';
+    var lp = pts[pts.length - 1]; cx.fillStyle = '#feb2b4'; cx.beginPath(); cx.arc(lp[0], lp[1], 9, 0, Math.PI * 2); cx.fill(); cx.lineWidth = 4; cx.strokeStyle = pal.bg; cx.stroke();
+    // stat tiles
+    var tY = 832, gap = 18, tw = (W - P * 2 - gap * 3) / 4, th = 112;
+    [['TRADES', c.trades + ' (' + c.wins + 'W·' + c.losses + 'L)'], ['PROFIT FACTOR', c.profit_factor === null ? (c.losses ? '—' : '∞') : c.profit_factor.toFixed(2), c.profit_factor === null ? (c.losses ? '' : 'pos') : (c.profit_factor >= 1 ? 'pos' : 'neg')],
+     ['TOTAL R', c.total_r === null ? '—' : (c.total_r > 0 ? '+' : '') + c.total_r.toFixed(1) + 'R', c.total_r === null ? '' : (c.total_r >= 0 ? 'pos' : 'neg')], ['GREEN DAYS', c.green_days + ' / ' + c.active_days]].forEach(function (t, i) {
+      var x = P + i * (tw + gap); rr(cx, x, tY, tw, th, 20); cx.fillStyle = pal.panel; cx.fill(); cx.lineWidth = 2; cx.strokeStyle = pal.line; cx.stroke();
+      cx.fillStyle = pal.mute; cx.font = '700 16px ' + MONO; cx.fillText(t[0], x + 22, tY + 38);
+      fitFont(cx, t[1], '800', 36, SANS, tw - 44, 20); cx.fillStyle = t[2] === 'pos' ? pal.pos : t[2] === 'neg' ? pal.neg : pal.text; cx.fillText(t[1], x + 22, tY + 86);
+    });
+    // chips: best trade / best day / top market
+    var chips = []; if (c.best) chips.push(['BEST TRADE', c.best.symbol + '  ' + short(c.best.pnl)]); if (c.best_day && c.active_days > 1) chips.push(['BEST DAY', c.best_day.day.slice(0, 3) + '  ' + short(c.best_day.pnl)]); if (c.top_symbol && (!c.best || c.top_symbol !== c.best.symbol)) chips.push(['TOP MARKET', c.top_symbol]);
+    var x = P, y = 974;
+    chips.forEach(function (ch) {
+      cx.font = '700 16px ' + MONO; var lw = cx.measureText(ch[0]).width; cx.font = '700 24px ' + SANS; var vw = cx.measureText(ch[1]).width; var w = lw + vw + 54;
+      if (x + w > W - P) return; rr(cx, x, y, w, 54, 27); cx.fillStyle = pal.panel; cx.fill(); cx.lineWidth = 2; cx.strokeStyle = pal.line; cx.stroke();
+      cx.fillStyle = pal.mute; cx.font = '700 16px ' + MONO; cx.fillText(ch[0], x + 22, y + 34); cx.fillStyle = pal.text; cx.font = '700 24px ' + SANS; cx.fillText(ch[1], x + 34 + lw, y + 36); x += w + 12;
+    });
+    // trade-by-trade dots
+    var dy = 1068, seq = c.seq || [], dr = 11, step = 30, maxN = Math.floor((W - P * 2 - 210) / step);
+    cx.fillStyle = pal.mute; cx.font = '700 16px ' + MONO; cx.fillText('TRADE BY TRADE', P, dy + 6);
+    seq.slice(0, maxN).forEach(function (v, i) { cx.fillStyle = v > 0 ? pal.pos : v < 0 ? pal.neg : pal.zero; cx.beginPath(); cx.arc(P + 196 + i * step, dy, dr, 0, Math.PI * 2); cx.fill(); });
+    if (seq.length > maxN) { cx.fillStyle = pal.mute; cx.font = '700 18px ' + SANS; cx.fillText('+' + (seq.length - maxN), P + 196 + maxN * step - 6, dy + 7); }
+    // footer: verified + QR
+    var fy = H - 206; cx.fillStyle = brandGrad(cx, P, 0, W - P, 0); cx.globalAlpha = 0.6; cx.fillRect(P, fy - 30, W - P * 2, 2); cx.globalAlpha = 1;
+    var qs = 156, qx = W - P - qs, qy = fy - 4;
+    rr(cx, qx - 12, qy - 12, qs + 24, qs + 24, 18); cx.fillStyle = '#ffffff'; cx.fill();
+    if (window.qrcode && o.url) { var q = window.qrcode(0, 'M'); q.addData(o.url); q.make(); var n = q.getModuleCount(), m = qs / n; cx.fillStyle = '#0b0d12'; for (var r = 0; r < n; r++) for (var k = 0; k < n; k++) if (q.isDark(r, k)) cx.fillRect(qx + k * m, qy + r * m, Math.ceil(m), Math.ceil(m)); }
+    cx.fillStyle = brandGrad(cx, P, fy + 26, P + 40, fy + 66); cx.beginPath(); cx.arc(P + 20, fy + 46, 20, 0, Math.PI * 2); cx.fill();
+    cx.strokeStyle = '#fff'; cx.lineWidth = 5; cx.beginPath(); cx.moveTo(P + 11, fy + 47); cx.lineTo(P + 18, fy + 54); cx.lineTo(P + 30, fy + 39); cx.stroke();
+    cx.fillStyle = pal.text; cx.font = '800 34px ' + DISP; cx.fillText('Verified by ' + o.site, P + 54, fy + 58);
+    cx.fillStyle = pal.mute; cx.font = '500 24px ' + SANS; cx.fillText('Scan to check this week against', P, fy + 108); cx.fillText('the trader’s journal.', P, fy + 140);
+  }
+  var showWeekCard = wireCardModal($('#tm-week'), function (r) { return { card: r.card, url: r.url, site: r.site }; },
+    function (r) { return 'journzey-week-' + (r ? r.card.date : 'card') + '.png'; },
+    function (r) { var c = r.card; return 'My trading week (' + c.date_label + '): ' + signedMoney(c.net, c.currency) + ' · ' + c.trades + ' trades' + (c.win_rate === null ? '' : ' · ' + Math.round(c.win_rate * 100) + '% win rate') + ' — journaled with ' + r.site; }, drawWeek);
+  (function () {
+    var m = $('#tm-week'), sel = m && $('[data-week-select]', m), cv = m && $('canvas', m);
+    if (!m || !showWeekCard) return;
+    var load = function (wk, btn) {
+      if (btn) btn.classList.add('busy'); cv.classList.add('is-loading');
+      post(base + '/flex/week', { week: wk }).then(function (r) {
+        if (btn) btn.classList.remove('busy'); cv.classList.remove('is-loading');
+        if (!r || !r.ok) { toast((r && r.error) || 'Could not build the weekly card.', 'error'); return; }
+        showWeekCard(r);
+      });
+    };
+    $$('[data-week-card]').forEach(function (b) { b.addEventListener('click', function () { if (sel && sel.value) load(sel.value, b); }); });
+    if (sel) sel.addEventListener('change', function () { load(sel.value); });
+  })();
 
   /* ---------------------------------------------------------------- Blow-up radar what-if + runner audit */
   $$('[data-radar] [data-scen]').forEach(function (b) {

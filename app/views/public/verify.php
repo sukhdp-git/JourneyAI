@@ -1,6 +1,6 @@
 <?php
 /** @var array $card @var string $checked */
-$c = $card; $isTrade = ($c['kind'] ?? 'day') === 'trade'; $up = (float) ($isTrade ? $c['pnl'] : $c['net']) >= 0;
+$c = $card; $isTrade = ($c['kind'] ?? 'day') === 'trade'; $isWeek = ($c['kind'] ?? 'day') === 'week'; $up = (float) ($isTrade ? $c['pnl'] : $c['net']) >= 0;
 ?>
 <section class="section section-tight">
   <div class="container verify-wrap">
@@ -17,6 +17,17 @@ $c = $card; $isTrade = ($c['kind'] ?? 'day') === 'trade'; $up = (float) ($isTrad
         <div><dt>Lot size</dt><dd><?= e((string) ($c['lots'] ?? '—')) ?></dd></div>
         <?php if (!empty($c['strategy'])): ?><div><dt>Strategy</dt><dd><?= e($c['strategy']) ?></dd></div><?php endif; ?>
         <?php if (!empty($c['session'])): ?><div><dt>Session</dt><dd><?= e($c['session']) ?></dd></div><?php endif; ?>
+      </dl>
+      <?php elseif ($isWeek): ?>
+      <p class="verify-sym"><strong>Trading week</strong> <span class="badge">Week <?= (int) $c['week_no'] ?></span></p>
+      <p class="verify-pnl <?= $up ? 'up' : 'down' ?>"><?= e(money($c['net'], $c['currency'], true)) ?></p>
+      <dl class="verify-stats">
+        <div><dt>Trades</dt><dd><?= (int) $c['trades'] ?> (<?= (int) $c['wins'] ?>W · <?= (int) $c['losses'] ?>L)</dd></div>
+        <div><dt>Win rate</dt><dd><?= e(pct($c['win_rate'], 0)) ?></dd></div>
+        <?php if ($c['profit_factor'] !== null): ?><div><dt>Profit factor</dt><dd><?= e(number_format((float) $c['profit_factor'], 2)) ?></dd></div><?php endif; ?>
+        <?php if ($c['total_r'] !== null): ?><div><dt>Total R</dt><dd><?= e(($c['total_r'] > 0 ? '+' : '') . number_format((float) $c['total_r'], 2)) ?>R</dd></div><?php endif; ?>
+        <div><dt>Green days</dt><dd><?= (int) $c['green_days'] ?> of <?= (int) $c['active_days'] ?></dd></div>
+        <?php if (!empty($c['best'])): ?><div><dt>Best trade</dt><dd><?= e($c['best']['symbol']) ?> <?= e(money($c['best']['pnl'], $c['currency'], true)) ?></dd></div><?php endif; ?>
       </dl>
       <?php else: ?>
       <p class="verify-pnl <?= $up ? 'up' : 'down' ?>"><?= e(money($c['net'], $c['currency'], true)) ?></p>

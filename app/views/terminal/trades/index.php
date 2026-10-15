@@ -18,7 +18,8 @@ $sortLink = function (string $col, string $label) use ($f, $qs) { $on = ($f['sor
   <label class="sr-only" for="tto">To</label><input id="tto" type="date" name="to" value="<?= e($f['to'] ?? '') ?>" style="width:auto">
   <button class="tm-btn tm-btn-sm" type="submit">Filter</button>
   <?php if (array_diff_key($f, ['sort' => 1, 'dir' => 1])): ?><a class="small" href="<?= e(url('/terminal/trades')) ?>">Reset</a><?php endif; ?>
-  <span style="margin-left:auto;display:flex;gap:6px">
+  <span style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">
+    <button type="button" class="tm-btn tm-btn-sm wk-open" data-week-card<?= $weeks ? '' : ' disabled title="Close a trade to create your first weekly card"' ?>><?= icon('sparkles', 'icon icon-sm') ?> Weekly card</button>
     <a class="tm-btn tm-btn-sm" href="<?= e(url('/terminal/trades/export') . $qs([])) ?>"><?= icon('download', 'icon icon-sm') ?> <?= e(t('common.export')) ?></a>
     <?php if ($acc['writable']): ?><a class="tm-btn tm-btn-sm tm-btn-primary" href="<?= e(url('/terminal/trades/new')) ?>"><?= icon('plus', 'icon icon-sm') ?> <?= e(t('common.new_trade')) ?></a><?php endif; ?>
   </span>
@@ -78,3 +79,4 @@ $sortLink = function (string $col, string $label) use ($f, $qs) { $on = ($f['sor
   <?php else: ?><div class="empty"><?= icon('list', 'icon') ?><p><?= $f ? 'No trades match these filters.' : e(t('empty.trades')) ?></p><?php if ($acc['writable']): ?><a class="tm-btn tm-btn-primary" href="<?= e(url('/terminal/trades/new')) ?>">Log your first trade</a><?php endif; ?></div><?php endif; ?>
 </section>
 <?php endif; ?>
+<?= App\Core\View::partial('terminal/partials/week-modal', ['weeks' => $weeks]) ?>

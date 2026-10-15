@@ -25,6 +25,21 @@ final class FlexController extends TerminalController
         Response::json(['ok' => true, 'card' => $card, 'url' => url('/verify/' . $code), 'site' => setting('site_name', 'journzey.ai')]);
     }
 
+    /** Weekly recap card (Trade Log). `week` = any date in the week; the card covers Monday–Sunday. */
+    public function week(Request $req): never
+    {
+        $today = (new \DateTimeImmutable('now', new \DateTimeZone($this->tz)))->format('Y-m-d');
+        $date = (string) $req->post('week', $today);
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) || !\DateTime::createFromFormat('Y-m-d', $date) || $date > $today || $date < '2000-01-01') {
+            Response::json(['ok' => false, 'error' => 'Choose a valid week.'], 422);
+        }
+        [$card, $code] = FlexCard::forWeek($this->m, $this->acc, FlexCard::weekStart($date), $this->tz);
+        if (!$card['trades']) {
+            Response::json(['ok' => false, 'error' => 'No closed trades in the week of ' . $card['date_label'] . ' in this account.'], 422);
+        }
+        Response::json(['ok' => true, 'card' => $card, 'url' => url('/verify/' . $code), 'site' => setting('site_name', 'journzey.ai')]);
+    }
+
     /** Card for one closed trade of the active account. */
     public function trade(Request $req): never
     {

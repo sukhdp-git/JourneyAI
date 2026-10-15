@@ -38,7 +38,29 @@ final class TradeController extends TerminalController
         $pg = new Paginator($total, $per, $req->int('page', 1));
         [$rows] = Ledger::trades($this->uid, (int) $this->acc['id'], $f, $this->tz, $per, $pg->offset);
         $symbols = array_column(Database::all('SELECT DISTINCT symbol FROM trades WHERE user_id = :u AND account_id = :a ORDER BY symbol', ['u' => $this->uid, 'a' => $this->acc['id']]), 'symbol');
-        $this->render('trades/index', ['rows' => $rows, 'pager' => $pg, 'f' => $f, 'symbols' => $symbols, 'strategies' => Ledger::strategies($this->uid)], 'Trade Log', 'trades');
+        $this->render('trades/index', ['rows' => $rows, 'pager' => $pg, 'f' => $f, 'symbols' => $symbols, 'strategies' => Ledger::strategies($this->uid), 'weeks' => $this->cardWeeks()], 'Trade Log', 'trades');
+    }
+
+    /** Weeks (Monday => label + trade count) with closed trades in the last ~6 months, newest first, for the weekly card picker. */
+    private function cardWeeks(): array
+    {
+        $zone = new \DateTimeZone($this->tz);
+        $since = (new \DateTimeImmutable('now', $zone))->modify('-26 weeks')->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+        $rows = Database::all("SELECT executed_at FROM trades WHERE user_id = :u AND account_id = :a AND status = 'CLOSED' AND pnl IS NOT NULL AND executed_at >= :s ORDER BY executed_at DESC LIMIT 5000",
+            ['u' => $this->uid, 'a' => $this->acc['id'], 's' => $since]);
+        $weeks = [];
+        $thisWeek = \App\Trading\FlexCard::weekStart((new \DateTimeImmutable('now', $zone))->format('Y-m-d'));
+        foreach ($rows as $r) {
+            $mon = \App\Trading\FlexCard::weekStart((new \DateTimeImmutable($r['executed_at'], new \DateTimeZone('UTC')))->setTimezone($zone)->format('Y-m-d'));
+            $weeks[$mon] = ($weeks[$mon] ?? 0) + 1;
+        }
+        $out = [];
+        foreach ($weeks as $mon => $n) {
+            $a = new \DateTimeImmutable($mon);
+            $b = $a->modify('+6 days');
+            $out[$mon] = ($mon === $thisWeek ? 'This week · ' : '') . $a->format('M j') . ' – ' . $b->format($a->format('M') === $b->format('M') ? 'j' : 'M j') . ' · ' . $n . ' trade' . ($n === 1 ? '' : 's');
+        }
+        return $out;
     }
 
     public function export(Request $req): never

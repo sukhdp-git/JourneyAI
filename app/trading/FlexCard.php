@@ -70,6 +70,71 @@ final class FlexCard
         return [$payload, self::store($m, $acc, $payload['date'], (int) $t['id'], $payload)];
     }
 
+    /** card_ref used for weekly cards (card_date = the Monday). Trade cards use the trade id; daily cards use 0. */
+    public const WEEK_REF = 4294967295;
+
+    /** Monday (Y-m-d) of the week containing $date. */
+    public static function weekStart(string $date): string
+    {
+        $d = new \DateTimeImmutable($date);
+        return $d->modify('-' . ((int) $d->format('N') - 1) . ' days')->format('Y-m-d');
+    }
+
+    /** Weekly recap card (Trade Log): net P&L, daily bars, cumulative curve, win rate, best trade/day. */
+    public static function forWeek(array $m, array $acc, string $monday, string $tz): array
+    {
+        $zone = new \DateTimeZone($tz);
+        $start = new \DateTimeImmutable($monday . ' 00:00:00', $zone);
+        $from = $start->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+        $to = $start->modify('+7 days')->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+        $trades = Database::all(Ledger::TRADE_SELECT . " WHERE t.user_id = :u AND t.account_id = :a AND t.status = 'CLOSED' AND t.pnl IS NOT NULL AND t.executed_at >= :f AND t.executed_at < :t ORDER BY t.executed_at",
+            ['u' => $m['id'], 'a' => $acc['id'], 'f' => $from, 't' => $to]);
+        $s = Analytics::summarize($trades);
+        $days = array_fill(0, 7, 0.0);
+        $dayCount = array_fill(0, 7, 0);
+        $curve = [0.0];
+        $run = 0.0;
+        $best = null;
+        $syms = [];
+        $seq = [];
+        foreach ($trades as $t) {
+            $p = (float) $t['pnl'];
+            $i = (int) (new \DateTimeImmutable($t['executed_at'], new \DateTimeZone('UTC')))->setTimezone($zone)->format('N') - 1;
+            $days[$i] += $p;
+            $dayCount[$i]++;
+            $run += $p;
+            $curve[] = round($run, 2);
+            $seq[] = $p > 0 ? 1 : ($p < 0 ? -1 : 0);
+            $syms[$t['symbol']] = ($syms[$t['symbol']] ?? 0) + $p;
+            if ($best === null || $p > (float) $best['pnl']) {
+                $best = $t;
+            }
+        }
+        $bestDay = null;
+        foreach ($days as $i => $v) {
+            if ($dayCount[$i] && ($bestDay === null || $v > $days[$bestDay])) {
+                $bestDay = $i;
+            }
+        }
+        arsort($syms);
+        $rs = array_values(array_filter(array_map(fn ($t) => $t['rr'] === null ? null : (float) $t['rr'], $trades), fn ($v) => $v !== null));
+        $end = $start->modify('+6 days');
+        $first = trim(explode(' ', trim((string) $m['name']))[0] ?? '');
+        $label = $start->format('M') === $end->format('M') ? $start->format('M j') . ' – ' . $end->format('j, Y') : $start->format('M j') . ' – ' . $end->format('M j, Y');
+        $payload = [
+            'kind' => 'week', 'date' => $monday, 'date_label' => $label, 'week_no' => (int) $start->format('W'), 'name' => $first, 'currency' => $acc['currency'],
+            'net' => round((float) $s['net'], 2), 'trades' => (int) $s['trades'], 'wins' => (int) $s['wins'], 'losses' => (int) $s['losses'],
+            'win_rate' => $s['win_rate'], 'profit_factor' => $s['profit_factor'], 'total_r' => $rs ? round(array_sum($rs), 2) : null,
+            'days' => array_map(fn ($v) => round($v, 2), $days), 'day_trades' => $dayCount, 'curve' => array_slice($curve, 0, 200), 'seq' => array_slice($seq, 0, 60),
+            'green_days' => count(array_filter($days, fn ($v) => $v > 0)), 'active_days' => count(array_filter($dayCount)),
+            'best_day' => $bestDay === null ? null : ['day' => $start->modify("+$bestDay days")->format('l'), 'pnl' => round($days[$bestDay], 2)],
+            'best' => $best ? ['symbol' => $best['symbol'], 'pnl' => round((float) $best['pnl'], 2)] : null,
+            'top_symbol' => $syms ? (string) array_key_first($syms) : null,
+            'demo' => (int) $acc['has_demo_data'] === 1, 'account_type' => (int) $acc['is_demo'] ? 'Demo account' : 'Live account',
+        ];
+        return [$payload, $trades ? self::store($m, $acc, $monday, self::WEEK_REF, $payload) : ''];
+    }
+
     private static function store(array $m, array $acc, string $date, int $ref, array $payload): string
     {
         $row = Database::one('SELECT code FROM share_cards WHERE user_id = :u AND account_id = :a AND card_date = :d AND card_ref = :r', ['u' => $m['id'], 'a' => $acc['id'], 'd' => $date, 'r' => $ref]);
