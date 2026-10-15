@@ -67,6 +67,7 @@ All URLs are clean and never end in `.php`.
 | **Strategy Analysis** | Personal strategy builder (style, edge/thesis, reorderable rules, sub-setups), scoreboard, win-rate rings, win rate by Asian/London/New York session — rings, session bars and the P&L chart animate in the same way as the Dashboard. |
 | **Edge Matrix** | Highlighted in the sidebar with its own radar icon and EDGE tag. Colour-coded cards, each with a **?** help explanation: compact last-month audit (keep doing / cut out), best trading window with cautious A+ detection, anti-window, **Blow-up probability radar** (last 30 days of win rate, reward:risk, drawdown and position size → chance the account falls by −5/−10/−20/−50% in the next 14 days, with what-if risk buttons), **20% runner audit** (what 20% left open for 2 more hours with a breakeven stop would have done; needs market data, simulated for DEMO DATA), discipline leak and tilt rule. |
 | **Daily Notepad** | “How was your trading day?”, rules followed (yes/partially/no), emotional state, own discipline rating plus a separate system discipline score, key lessons library; voice dictation in English, Russian, Chinese and Portuguese. |
+| **Strategy vs setup** | One rule everywhere: a trade's **strategy** is only the strategy assigned to it; **Setup trigger / tags** is a separate free-text label (searchable, analysed in Edge Matrix as “Setup”) and never counts as a strategy. Trades without a strategy appear as “No strategy assigned”, which is also a Trade Log filter. |
 | **AI Coach** | Short and point-based: a highlighted “Today's focus”, top-3 edge and top-3 leaks in one line each, compact weekly/monthly reviews (score, what worked, what cost money, next actions — max 3 points each, key numbers highlighted), and chat with voice input that answers in at most 6 short bullets plus “Next:” actions (Anthropic Claude or Google Gemini). |
 | **University** | **Trading Foundations** free mini-course (5 modules, beginner → intermediate, about 60 min): 1 the harsh reality (regulator loss statistics, leverage, recovery maths), 2 market fundamentals (stocks, indices, forex, commodities, crypto, candlesticks, market structure, support/resistance, order types), 3 risk management (1–2% rule, position-size formula with a live calculator, R:R, break-even win-rate table, expectancy grid, losing-streak table), 4 trading psychology (8 emotional traps, tilt cycle, a self-check that writes your rules), 5 habits (backtesting, a fillable trading plan, journaling, weekly review, 30-day plan). Each module has diagrams, tables and a quiz; progress and the trading plan are kept in the member's browser. Below it, all playbook strategies in one clean numbered column (01 → 10), each opening a step-by-step explanation (logic, rules, entry, stop, targets), colour-coded by style; **Add to my strategies** copies one into the member's strategy builder. |
 | **Markets** | Free TradingView widgets in five tabs: **live chart** (TradingView Advanced Real-Time Chart with indicators, timeframes, symbol search and the full drawing toolbar; quick buttons for gold, EUR/USD, GBP/USD, Nasdaq, S&P 500 and Bitcoin), **stock heatmap** (S&P 500 / Nasdaq 100), **crypto heatmap**, **market news** and **economic calendar**. Each loads only when its tab is opened and follows the member's theme and language. The Home Hub shows a scrolling **TradingView ticker tape** in its own box below the daily quote. Chart drawings are not saved between visits. |
@@ -199,6 +200,7 @@ On cPanel the defaults are usually right: folders `755`, files `644`.
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Optional. If defined (non-empty) they override the values saved under **Integrations**. |
 | `APP_ENV` | `production` (default) or `development`. |
 | `APP_DEBUG` | `false` on live sites. Errors are then logged to `storage/logs/`, never shown to visitors. |
+| `ANTHROPIC_API_BASE` | Optional. Base URL for Anthropic requests (e.g. an API gateway). Leave undefined to use `https://api.anthropic.com`. |
 
 ### 4.6 Verify the installation
 
@@ -363,7 +365,10 @@ Use **Test connection** after saving. Plans are activated only after a verified 
 
 ### AI Coach & market data setup
 - **AI Coach:** **Members → Integrations → AI Coach**. Choose **Anthropic Claude** (key from console.anthropic.com; default model `claude-opus-5-5`) or **Google Gemini** (key from aistudio.google.com; default `gemini-2.5-flash`). Leave *Model* empty to use the default. Claude requests use adaptive thinking and server-side fallbacks, so a request the main model declines is retried on a fallback model automatically. The coach only receives aggregated statistics for the signed-in member plus their own short journal notes. Without a key, members see “AI Coach requires server configuration.”
-- **Daily limits:** per plan (and the free limit). Counted per member per UTC day.
+- **Daily limits:** per plan (and the free limit). Counted per member per UTC day. Only **answered** questions count: a request that fails (provider error, timeout, connection problem) stores nothing and does not use a message.
+- **When the provider fails:** members see a short, safe message with a reference (e.g. “AI Coach is temporarily unavailable … (Ref: 1A2B3C4D)”), their question stays in the box and **Try again** resends it. Provider and billing details (invalid key, wrong model, *credit balance too low*) are never shown to members: they are written to `storage/logs/app-YYYY-MM.log` under the same reference, and problems only you can fix appear as a red notice on **Members → Integrations → AI Coach** until a **Test connection** succeeds. Test connection sends the same kind of request the coach uses and shows the provider's own message.
+- **Credits are an owner action.** If the provider reports a low credit balance, add credits in the provider's console (for Anthropic: console.anthropic.com → Plans & Billing); no code change can do this.
+- **Timeouts:** each provider request is limited to 90 seconds. The AI request no longer holds the member's session, so their other pages keep loading while the coach is thinking.
 - **Market data (optional):** a [Twelve Data](https://twelvedata.com) key under **Members → Integrations** enables the post-trade Runner Auditor. The terminal never displays market prices.
 
 ### Trade import (members)
@@ -558,6 +563,8 @@ Recommended extras:
 - **Google says `redirect_uri_mismatch`.** The redirect URI in Google Cloud must match exactly the one shown under **Members → Integrations** (including `https` and `www`). `BASE_URL` must match the address members use.
 - **A payment succeeded but the plan is not active.** Check the webhook URL and secret in the gateway dashboard and **Members → Payments**. You can grant the plan manually from the member's page.
 - **AI Coach says it requires server configuration.** Add a provider and API key under **Members → Integrations → AI Coach** and click **Test connection**.
+- **A member reports an error reference.** Every response carries an `X-Request-Id` header and every log line starts with the same `rid`; AI Coach failures also log a `ref`. Search `storage/logs/app-YYYY-MM.log` for the reference. Requests slower than 20 seconds are logged as `Slow request` with the path.
+- **Intermittent 502/504 errors.** If a 502/504 has **no** matching entry in `storage/logs`, it came from the hosting proxy/server (PHP worker limits, LiteSpeed/Apache timeouts, HTTP/2 connection resets) — ask the host for the error log at that time and the gateway timeout value. The application itself never returns 502; provider outages are reported as 503 with `Retry-After`.
 
 ### 404 troubleshooting
 - **Every page except the homepage returns 404.** `mod_rewrite` or `.htaccess` is not active:
@@ -597,10 +604,10 @@ The starter content describes the journzey.ai product honestly and **contains no
 
 | Location | Placeholder |
 |---|---|
-| Testimonials | 3 entries flagged **Demo content**, shown with a visible "Demo" badge. |
+| Testimonials | 3 entries flagged **Demo content**. Demo testimonials are **never shown on the public site**; add genuine, approved reviews with “Demo” unticked to show the section. |
 | Homepage → Statistics and About → statistics block | Disabled or hidden; contain `[Replace]`. |
 | FAQs | Answers containing `[Replace]`: supported brokers, data handling. |
-| Privacy Policy and Terms | Template text with a visible notice to have them legally reviewed. |
+| Privacy Policy, Terms, Security, Risk Disclaimer | **Launch blocker.** Template text with owner placeholders. While any `[Replace…]`-style placeholder or the template notice remains, the page is shown with a “Draft — not yet final” banner, placeholders appear as *[to be completed]*, the page is `noindex`, and the Control Panel dashboard lists it. See `docs/LAUNCH-POLICY-INPUTS.md` for the exact inputs needed. |
 | Contact details, logos, social links, analytics IDs | Empty until you add them. |
 
 ---
