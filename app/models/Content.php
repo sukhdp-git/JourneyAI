@@ -33,7 +33,9 @@ final class Content
 
     public static function testimonials(int $limit = 12): array
     {
-        return Database::all('SELECT * FROM testimonials WHERE status = \'published\' ORDER BY sort_order, id LIMIT :lim', ['lim' => $limit]);
+        // Rows marked "demo" are layout placeholders, never genuine reviews: they stay manageable in the Control
+        // Panel but are not shown publicly (untick "Demo" on a genuine, approved testimonial to publish it).
+        return Database::all('SELECT * FROM testimonials WHERE status = \'published\' AND is_demo = 0 ORDER BY sort_order, id LIMIT :lim', ['lim' => $limit]);
     }
 
     public static function faqs(string $category = '', int $limit = 50): array

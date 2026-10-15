@@ -7,7 +7,8 @@ if (can('integrations') && !$m['google']) $todo[] = ['Google sign-in is not conf
 if (can('integrations') && $m['gateway'] === 'none') $todo[] = ['No payment gateway is configured — members cannot buy plans online (you can still grant plans manually).', 'integrations', 'Set up payments'];
 if (can('integrations') && !$m['ai']) $todo[] = ['AI Coach is not configured — members see “AI Coach requires server configuration.”', 'integrations', 'Add an AI key'];
 if (can('email.smtp') && !$m['smtp_enabled']) $todo[] = ['SMTP email is not enabled — welcome, password reset and receipt emails are not sent.', 'email/smtp', 'Configure SMTP'];
-if (can('testimonials') && $m['demo_testimonials'] > 0) $todo[] = [$m['demo_testimonials'] . ' demo testimonial(s) are published. Replace them with genuine reviews or unpublish them.', 'testimonials', 'Review testimonials'];
+if (can('testimonials') && $m['demo_testimonials'] > 0) $todo[] = [$m['demo_testimonials'] . ' demo testimonial(s) are marked published. Demo rows are never shown on the public site; add genuine, approved reviews (with “Demo” unticked) if you want the section to appear.', 'testimonials', 'Review testimonials'];
+if (can('pages')) foreach ($m['unfinished_pages'] ?? [] as $pg) $todo[] = ['LAUNCH BLOCKER — “' . $pg['title'] . '” still has ' . $pg['count'] . ' unfinished placeholder(s). It is shown publicly as a draft and hidden from search until completed and legally reviewed.', 'pages', 'Edit pages'];
 $u = $m['users'] ?? null;
 ?>
 <div class="page-head">

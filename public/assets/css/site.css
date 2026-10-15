@@ -896,3 +896,8 @@ body { background: radial-gradient(1100px 650px at 85% -10%, color-mix(in srgb, 
 .price-card.is-featured { border-color: color-mix(in srgb, var(--primary) 65%, transparent); background: radial-gradient(420px 200px at 50% 0%, color-mix(in srgb, var(--primary) 16%, transparent), transparent 70%), radial-gradient(300px 160px at 100% 100%, color-mix(in srgb, var(--secondary) 8%, transparent), transparent 70%), linear-gradient(180deg, color-mix(in srgb, var(--surface) 92%, var(--heading) 3%), var(--surface)); }
 .prose blockquote { border-left-color: var(--primary); }
 .announcement { background: linear-gradient(90deg, color-mix(in srgb, var(--primary) 30%, var(--surface)), color-mix(in srgb, var(--secondary) 18%, var(--surface))); }
+
+/* Unfinished CMS page shown as a draft (owner placeholders not yet completed) */
+.draft-banner { margin: 0 0 24px; padding: 14px 18px; border-radius: 12px; border: 1px solid color-mix(in srgb, #f5a524 55%, transparent); background: color-mix(in srgb, #f5a524 12%, transparent); color: var(--text); font-size: 15px; }
+.draft-banner strong { color: var(--heading, inherit); }
+.todo-mark { background: color-mix(in srgb, #f5a524 22%, transparent); color: inherit; padding: 0 4px; border-radius: 4px; font-style: italic; }

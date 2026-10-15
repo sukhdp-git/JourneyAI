@@ -7,7 +7,11 @@ $legal = $page['template'] === 'legal';
 <?php if (trim(strip_tags((string) $page['content'], '<img><iframe>')) !== ''): ?>
 <section class="section section-tight">
   <div class="container<?= $legal ? ' legal-layout' : '' ?>">
-    <article class="prose <?= $legal ? 'legal' : 'narrow center-block' ?>"><?= $page['content'] ?></article>
+    <?php $todo = cms_unfinished((string) $page['content']); ?>
+    <article class="prose <?= $legal ? 'legal' : 'narrow center-block' ?>">
+      <?php if ($todo): ?><div class="draft-banner" role="note"><strong>Draft — not yet final.</strong> This page is still being completed and reviewed. Sections marked “to be completed” are pending. For questions, use the <a href="<?= e(url('/contact')) ?>">contact page</a>.</div><?php endif; ?>
+      <?= $todo ? cms_draft_render((string) $page['content']) : $page['content'] ?>
+    </article>
   </div>
 </section>
 <?php endif; ?>

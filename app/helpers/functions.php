@@ -383,3 +383,26 @@ function coach_text(?string $text): string
 {
     return preg_replace('/\*\*(.+?)\*\*/s', '<mark>$1</mark>', e($text)) ?? e($text);
 }
+
+/**
+ * Unfinished-content markers in CMS HTML: owner placeholders such as "[Replace with your registered company
+ * name and address.]" and the "Template text" notice shipped with the starter legal pages.
+ * @return string[] the placeholder texts found (empty = no markers)
+ */
+function cms_unfinished(string $html): array
+{
+    preg_match_all('/\[(?:Replace|State|Describe|Add|Insert|Have this|To be completed|TODO)\b[^\]]{0,240}\]/i', strip_tags($html), $m);
+    $found = array_values(array_unique($m[0]));
+    if (preg_match('/<p class="notice"><strong>Template text\.<\/strong>/i', $html)) {
+        array_unshift($found, 'Template notice: "Template text … reviewed by a qualified professional before launch"');
+    }
+    return $found;
+}
+
+/** Public rendering of an unfinished page: drops the internal template instruction and marks each placeholder. */
+function cms_draft_render(string $html): string
+{
+    $html = preg_replace('/<p class="notice"><strong>Template text\.<\/strong>.*?<\/p>/is', '', $html) ?? $html;
+    return preg_replace('/\[(?:Replace|State|Describe|Add|Insert|Have this|To be completed|TODO)\b[^\]<]{0,240}\]/i', '<mark class="todo-mark">[to be completed]</mark>', $html) ?? $html;
+}
+

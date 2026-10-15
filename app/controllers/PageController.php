@@ -41,7 +41,7 @@ final class PageController extends Controller
             'description' => $page['meta_description'] ?: ($page['hero_subtitle'] ?: excerpt($page['content'])),
             'image' => $page['og_image'] ?: $page['featured_image'],
             'canonical' => $page['canonical_url'] ?: null,
-            'noindex' => (bool) $page['noindex'],
+            'noindex' => (bool) $page['noindex'] || cms_unfinished((string) $page['content']) !== [], // drafts stay out of search results
             'path' => '/' . $page['slug'],
         ]);
     }

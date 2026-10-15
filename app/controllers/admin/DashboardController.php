@@ -55,6 +55,12 @@ final class DashboardController extends AdminController
         $m['ai'] = AiCoach::configured();
         $m['market'] = MarketData::configured();
         $m['demo_testimonials'] = (int) Database::value("SELECT COUNT(*) FROM testimonials WHERE is_demo = 1 AND status = 'published'");
+        $m['unfinished_pages'] = [];
+        foreach (Database::all("SELECT title, slug, content FROM pages WHERE status = 'published'") as $pg) {
+            if ($n = count(cms_unfinished((string) $pg['content']))) {
+                $m['unfinished_pages'][] = ['title' => $pg['title'], 'slug' => $pg['slug'], 'count' => $n];
+            }
+        }
         $m['activity'] = Auth::can('logs') ? Database::all('SELECT l.action, l.module, l.details, l.created_at, a.name FROM activity_logs l LEFT JOIN admins a ON a.id = l.admin_id ORDER BY l.id DESC LIMIT 6') : [];
         $this->render('dashboard', ['m' => $m, 'canMembers' => $members], 'Dashboard', [['Dashboard', null]]);
     }
