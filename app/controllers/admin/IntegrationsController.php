@@ -118,6 +118,9 @@ final class IntegrationsController extends AdminController
             'google' => GoogleAuth::configured() ? ['ok' => true, 'message' => 'Client ID and secret are saved. Use “Continue with Google” on /login to complete a real sign-in test.'] : ['ok' => false, 'message' => 'Save the Google client ID and client secret first.'],
             default => ['ok' => false, 'message' => 'Unknown integration.'],
         };
+        if ($which === 'ai' && $r['ok']) {
+            Settings::save(['ai_last_error' => ''], 'ai');
+        }
         Activity::log('test', 'integrations', null, $which . ': ' . ($r['ok'] ? 'ok' : 'failed'));
         Response::json(['ok' => $r['ok'], 'message' => $r['message']]);
     }

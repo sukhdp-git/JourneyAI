@@ -14,7 +14,10 @@
     if (!(data instanceof FormData)) Object.keys(data || {}).forEach(function (k) { fd.append(k, data[k]); });
     fd.append('_csrf', csrf);
     return fetch(url, { method: 'POST', body: fd, credentials: 'same-origin', headers: { 'X-CSRF-Token': csrf, 'X-Requested-With': 'XMLHttpRequest', Accept: 'application/json' } })
-      .then(function (r) { return r.json().catch(function () { return { ok: false, error: 'Unexpected server response (' + r.status + ').' }; }).then(function (j) { if (r.status === 401) location.href = '/login'; return j; }); });
+      .then(function (r) { return r.json().catch(function () { return { ok: false, httpStatus: r.status, error: r.status >= 500 ? 'The server did not respond properly (HTTP ' + r.status + '). Nothing was changed by this response — please try again.' : 'Unexpected server response (HTTP ' + r.status + ').' }; }).then(function (j) { if (r.status === 401) location.href = '/login'; return j; }); },
+        // Network failure (offline, connection reset, HTTP/2 stream closed): resolve with an error instead of rejecting,
+        // so callers always leave their loading state.
+        function () { return { ok: false, network: true, error: 'Connection problem — the request did not complete. Check your connection and try again.' }; });
   }
   window.tmPost = post;
 
@@ -138,18 +141,30 @@
     var add = function (role, text, meta) { var m = txt('div', 'msg ' + role); setCoachText(m, text); if (meta) m.appendChild(txt('small', '', meta)); log.appendChild(m); log.scrollTop = log.scrollHeight; return m; };
     $$('[data-prompt]').forEach(function (b) { b.addEventListener('click', function () { ta.value = b.dataset.prompt; ta.focus(); }); });
     ta.addEventListener('keydown', function (e) { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) chat.requestSubmit(); });
-    chat.addEventListener('submit', function (e) {
-      e.preventDefault();
-      var q = ta.value.trim(); if (!q) return;
-      add('user', q); ta.value = '';
-      var wait = add('assistant', 'Analysing your journal…'); var btn = $('[type=submit]', chat); btn.classList.add('busy');
+    var sending = false;
+    var ask = function (q) {
+      if (sending) return; sending = true;
+      var mine = add('user', q); ta.value = '';
+      var wait = add('assistant', 'Analysing your journal…'); var btn = $('[type=submit]', chat); btn.classList.add('busy'); btn.disabled = true;
       post(base + '/coach/send', { message: q, conversation_id: chat.dataset.conversation || '', lang: ($('[name=lang]', chat) || {}).value || 'en' }).then(function (r) {
-        btn.classList.remove('busy'); wait.remove();
-        if (!r.ok) { add('assistant', r.error || 'AI Coach is unavailable right now. Your journal and analytics remain available.'); return; }
+        sending = false; btn.classList.remove('busy'); btn.disabled = false; wait.remove();
+        if (!r.ok) {
+          // Keep the question: put it back in the box and offer an explicit retry. Failed attempts do not use a daily message.
+          mine.remove(); if (!ta.value) ta.value = q;
+          var err = add('assistant error', r.error || 'AI Coach is unavailable right now. Your journal and analytics remain available.');
+          err.setAttribute('role', 'alert');
+          if (r.retryable !== false && !r.upgrade) {
+            var again = txt('button', 'tm-btn tm-btn-sm', 'Try again'); again.type = 'button';
+            again.addEventListener('click', function () { err.remove(); ask(ta.value.trim() || q); });
+            err.appendChild(d.createElement('br')); err.appendChild(again);
+          }
+          return;
+        }
         add('assistant', r.reply, r.meta); if (r.conversation_id && !chat.dataset.conversation) { chat.dataset.conversation = r.conversation_id; history.replaceState(null, '', base + '/coach/' + r.conversation_id); }
         if (r.remaining !== undefined) { var rem = $('[data-ai-remaining]'); if (rem) rem.textContent = r.remaining; }
       });
-    });
+    };
+    chat.addEventListener('submit', function (e) { e.preventDefault(); var q = ta.value.trim(); if (q) ask(q); });
   }
   $$('[data-review]').forEach(function (b) {
     b.addEventListener('click', function () {

@@ -1573,3 +1573,6 @@ body.tm { background: radial-gradient(1000px 520px at 92% -12%, var(--glow-1), t
 .wk-open:disabled { opacity: .55; cursor: not-allowed; }
 .wk-pick { margin: 4px 0 8px; } .wk-pick select { width: 100%; }
 .wk-modal canvas.is-loading { opacity: .45; transition: opacity var(--t-fast); }
+/* AI Coach: failed request (question is kept in the box; "Try again" resends it) */
+.chat .msg.error { border-color: color-mix(in srgb, var(--neg) 45%, var(--line)); background: color-mix(in srgb, var(--neg) 8%, var(--panel-2)); }
+.chat .msg.error .tm-btn { margin-top: 8px; }

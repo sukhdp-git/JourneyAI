@@ -88,6 +88,17 @@ final class CoachController extends TerminalController
         }
     }
 
+    /**
+     * Provider failure: nothing is stored, so the attempt does not use a daily message (the quota counts saved
+     * questions). 503 + Retry-After instead of 502 so it cannot be confused with a gateway/proxy failure.
+     */
+    private function unavailable(array $res): never
+    {
+        $retry = ['busy' => 60, 'timeout' => 30, 'network' => 60, 'upstream' => 120][$res['kind'] ?? ''] ?? 300;
+        header('Retry-After: ' . $retry);
+        Response::json(['ok' => false, 'error' => $res['error'] ?? t('ai.unavailable'), 'retryable' => ($res['kind'] ?? '') !== 'refusal', 'ref' => $res['ref'] ?? null], ($res['kind'] ?? '') === 'refusal' ? 422 : 503);
+    }
+
     private function langLine(string $lang): string
     {
         $lang = isset(Domain::LANGUAGES[$lang]) ? $lang : 'en';
@@ -127,7 +138,7 @@ final class CoachController extends TerminalController
 
         $res = AiCoach::complete($this->context((string) $req->post('lang', $this->m['language'])), $messages);
         if (!$res['ok']) {
-            Response::json(['ok' => false, 'error' => $res['error'] ?? t('ai.unavailable')], 502);
+            $this->unavailable($res);
         }
         $convId = Database::transaction(function () use ($conv, $text, $res) {
             $cid = $conv ? (int) $conv['id'] : Database::insert('ai_conversations', ['user_id' => $this->uid, 'title' => mb_strimwidth($text, 0, 80, '…')]);
@@ -150,7 +161,7 @@ final class CoachController extends TerminalController
         // The review prompt is fixed server-side; it counts toward the daily limit like a chat message.
         $res = AiCoach::complete($this->context((string) $req->post('lang', $this->m['language']), $from, $to, $label), [['role' => 'user', 'content' => $prompt]]);
         if (!$res['ok']) {
-            Response::json(['ok' => false, 'error' => $res['error'] ?? t('ai.unavailable')], 502);
+            $this->unavailable($res);
         }
         Database::transaction(function () use ($period, $label, $prompt, $res) {
             $cid = Database::insert('ai_conversations', ['user_id' => $this->uid, 'title' => ucfirst($period) . ' review · ' . $label]);

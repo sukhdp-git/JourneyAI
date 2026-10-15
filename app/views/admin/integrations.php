@@ -64,6 +64,9 @@ $test = fn (string $which, string $label = 'Test connection') => '<button type="
       <?= $fld(['name' => 'ai_model', 'label' => 'Model (optional)', 'type' => 'text', 'width' => 'half', 'help' => 'Default: claude-opus-5-5 (Anthropic) or gemini-2.5-flash (Gemini).']) ?>
       <?= $secret('ai_api_key', 'API key', 'Anthropic: console.anthropic.com → API keys. Gemini: aistudio.google.com → Get API key.') ?>
     </div>
+    <?php $aiErr = json_decode(setting('ai_last_error'), true); if (is_array($aiErr) && !empty($aiErr['msg'])): ?>
+    <div class="alert alert-error" role="status"><strong>Last AI Coach failure needing your action</strong> (<?= e($aiErr['at']) ?> UTC, ref <?= e($aiErr['ref']) ?>): <?= e($aiErr['msg']) ?><br><span class="small">Members were shown a general “temporarily unavailable” message. Fix the cause (for example add provider credits or correct the key/model), then use Test connection — a successful test clears this notice.</span></div>
+    <?php endif; ?>
     <div class="form-foot"><?= $test('ai') ?></div>
   </section>
 

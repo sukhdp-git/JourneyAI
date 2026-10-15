@@ -50,29 +50,42 @@ TXT;
 
     /**
      * @param array<int, array{role: string, content: string}> $messages alternating user/assistant, ending with user
-     * @return array{ok: bool, text: string, model: string, error: ?string}
+     * @return array{ok: bool, text: string, model: string, error: ?string, kind?: string, ref?: string}
      */
     public static function complete(string $context, array $messages, int $maxTokens = 8000): array
     {
         $provider = self::provider();
         if ($provider === 'none') {
-            return ['ok' => false, 'text' => '', 'model' => '', 'error' => t('ai.not_configured')];
+            return ['ok' => false, 'text' => '', 'model' => '', 'error' => t('ai.not_configured'), 'kind' => 'config'];
         }
-        @set_time_limit(180);
+        @set_time_limit(self::TIMEOUT + 30);
         return $provider === 'gemini'
             ? self::gemini(secret_setting('ai_api_key'), self::model(), $context, $messages, $maxTokens)
             : self::anthropic(secret_setting('ai_api_key'), self::model(), $context, $messages, $maxTokens);
     }
 
-    /** Small live request for the Control Panel "Test connection" button. */
+    /**
+     * Live request for the Control Panel "Test connection" button. It sends the same request shape as the
+     * AI Coach (thinking, effort, fallbacks) so a model or configuration problem shows up here, and it returns
+     * the provider's own diagnostic text — this message is shown to the operator only, never to members.
+     */
     public static function test(string $provider, string $key, string $model): array
     {
         $model = $model !== '' ? $model : (self::DEFAULT_MODELS[$provider] ?? '');
         $r = $provider === 'gemini'
-            ? self::gemini($key, $model, 'Connection test.', [['role' => 'user', 'content' => 'Reply with OK.']], 16, true)
-            : self::anthropic($key, $model, 'Connection test.', [['role' => 'user', 'content' => 'Reply with OK.']], 16, true);
+            ? self::gemini($key, $model, 'Connection test.', [['role' => 'user', 'content' => 'Reply with OK.']], 256, true)
+            : self::anthropic($key, $model, 'Connection test.', [['role' => 'user', 'content' => 'Reply with OK.']], 1024, true);
         return ['ok' => $r['ok'], 'message' => $r['ok'] ? 'Connected (' . $r['model'] . ').' : $r['error']];
     }
+
+    /** Messages endpoint. ANTHROPIC_API_BASE (optional, config.php) points at an API gateway or a local test double. */
+    private static function anthropicUrl(): string
+    {
+        return rtrim(defined('ANTHROPIC_API_BASE') && ANTHROPIC_API_BASE !== '' ? (string) ANTHROPIC_API_BASE : 'https://api.anthropic.com', '/') . '/v1/messages';
+    }
+
+    /** Seconds allowed for one provider request, kept below common hosting gateway limits. */
+    public const TIMEOUT = 90;
 
     private static function anthropic(string $key, string $model, string $context, array $messages, int $maxTokens, bool $test = false): array
     {
@@ -84,37 +97,43 @@ TXT;
                 ['type' => 'text', 'text' => $context],
             ],
             'messages' => $messages,
-        ];
-        if (!$test) {
-            $body['thinking'] = ['type' => 'adaptive'];
-            $body['output_config'] = ['effort' => 'medium'];
+            'thinking' => ['type' => 'adaptive'],
+            'output_config' => ['effort' => $test ? 'low' : 'medium'],
             // Server-side fallback: if the primary model declines a request, the API retries it on a fallback model.
-            $body['fallbacks'] = 'default';
-        }
+            'fallbacks' => 'default',
+        ];
         $headers = ['x-api-key: ' . $key, 'anthropic-version: 2023-06-01', 'content-type: application/json'];
-        [$status, $json, $err] = self::post('https://api.anthropic.com/v1/messages', array_merge($headers, ['anthropic-beta: server-side-fallback-2026-07-01']), $body);
-        if ($err === null && $status === 400 && preg_match('/fallback|beta/i', (string) ($json['error']['message'] ?? ''))) {
-            // The key's account does not accept server-side fallbacks: retry the same request without them.
-            unset($body['fallbacks']);
-            [$status, $json, $err] = self::post('https://api.anthropic.com/v1/messages', $headers, $body);
+        [$status, $json, $err] = self::post(self::anthropicUrl(), array_merge($headers, ['anthropic-beta: server-side-fallback-2026-07-01']), $body);
+        if ($err === null && $status === 400 && preg_match('/fallback|beta|thinking|effort|output_config/i', (string) ($json['error']['message'] ?? ''))) {
+            // The account or the model chosen in the Control Panel does not accept these optional features
+            // (e.g. an older model): retry the same question as a plain request.
+            Logger::info('AI coach: retrying without optional request features', ['detail' => self::providerMessage($json, $key)]);
+            unset($body['fallbacks'], $body['thinking'], $body['output_config']);
+            [$status, $json, $err] = self::post(self::anthropicUrl(), $headers, $body);
         }
         if ($err !== null) {
-            return self::fail('Could not reach the AI provider.', $err);
+            return self::fail(str_starts_with($err, 'timeout') ? 'timeout' : 'network', 'anthropic ' . $err, $test, 'Could not reach the AI provider (' . $err . ').');
         }
         if ($status !== 200) {
+            $type = (string) ($json['error']['type'] ?? '');
             $detail = self::providerMessage($json, $key);
-            $msg = match ($status) {
+            $kind = match (true) {
+                $status === 429 => 'busy',
+                in_array($status, [500, 502, 503, 504, 529], true) || $type === 'overloaded_error' => 'upstream',
+                default => 'config', // 400 (incl. low credit balance), 401, 403, 404, 413: needs the operator
+            };
+            $operator = match ($status) {
                 401 => 'The AI provider rejected the API key.',
                 403 => 'The API key does not have access to this model.',
                 404 => 'The configured AI model was not found. Leave the Model field empty to use the default.',
-                429 => 'The AI provider is rate-limiting requests. Please try again shortly.',
-                529, 503 => 'The AI provider is temporarily overloaded. Please try again shortly.',
-                default => 'The AI provider returned an error (HTTP ' . $status . ')' . ($detail !== '' ? ': ' . $detail : '.'),
-            };
-            return self::fail($msg, 'anthropic http ' . $status . ' ' . ($json['error']['type'] ?? '') . ' ' . $detail);
+                429 => 'The AI provider is rate-limiting requests.',
+                529, 503 => 'The AI provider is temporarily overloaded.',
+                default => 'The AI provider returned HTTP ' . $status . '.',
+            } . ($detail !== '' ? ' Provider says: ' . $detail : '');
+            return self::fail($kind, 'anthropic http ' . $status . ' ' . $type . ' ' . $detail, $test, $operator);
         }
         if (($json['stop_reason'] ?? '') === 'refusal') {
-            return ['ok' => false, 'text' => '', 'model' => (string) ($json['model'] ?? $model), 'error' => 'The AI Coach declined to answer this request. Try rephrasing it around your own trading performance.'];
+            return ['ok' => false, 'text' => '', 'model' => (string) ($json['model'] ?? $model), 'error' => 'The AI Coach declined to answer this request. Try rephrasing it around your own trading performance.', 'kind' => 'refusal'];
         }
         $text = '';
         foreach ($json['content'] ?? [] as $block) {
@@ -124,7 +143,7 @@ TXT;
         }
         $text = trim($text);
         if ($text === '' && !$test) {
-            return self::fail('The AI Coach returned an empty answer. Please try again.', 'anthropic empty ' . ($json['stop_reason'] ?? ''));
+            return self::fail('upstream', 'anthropic empty answer, stop_reason ' . ($json['stop_reason'] ?? ''), $test, 'The model returned an empty answer.');
         }
         return ['ok' => true, 'text' => $text, 'model' => (string) ($json['model'] ?? $model), 'error' => null];
     }
@@ -141,16 +160,12 @@ TXT;
             'generationConfig' => ['maxOutputTokens' => $maxTokens],
         ]);
         if ($err !== null) {
-            return self::fail('Could not reach the AI provider.', $err);
+            return self::fail(str_starts_with($err, 'timeout') ? 'timeout' : 'network', 'gemini ' . $err, $test, 'Could not reach the AI provider (' . $err . ').');
         }
         if ($status !== 200) {
-            $msg = match ($status) {
-                400, 401, 403 => 'The AI provider rejected the API key or request' . (($d = self::providerMessage($json, $key)) !== '' ? ': ' . $d : '.'),
-                404 => 'The configured AI model was not found.',
-                429 => 'The AI provider is rate-limiting requests. Please try again shortly.',
-                default => 'The AI provider returned an error (HTTP ' . $status . ').',
-            };
-            return self::fail($msg, 'gemini http ' . $status);
+            $detail = self::providerMessage($json, $key);
+            $kind = $status === 429 ? 'busy' : ($status >= 500 ? 'upstream' : 'config');
+            return self::fail($kind, 'gemini http ' . $status . ' ' . $detail, $test, 'The AI provider returned HTTP ' . $status . ($detail !== '' ? '. Provider says: ' . $detail : '.'));
         }
         $cand = $json['candidates'][0] ?? null;
         if (!$cand || in_array($cand['finishReason'] ?? '', ['SAFETY', 'PROHIBITED_CONTENT', 'BLOCKLIST'], true)) {
@@ -158,7 +173,7 @@ TXT;
         }
         $text = trim(implode("\n", array_map(fn ($p) => (string) ($p['text'] ?? ''), $cand['content']['parts'] ?? [])));
         if ($text === '' && !$test) {
-            return self::fail('The AI Coach returned an empty answer. Please try again.', 'gemini empty');
+            return self::fail('upstream', 'gemini empty answer', $test, 'The model returned an empty answer.');
         }
         return ['ok' => true, 'text' => $text, 'model' => $model, 'error' => null];
     }
@@ -186,7 +201,7 @@ TXT;
         if ($provider === 'none') {
             return ['ok' => false, 'fields' => [], 'note' => '', 'error' => 'Automatic chart reading is not set up on this site.'];
         }
-        @set_time_limit(90);
+        @set_time_limit(self::TIMEOUT + 30);
         $key = secret_setting('ai_api_key');
         $model = self::model();
         $ask = 'Known instrument symbols: ' . implode(', ', $symbols) . '. Use one of these for "symbol" (e.g. gold = XAUUSD, Nasdaq = NAS100) or null.';
@@ -199,8 +214,8 @@ TXT;
             ]);
             $text = $status === 200 ? implode('', array_map(fn ($p) => (string) ($p['text'] ?? ''), $json['candidates'][0]['content']['parts'] ?? [])) : '';
         } else {
-            [$status, $json, $err] = self::post('https://api.anthropic.com/v1/messages', ['x-api-key: ' . $key, 'anthropic-version: 2023-06-01', 'content-type: application/json'], [
-                'model' => $model, 'max_tokens' => 600, 'system' => self::CHART_PROMPT,
+            [$status, $json, $err] = self::post(self::anthropicUrl(), ['x-api-key: ' . $key, 'anthropic-version: 2023-06-01', 'content-type: application/json'], [
+                'model' => $model, 'max_tokens' => 4000, 'output_config' => ['effort' => 'low'], 'system' => self::CHART_PROMPT,
                 'messages' => [['role' => 'user', 'content' => [
                     ['type' => 'image', 'source' => ['type' => 'base64', 'media_type' => $mime, 'data' => $b64]],
                     ['type' => 'text', 'text' => $ask],
@@ -247,11 +262,11 @@ TXT;
             CURLOPT_POSTFIELDS => json_encode($body, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_CONNECTTIMEOUT => 10,
-            CURLOPT_TIMEOUT => 170,
+            CURLOPT_TIMEOUT => self::TIMEOUT,
         ]);
         $raw = curl_exec($ch);
         $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $err = $raw === false ? curl_error($ch) : null;
+        $err = $raw === false ? (curl_errno($ch) === CURLE_OPERATION_TIMEDOUT ? 'timeout after ' . self::TIMEOUT . 's' : curl_error($ch)) : null;
         curl_close($ch);
         $json = is_string($raw) ? (json_decode($raw, true) ?: []) : [];
         return [$status, $json, $err];
@@ -267,10 +282,30 @@ TXT;
         return mb_strimwidth(trim(strip_tags($m)), 0, 220, '…');
     }
 
-    private static function fail(string $public, string $log): array
+    /**
+     * Logs the provider diagnostics under a short reference and returns a member-safe message. Members never see
+     * provider or billing text (e.g. "credit balance is too low"); the operator sees it in the Control Panel test
+     * and in storage/logs, matched by the reference.
+     * @param string $kind config|busy|upstream|timeout|network
+     */
+    private static function fail(string $kind, string $log, bool $test = false, string $operator = ''): array
     {
-        Logger::error('AI coach request failed', ['detail' => mb_substr($log, 0, 200)]);
-        return ['ok' => false, 'text' => '', 'model' => '', 'error' => $public];
+        $ref = strtoupper(bin2hex(random_bytes(4)));
+        Logger::error('AI coach request failed', ['ref' => $ref, 'kind' => $kind, 'detail' => mb_substr($log, 0, 300)]);
+        if (!$test && $kind === 'config') {
+            // Problems only the operator can fix (key, model, billing/credits) are shown on Integrations.
+            try {
+                \App\Core\Settings::save(['ai_last_error' => json_encode(['at' => gmdate('Y-m-d H:i'), 'ref' => $ref, 'msg' => mb_substr($operator, 0, 300)])], 'ai');
+            } catch (\Throwable) {
+            }
+        }
+        $public = match ($kind) {
+            'busy' => 'AI Coach is busy right now. Please try again in a minute.',
+            'timeout' => 'AI Coach took too long to answer. Please try again.',
+            'network', 'upstream' => 'AI Coach is temporarily unavailable. Please try again in a few minutes.',
+            default => 'AI Coach is temporarily unavailable. Your journal and analytics still work — please try again later.',
+        };
+        return ['ok' => false, 'text' => '', 'model' => '', 'error' => $test ? ($operator !== '' ? $operator : $public) : $public . ' (Ref: ' . $ref . ')', 'kind' => $kind, 'ref' => $ref];
     }
 
     // ------------------------------------------------------------------ context
