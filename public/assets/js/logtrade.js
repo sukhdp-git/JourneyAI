@@ -133,8 +133,48 @@
   function sym(c) { return { USD: '$', EUR: '€', GBP: '£', JPY: '¥', INR: '₹', AUD: 'A$', CAD: 'C$', SGD: 'S$' }[c] || (c + ' '); }
   function money(v, c, sign) { var s = sym(c) + Math.abs(v).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); return (v < 0 ? '−' : (sign && v > 0 ? '+' : '')) + s; }
   function num(x) { var v = parseFloat(x.value); return isNaN(v) ? null : v; }
+  // Same rules as the server (Ledger::validate) so the preview never shows numbers for a trade that cannot be saved.
+  // Empty optional fields (exit = open trade, stop, take profit) stay valid; required fields are checked on save.
+  var FIELDS = [['entry', 'entry_price'], ['exit', 'exit_price'], ['stop', 'stop_loss'], ['tp', 'take_profit'], ['lots', 'lot_size']];
+  function raw(x) { return x ? String(x.value).trim() : ''; }
+  function validate(side) {
+    var e = {}, v = {};
+    FIELDS.forEach(function (f) { var t = raw(el[f[0]]); v[f[0]] = t === '' ? null : (isFinite(+t) ? +t : NaN); });
+    if (v.entry !== null && !(v.entry > 0)) e.entry = 'Enter a positive entry price.';
+    if (v.exit !== null && !(v.exit > 0)) e.exit = 'Enter a valid exit price.';
+    if (v.stop !== null && !(v.stop > 0)) e.stop = 'Enter a valid stop loss.';
+    if (v.tp !== null && !(v.tp > 0)) e.tp = 'Enter a valid take profit.';
+    if (v.lots !== null && !(v.lots > 0 && v.lots <= 1000000)) e.lots = 'Enter a positive lot size.';
+    if (!Object.keys(e).length && v.stop !== null && v.entry !== null) {
+      if (v.stop === v.entry) e.stop = 'Stop loss cannot equal entry.';
+      else if (side === 1 && v.stop > v.entry) e.stop = 'A long stop loss must be below entry.';
+      else if (side === -1 && v.stop < v.entry) e.stop = 'A short stop loss must be above entry.';
+    }
+    FIELDS.forEach(function (f) {
+      var input = el[f[0]]; if (!input) return;
+      var box = input.closest('.f'), id = 'cerr-' + f[1], p = d.getElementById(id);
+      if (e[f[0]]) {
+        if (!p) { p = d.createElement('p'); p.className = 'field-error'; p.id = id; box.appendChild(p); }
+        p.textContent = e[f[0]]; input.setAttribute('aria-invalid', 'true');
+        input.setAttribute('aria-describedby', id); box.classList.add('has-error');
+      } else {
+        if (p) p.remove();
+        if (!d.getElementById('err-' + f[1])) { input.removeAttribute('aria-invalid'); input.removeAttribute('aria-describedby'); box.classList.remove('has-error'); }
+      }
+    });
+    return e;
+  }
+  // A server-side error for a field is stale once the member edits that field.
+  FIELDS.forEach(function (f) { var input = el[f[0]]; if (input) input.addEventListener('input', function () { var p = d.getElementById('err-' + f[1]); if (p) { p.remove(); input.closest('.f').classList.remove('has-error'); } }); });
   function calc() {
     var s = resolveSym(el.symbol.value), sp = specs[s];
+    var bad = validate(($('input[name=side]:checked') || {}).value === 'SHORT' ? -1 : 1);
+    if (Object.keys(bad).length) {
+      gold.hidden = !(s && /^XAU/.test(s));
+      out.risk.textContent = '—'; out.rr.textContent = '—'; out.pnl.textContent = '—';
+      out.pnl.classList.remove('up', 'down'); out.pnlLabel.textContent = 'Fix the highlighted fields to see P&L';
+      return;
+    }
     gold.hidden = !(s && /^XAU/.test(s));
     var side = ($('input[name=side]:checked') || {}).value === 'SHORT' ? -1 : 1;
     var entry = num(el.entry), exit = num(el.exit), stop = num(el.stop), tp = num(el.tp), lots = num(el.lots), conv = null;
