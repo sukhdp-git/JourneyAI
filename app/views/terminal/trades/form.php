@@ -42,7 +42,7 @@ $mini = fn (string $field, string $label) => '<button type="button" class="lt-mi
 if ($editing && $t['pnl'] !== null) {
     $fmt = fn ($x) => Instruments::format($t['symbol'], $x);
     $share = ['id' => (int) $t['id'], 'symbol' => $t['symbol'], 'side' => $t['side'], 'pnl' => money($t['pnl'], $acc['currency'], true), 'positive' => (float) $t['pnl'] >= 0, 'r' => $t['rr'] === null ? '' : ((float) $t['rr'] > 0 ? '+' : '') . number_format((float) $t['rr'], 2) . 'R',
-        'entry' => $fmt($t['entry_price']), 'exit' => $fmt($t['exit_price']), 'stop' => $fmt($t['stop_loss']), 'lots' => rtrim(rtrim((string) $t['lot_size'], '0'), '.'), 'strategy' => $t['strategy_name'] ?: ($t['setup_tag'] ?: '—'),
+        'entry' => $fmt($t['entry_price']), 'exit' => $fmt($t['exit_price']), 'stop' => $fmt($t['stop_loss']), 'lots' => rtrim(rtrim((string) $t['lot_size'], '0'), '.'), 'strategy' => $t['strategy_name'] ?: '—',
         'session' => Domain::SESSIONS[$t['session']] ?? '—', 'brand' => setting('site_name', 'journzey.ai'), 'demo' => (bool) $acc['has_demo_data']];
 }
 ?>

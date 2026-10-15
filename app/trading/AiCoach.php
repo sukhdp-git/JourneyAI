@@ -348,7 +348,7 @@ TXT;
             $lines[] = 'Max drawdown in period: ' . money($eq['max_dd'], $cur) . ' (' . number_format($eq['max_dd_pct'], 2) . '%)';
             $lines[] = '';
             foreach ([
-                $group('By strategy', Analytics::groupBy($trades, fn ($t) => $t['strategy_name'] ?: ($t['setup_tag'] ?: 'Untagged'))),
+                $group('By strategy', Analytics::groupBy($trades, [Domain::class, 'strategyLabel'])),
                 $group('By instrument', Analytics::groupBy($trades, fn ($t) => $t['symbol'])),
                 $group('By session (Asian / London / New York, DST-aware)', Analytics::groupBy($trades, fn ($t) => Domain::SESSION_BUCKETS[Sessions::bucket($t['executed_at'])])),
                 $group('By trading hour (' . $tz . ')', Analytics::byHour($trades, $tz), 24),

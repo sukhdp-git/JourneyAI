@@ -35,7 +35,7 @@ final class InsightsController extends TerminalController
             'byWeekday' => $bars(Analytics::byWeekday($trades, $this->tz)),
             'bySession' => $bars(Analytics::groupBy($trades, fn ($t) => $t['session']), fn ($k) => Domain::SESSIONS[$k] ?? $k),
             'bySymbol' => $bars(Analytics::groupBy($trades, fn ($t) => $t['symbol'])),
-            'byStrategy' => $bars(Analytics::groupBy($trades, fn ($t) => $t['strategy_name'] ?: ($t['setup_tag'] ?: 'Unassigned'))),
+            'byStrategy' => $bars(Analytics::groupBy($trades, [Domain::class, 'strategyLabel'])),
         ], 'Dashboard', 'dashboard');
     }
 

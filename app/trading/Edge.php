@@ -23,7 +23,7 @@ final class Edge
     // ------------------------------------------------------------------ helpers
     public static function strategyOf(array $t): string
     {
-        return $t['strategy_name'] ?: ($t['setup_tag'] ?: 'Unassigned');
+        return Domain::strategyLabel($t);
     }
 
     public static function sessionOf(array $t): string
@@ -450,7 +450,7 @@ final class Edge
 
     public static function windowName(array $w): string
     {
-        return implode(' · ', array_filter([$w['session_label'] . ' session', $w['symbol'], $w['strategy'] && $w['strategy'] !== 'Unassigned' ? $w['strategy'] : null]));
+        return implode(' · ', array_filter([$w['session_label'] . ' session', $w['symbol'], $w['strategy'] && $w['strategy'] !== Domain::NO_STRATEGY ? $w['strategy'] : null]));
     }
 
     /** Monday-start week / calendar month ranges in the member's timezone. */

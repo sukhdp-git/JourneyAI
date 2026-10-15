@@ -94,10 +94,10 @@ final class WeeklyBrief
             if ($best) {
                 $do[] = ['text' => 'Focus on the ' . (Domain::SESSIONS[$best['key']] ?? $best['key']) . ' session', 'stat' => $money($best['s']['net']) . ' · ' . pct($best['s']['win_rate'], 0) . ' win'];
             }
-            $setups = Analytics::groupBy($trades, fn ($t) => $t['strategy_name'] ?: ($t['setup_tag'] ?: null));
+            $setups = Analytics::groupBy($trades, fn ($t) => $t['strategy_name'] ?: null);
             foreach ($setups as $g) {
                 if ($g['key'] && $g['s']['trades'] >= 2 && $g['s']['net'] > 0) {
-                    $do[] = ['text' => 'Keep trading your “' . $g['key'] . '” setup', 'stat' => $money($g['s']['net']) . ' · ' . $g['s']['trades'] . ' trades'];
+                    $do[] = ['text' => 'Keep trading your “' . $g['key'] . '” strategy', 'stat' => $money($g['s']['net']) . ' · ' . $g['s']['trades'] . ' trades'];
                     break;
                 }
             }

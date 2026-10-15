@@ -6,6 +6,18 @@ namespace App\Trading;
 /** Domain enumerations and reference data shared by the terminal, analytics and imports. */
 final class Domain
 {
+    /**
+     * Classification rule used everywhere (trade details, ledger, filters, dashboard, Strategy Analysis, Edge Matrix,
+     * AI Coach, cards): a trade's strategy is only the strategy assigned to it. The free-text "Setup trigger / tags"
+     * field is a separate label and never stands in for a strategy.
+     */
+    public const NO_STRATEGY = 'No strategy assigned';
+
+    public static function strategyLabel(array $t): string
+    {
+        return (string) ($t['strategy_name'] ?? '') !== '' ? (string) $t['strategy_name'] : self::NO_STRATEGY;
+    }
+
     public const ASSET_CLASSES = ['METALS' => 'Gold & metals', 'FOREX' => 'Forex', 'INDICES' => 'Indices', 'CRYPTO' => 'Crypto', 'COMMODITIES' => 'Commodities'];
     public const SIDES = ['LONG', 'SHORT'];
     public const SESSIONS = ['ASIA' => 'Asia', 'LONDON' => 'London', 'LONDON_NY_OVERLAP' => 'London/NY overlap', 'NEW_YORK' => 'New York', 'NY_PM' => 'NY PM', 'OFF_HOURS' => 'Off-hours'];

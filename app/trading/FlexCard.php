@@ -63,7 +63,7 @@ final class FlexCard
         $payload = [
             'kind' => 'trade', 'date' => $local->format('Y-m-d'), 'date_label' => $local->format('D, j M Y · H:i'), 'name' => $first, 'currency' => $acc['currency'],
             'symbol' => $t['symbol'], 'side' => $t['side'], 'pnl' => round((float) $t['pnl'], 2), 'r' => $t['rr'] === null ? null : round((float) $t['rr'], 2),
-            'entry' => $num($t['entry_price']), 'exit' => $num($t['exit_price']), 'lots' => $num($t['lot_size']), 'strategy' => $t['strategy_name'] ?: ($t['setup_tag'] ?: null),
+            'entry' => $num($t['entry_price']), 'exit' => $num($t['exit_price']), 'lots' => $num($t['lot_size']), 'strategy' => $t['strategy_name'] ?: null,
             'session' => Domain::SESSIONS[$t['session'] ?? ''] ?? null,
             'demo' => (int) $acc['has_demo_data'] === 1, 'account_type' => (int) $acc['is_demo'] ? 'Demo account' : 'Live account',
         ];
