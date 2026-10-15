@@ -57,6 +57,20 @@ final class MemberAuthController
     {
         Csrf::verify($req);
         $email = mb_substr($req->str('email', 190), 0, 190);
+        $errors = [];
+        if (trim($email) === '') {
+            $errors['email'] = 'Enter your email address.';
+        } elseif (!filter_var(trim($email), FILTER_VALIDATE_EMAIL)) {
+            $errors['email'] = 'Enter a valid email address.';
+        }
+        if ((string) ($_POST['password'] ?? '') === '') {
+            $errors['password'] = 'Enter your password.';
+        }
+        if ($errors) {
+            // Missing/malformed input is a form error, not a failed sign-in: no credential check, no lockout count.
+            Session::withErrors($errors, ['email' => $email]);
+            Response::redirect('/login');
+        }
         $result = Members::attempt($email, (string) ($_POST['password'] ?? ''), $req);
         if (is_string($result)) {
             Session::withErrors([], ['email' => $email]);
@@ -189,7 +203,13 @@ final class MemberAuthController
     {
         Csrf::verify($req);
         $email = trim((string) $req->post('email', ''));
-        if (filter_var($email, FILTER_VALIDATE_EMAIL) && RateLimiter::hit('member-reset:' . $req->ip(), 5, 3600)) {
+        if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 190) {
+            // Invalid input: say so and send nothing. Valid addresses always get the same neutral message below,
+            // whether or not an account exists (no account enumeration).
+            Session::withErrors(['email' => $email === '' ? 'Enter your email address.' : 'Enter a valid email address.'], ['email' => $email]);
+            Response::redirect('/forgot-password');
+        }
+        if (RateLimiter::hit('member-reset:' . $req->ip(), 5, 3600)) {
             Members::sendReset($email, $req);
         }
         Session::flash('success', 'If an account exists for that email, a reset link is on its way. It expires in 60 minutes.');

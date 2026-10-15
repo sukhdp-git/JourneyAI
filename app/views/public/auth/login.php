@@ -7,9 +7,10 @@
   <form method="post" action="<?= e(url('/login')) ?>" class="form" data-validate novalidate>
     <?= csrf_field() ?>
     <?= App\Core\View::partial('public/partials/field', ['name' => 'email', 'label' => 'Email', 'type' => 'email', 'required' => true, 'autocomplete' => 'email', 'max' => 190]) ?>
-    <div class="field">
-      <label for="f-password">Password <a class="auth-link-right" href="<?= e(url('/forgot-password')) ?>">Forgot password?</a></label>
-      <input id="f-password" type="password" name="password" required autocomplete="current-password" maxlength="200">
+    <div class="field<?= has_error('password') ? ' has-error' : '' ?>">
+      <label for="f-password">Password <span class="req" aria-hidden="true">*</span> <a class="auth-link-right" href="<?= e(url('/forgot-password')) ?>">Forgot password?</a></label>
+      <input id="f-password" type="password" name="password" required autocomplete="current-password" maxlength="200"<?= has_error('password') ? ' aria-invalid="true" aria-describedby="err-password"' : '' ?>>
+      <?= field_error('password') ?>
     </div>
     <button class="btn btn-primary btn-lg btn-block" type="submit">Sign in</button>
   </form>
