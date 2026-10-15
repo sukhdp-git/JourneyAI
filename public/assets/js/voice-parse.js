@@ -19,6 +19,7 @@
       ar: { u: { 'صفر': 0, 'واحد': 1, 'واحدة': 1, 'أحد': 1, 'احد': 1, 'اثنان': 2, 'اثنين': 2, 'اثنتان': 2, 'اثنا': 2, 'إثنان': 2, 'ثلاثة': 3, 'ثلاث': 3, 'أربعة': 4, 'اربعة': 4, 'أربع': 4, 'اربع': 4, 'خمسة': 5, 'خمس': 5, 'ستة': 6, 'ست': 6, 'سبعة': 7, 'سبع': 7, 'ثمانية': 8, 'ثماني': 8, 'ثمان': 8, 'تسعة': 9, 'تسع': 9, 'عشرة': 10, 'عشر': 10, 'عشرون': 20, 'عشرين': 20, 'ثلاثون': 30, 'ثلاثين': 30, 'أربعون': 40, 'أربعين': 40, 'اربعين': 40, 'خمسون': 50, 'خمسين': 50, 'ستون': 60, 'ستين': 60, 'سبعون': 70, 'سبعين': 70, 'ثمانون': 80, 'ثمانين': 80, 'تسعون': 90, 'تسعين': 90, 'مئتان': 200, 'مئتين': 200, 'مائتان': 200, 'مائتين': 200, 'ثلاثمائة': 300, 'ثلاثمئة': 300, 'أربعمائة': 400, 'أربعمئة': 400, 'اربعمائة': 400, 'خمسمائة': 500, 'خمسمئة': 500, 'ستمائة': 600, 'ستمئة': 600, 'سبعمائة': 700, 'سبعمئة': 700, 'ثمانمائة': 800, 'ثمانمئة': 800, 'تسعمائة': 900, 'تسعمئة': 900 },
         h: ['مائة', 'مئة'], m: { 'ألف': 1e3, 'الف': 1e3, 'آلاف': 1e3, 'الاف': 1e3, 'ألفا': 1e3, 'الفا': 1e3, 'ألفان': 2e3, 'ألفين': 2e3, 'الفين': 2e3, 'مليون': 1e6 }, p: ['فاصلة', 'نقطة', 'فاصل'], j: [] }
     };
+    var LOTW = /^(lots?|лот|лота|лотов|lote|lotes|लॉट|लोट|لوت|عقد|عقود|micro|mini)$/;
     function wordsToDigits(text, lang) {
       var L = LEX[lang]; if (!L) return text;
       var toks = text.split(/\s+/), out = [], st = null;
@@ -45,11 +46,16 @@
           else { flush(); begin(); st.dig = true; var parts = val.split('.'); st.cur = parseFloat(parts[0]); if (parts[1]) st.dec = parts[1]; }
         } else if (Object.prototype.hasOwnProperty.call(L.u, lw)) {
           var v = L.u[lw]; if (st && st.dig && st.dec === null) flush();   // "2870 one point two five" = two numbers
+          else if (v === 0 && st && st.dec === null && st.total + st.cur > 0) flush();   // "…sixty zero point one five" — zero starts a new number
           begin();
           if (st.dec !== null) { if (v < 10 && !st.grp) st.dec += String(v); else st.grp += v; } else st.cur += v;
         } else if (L.h.indexOf(lw) >= 0 && st && st.dec === null) { st.cur = (st.cur || 1) * 100; }
         else if (Object.prototype.hasOwnProperty.call(L.m, lw) && (!st || st.dec === null)) { begin(); st.total += (st.cur || 1) * L.m[lw]; st.cur = 0; }
-        else if (L.p.indexOf(lw) >= 0 && isNumWord(peek(i + 1)) && (!st || st.dec === null)) { begin(); st.dec = ''; }
+        else if (L.p.indexOf(lw) >= 0 && isNumWord(peek(i + 1)) && (!st || st.dec === null)) {
+          // "exit 2660 point one five lots": a decimal that runs straight into a lot word is the lot size, not part of the price
+          if (st && st.total + st.cur >= 100) { var k = i + 1; while (k < toks.length && isNumWord(peek(k))) k++; if (LOTW.test(peek(k)) && peek(k + 1) !== 'size' && !isNumWord(peek(k + 1))) flush(); }
+          begin(); st.dec = '';
+        }
         else if (L.j.indexOf(lw) >= 0 && st && (Object.prototype.hasOwnProperty.call(L.u, peek(i + 1)) || Object.prototype.hasOwnProperty.call(L.m, peek(i + 1)))) { /* "and" inside a number */ }
         else { used = false; }
         if (!used) { flush(); out.push(w); }
@@ -81,14 +87,21 @@
     function normalize(text, locale) {
       var lang = (locale || 'en-US').slice(0, 2), t = String(text);
       if (lang === 'zh') return zhToDigits(t.replace(/百分之([零〇一二两三四五六七八九十点\d.]+)/g, '$1%')).replace(/\s+%/g, '%').replace(/\s+/g, ' ').trim().toLowerCase();
-      if (lang === 'en') t = t.replace(/\b(a )?half (a )?lots?\b/gi, '0.5 lot').replace(/\ba quarter (of )?(a )?lots?\b/gi, '0.25 lot');
+      // Speech engines write "point one five" as ".15" and sometimes "0. 15" or "015" — all mean 0.15
+      t = t.replace(/(^|[^\d.,])[.,](\d)/g, '$1 0.$2').replace(/\b0[.,]\s+(\d)/g, '0.$1').replace(/(^|[^\d.,:])0(\d{1,3})(?![\d.,:])/g, '$1 0.$2');
+      if (lang === 'en') {
+        t = t.replace(/\b(a )?half (a )?lots?\b/gi, '0.5 lot').replace(/\ba quarter (of )?(a )?lots?\b/gi, '0.25 lot')
+          .replace(/\b(position size|trade size|volume|quantity|qty|contracts?|units)\b/gi, 'lot size').replace(/\bstandard lots?\b/gi, 'lots');
+      }
       if (lang === 'hi') t = t.replace(/[०-९]/g, function (c) { return String('०१२३४५६७८९'.indexOf(c)); }).replace(/।/g, ', ').replace(/आधा\s*(लॉट|लोट)/g, '0.5 लॉट');
       if (lang === 'ar') t = t.replace(/[٠-٩]/g, function (c) { return String('٠١٢٣٤٥٦٧٨٩'.indexOf(c)); }).replace(/٫/g, '.').replace(/،/g, ', ').replace(/ـ/g, '')
         .replace(/نصف\s*(لوت|عقد)/g, '0.5 لوت').replace(/(في\s*ال|بال)(مئة|مائة)|٪/g, ' % ');
       if (lang === 'pt') t = t.replace(/\bpor ?cento\b/gi, ' % ');
       if (lang === 'pt' || lang === 'ru') t = t.replace(/(\d),(\d)/g, '$1.$2');
       else t = t.replace(/(\d),(?=\d{3}\b)/g, '$1');
-      return wordsToDigits(t, lang).toLowerCase();
+      t = wordsToDigits(t, lang).toLowerCase();
+      // "15 micro lots" = 0.15 lots, "3 mini lots" = 0.3 lots
+      return t.replace(/(\d+(?:\.\d+)?)\s*(micro|mini)\s*-?\s*lots?\b/g, function (m, n, k) { return String(+(parseFloat(n) * (k === 'micro' ? 0.01 : 0.1)).toFixed(4)) + ' lots'; });
     }
 
     /* ------------------------------------------------------------------ field extraction */
@@ -97,7 +110,7 @@
       stop: ['stop loss', 'stop-loss', 'stoploss', 'स्टॉप लॉस', 'स्टॉपलॉस', 'स्टॉप', 'وقف الخسارة', 'ستوب لوس', 'ستوب', 'стоп-лосс', 'стоп лосс', 'стоп', '止损', 'stop', 'sl'],
       exit: ['exit price', 'exit', 'closed at', 'close at', 'एग्जिट', 'एग्ज़िट', 'एक्ज़िट', 'एक्जिट', 'निकास', 'سعر الخروج', 'الخروج', 'خروج', 'выход', 'закрыл по', 'закрыл', '出场价', '出场', '平仓', 'saída', 'saida', 'fechei em', 'fechei'],
       tp: ['take profit', 'take-profit', 'target', 'टारगेट', 'लक्ष्य', 'جني الأرباح', 'الهدف', 'هدف', 'тейк-профит', 'тейк', 'цель', '止盈', 'alvo', 'tp'],
-      lots: ['lot size', 'lots', 'lot', 'लॉट', 'लोट', 'لوت', 'عقود', 'عقد', 'лотов', 'лота', 'лот', 'lotes', 'lote']
+      lots: ['lot size', 'lots', 'lot', 'लॉट', 'लोट', 'لوت', 'عقود', 'عقد', 'лотов', 'лота', 'лот', 'lotes', 'lote', 'size']
     };
     var ASSETS = [
       [/\b(gold|xau)\b|золот|黄金|\bouro\b|सोना|सोने|गोल्ड|ذهب/, 'XAUUSD'], [/\b(silver|xag)\b|серебр|白银|\bprata\b|चांदी|चाँदी|सिल्वर|فضة/, 'XAGUSD'],
@@ -169,5 +182,35 @@
     }
     function side(norm) { return pick(SIDES, norm); }
     return { normalize: normalize, extract: extractWith, findAsset: findAsset, toCommand: toCommand, toEnglish: toEnglish, command: command, side: side };
+  };
+
+  /* Shared microphone session. Keeps listening through short pauses (continuous mode) and stops after a quiet
+   * moment, so a whole sentence — entry, stop, exit and lot size — is captured even if the trader pauses.
+   * opts: { lang, continuous, silenceMs, firstMs, maxMs, onInterim(text), onDone(text), onError(code) } → { stop() } */
+  window.jzRecognize = function (o) {
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SR) return null;
+    var rec = new SR(), finals = [], interim = '', tSil = null, tMax = null, ended = false;
+    rec.lang = o.lang || 'en-US'; rec.interimResults = true; rec.continuous = !!o.continuous;
+    function text() { return (finals.join(' ') + (interim ? ' ' + interim : '')).replace(/\s+/g, ' ').trim(); }
+    function stop() { try { rec.stop(); } catch (e) {} }
+    function arm(ms) { clearTimeout(tSil); tSil = setTimeout(stop, ms); }
+    rec.onresult = function (ev) {
+      interim = '';
+      for (var i = ev.resultIndex || 0; i < ev.results.length; i++) {
+        var t = String(ev.results[i][0].transcript || '').trim(); if (!t) continue;
+        if (ev.results[i].isFinal) {
+          var last = finals[finals.length - 1];
+          if (last && t.indexOf(last) === 0) finals[finals.length - 1] = t;        // some Android builds resend the growing sentence
+          else if (!last || last.indexOf(t) !== 0) finals.push(t);
+        } else interim += (interim ? ' ' : '') + t;
+      }
+      if (o.onInterim) o.onInterim(text());
+      if (rec.continuous) arm(o.silenceMs || 2200);
+    };
+    rec.onerror = function (ev) { if (o.onError) o.onError(ev.error); };
+    rec.onend = function () { if (ended) return; ended = true; clearTimeout(tSil); clearTimeout(tMax); if (o.onDone) o.onDone(text()); };
+    try { rec.start(); } catch (e) { ended = true; if (o.onError) o.onError('start-failed'); return null; }
+    if (rec.continuous) { arm(o.firstMs || 8000); tMax = setTimeout(stop, o.maxMs || 30000); }
+    return { stop: stop };
   };
 })();

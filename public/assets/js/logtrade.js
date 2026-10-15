@@ -93,17 +93,18 @@
     if (f[field] === null || f[field] === undefined || f[field] === '') { toast('Not recognised — please try again.', 'error'); return; }
     apply(f, field);
   }
-  function stopRec() { if (rec) { try { rec.stop(); } catch (e) {} } }
+  function stopRec() { if (rec) rec.stop(); }
   function listen(field, btn) {
     if (!SR) { toast('Voice needs Chrome, Edge or Safari — you can type or use the “Try it” examples.', 'error'); return; }
     if (rec) { stopRec(); return; }
-    rec = new SR(); rec.lang = locale; rec.interimResults = true; rec.continuous = false;
-    var finalText = '';
+    var done = function () { rec = null; btn.classList.remove('rec'); btn.setAttribute('aria-pressed', 'false'); listenBadge.hidden = true; };
     btn.classList.add('rec'); btn.setAttribute('aria-pressed', 'true'); listenBadge.hidden = false;
-    rec.onresult = function (ev) { var t = ''; for (var i = 0; i < ev.results.length; i++) { t += ev.results[i][0].transcript; if (ev.results[i].isFinal) finalText = t; } heard.textContent = t; };
-    rec.onerror = function (ev) { if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') toast('Microphone access is blocked — allow it in your browser settings.', 'error'); };
-    rec.onend = function () { rec = null; btn.classList.remove('rec'); btn.setAttribute('aria-pressed', 'false'); listenBadge.hidden = true; if (finalText.trim()) handleSpeech(finalText.trim(), field); };
-    try { rec.start(); } catch (e) { rec = null; btn.classList.remove('rec'); listenBadge.hidden = true; }
+    // The whole-trade mic keeps listening through pauses and stops ~2 s after you finish (or when you tap it again)
+    rec = window.jzRecognize({ lang: locale, continuous: field === 'all', silenceMs: 2200,
+      onInterim: function (t) { heard.textContent = t; },
+      onError: function (code) { if (code === 'not-allowed' || code === 'service-not-allowed') toast('Microphone access is blocked — allow it in your browser settings.', 'error'); },
+      onDone: function (t) { done(); if (t) handleSpeech(t, field); } });
+    if (!rec) done();
   }
   if (!SR) $('[data-lt-unsupported]').hidden = false;
   $$('[data-lt-mic]').forEach(function (b) { b.addEventListener('click', function () { listen(b.dataset.ltMic, b); }); });

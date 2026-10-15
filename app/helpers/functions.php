@@ -74,14 +74,14 @@ function setting(string $key, string $default = ''): string
 
 /**
  * Public-site appearance value. Values that still equal the original shipped defaults resolve to the
- * royal (navy/champagne-gold) design defaults; anything the owner customised in Control Panel → Appearance is used as-is.
+ * brand design defaults (violet → pink gradient, #6541E9 → #FEB2B4); anything the owner customised in Control Panel → Appearance is used as-is.
  */
 function appearance(string $key): string
 {
     static $map = [
-        'color_primary' => ['#7c5cff', '#d8b36a'], 'color_secondary' => ['#22d3ee', '#f0dcaa'], 'color_accent' => ['#34d399', '#34c48c'],
-        'color_text' => ['#c9cfdd', '#d5d2c9'], 'color_heading' => ['#ffffff', '#f7f2e6'], 'color_muted' => ['#8f99ae', '#9aa1b2'],
-        'color_bg' => ['#070a12', '#070b14'], 'color_surface' => ['#0d1220', '#0c1322'], 'color_border' => ['#1c2436', '#1f2b42'],
+        'color_primary' => ['#7c5cff', '#6541e9'], 'color_secondary' => ['#22d3ee', '#feb2b4'], 'color_accent' => ['#34d399', '#34c48c'],
+        'color_text' => ['#c9cfdd', '#dedcec'], 'color_heading' => ['#ffffff', '#faf8ff'], 'color_muted' => ['#8f99ae', '#a19ebf'],
+        'color_bg' => ['#070a12', '#080818'], 'color_surface' => ['#0d1220', '#0e0e22'], 'color_border' => ['#1c2436', '#262448'],
         'font_heading' => ['Space Grotesk', 'Plus Jakarta Sans'], 'font_body' => ['Inter', 'Inter'], 'radius' => ['16', '14'],
         'button_style' => ['pill', 'rounded'], 'heading_weight' => ['600', '600'], 'section_spacing' => ['normal', 'normal'],
     ];

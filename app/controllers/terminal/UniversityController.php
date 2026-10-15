@@ -7,6 +7,7 @@ use App\Core\Database;
 use App\Core\Request;
 use App\Core\Response;
 use App\Models\Learn;
+use App\Trading\Course;
 
 /** journzey.ai University: every playbook strategy explained, for signed-in members. */
 final class UniversityController extends TerminalController
@@ -34,6 +35,22 @@ final class UniversityController extends TerminalController
             'prev' => $all[$pos - 1] ?? null, 'next' => $all[$pos + 1] ?? null,
             'owned' => in_array(mb_substr($s['title'], 0, 80), $this->mine(), true),
         ], $s['short_title'] ?: $s['title'], 'university');
+    }
+
+    /** Trading Foundations course overview. */
+    public function course(Request $req): never
+    {
+        $this->render('course/index', [], Course::TITLE, 'university');
+    }
+
+    /** One course module (views/terminal/course/m{n}.php). */
+    public function module(Request $req): never
+    {
+        $n = Course::find((string) ($req->params['slug'] ?? ''));
+        if ($n === null) {
+            Response::abort(404);
+        }
+        $this->render('course/module', ['n' => $n, 'mod' => Course::MODULES[$n]], 'Module ' . $n . ' · ' . Course::MODULES[$n][2], 'university');
     }
 
     /** Names of the member's own strategies (to show which playbook strategies were already copied). */

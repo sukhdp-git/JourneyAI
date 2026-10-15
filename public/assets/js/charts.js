@@ -32,6 +32,7 @@
   function tip(root) { var t = root.querySelector('.chart-tip'); if (!t) { t = document.createElement('div'); t.className = 'chart-tip'; t.hidden = true; root.appendChild(t); } return t; }
   function setTip(t, title, value, x, y) { t.textContent = ''; var s = document.createElement('strong'); s.textContent = value; t.appendChild(s); t.appendChild(document.createTextNode(title)); t.style.left = x + 'px'; t.style.top = y + 'px'; t.hidden = false; }
 
+  var gradSeq = 0;
   function line(root, data, f) {
     var pts = data.points || data; var w = root.clientWidth || 600, h = +(root.dataset.height || 220), pl = 62, pr = 10, pt = 10, pb = 24;
     root.querySelectorAll('svg').forEach(function (s) { s.remove(); });
@@ -44,11 +45,19 @@
     ticks.forEach(function (t) { el('line', { x1: pl, x2: w - pr, y1: Y(t), y2: Y(t), class: 'grid-l' }, svg); var tx = el('text', { x: pl - 8, y: Y(t) + 3.5, 'text-anchor': 'end', class: 'axis-t' }, svg); tx.textContent = fmt(t, f); });
     if (base !== undefined) el('line', { x1: pl, x2: w - pr, y1: Y(base), y2: Y(base), class: 'zero' }, svg);
     var d = pts.map(function (p, i) { return (i ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(p.y).toFixed(1); }).join(' ');
+    // Brand gradient (violet → pink, left to right) for equity / P&L lines; drawdown keeps its loss colour.
+    var neg = root.dataset.area === 'neg', gid = 'jzg' + (++gradSeq);
+    if (!neg) {
+      var defs = el('defs', {}, svg), lg = el('linearGradient', { id: gid + 's', gradientUnits: 'userSpaceOnUse', x1: pl, y1: 0, x2: w - pr, y2: 0 }, defs);
+      [['0', '#6541e9'], ['.35', '#8a5ddc'], ['.65', '#b17ace'], ['1', '#feb2b4']].forEach(function (s2) { el('stop', { offset: s2[0], 'stop-color': s2[1] }, lg); });
+      var fg = el('linearGradient', { id: gid + 'f', x1: 0, y1: 0, x2: 0, y2: 1 }, defs);
+      el('stop', { offset: '0', 'stop-color': '#8a5ddc', 'stop-opacity': '.32' }, fg); el('stop', { offset: '1', 'stop-color': '#feb2b4', 'stop-opacity': '0' }, fg);
+    }
     if (root.dataset.area) {
       var by = Y(base !== undefined ? base : min);
-      el('path', { d: d + ' L' + X(pts.length - 1).toFixed(1) + ' ' + by + ' L' + X(0).toFixed(1) + ' ' + by + ' Z', class: 'area' + (root.dataset.area === 'neg' ? ' neg' : '') }, svg);
+      el('path', { d: d + ' L' + X(pts.length - 1).toFixed(1) + ' ' + by + ' L' + X(0).toFixed(1) + ' ' + by + ' Z', class: 'area' + (neg ? ' neg' : ''), style: neg ? '' : 'fill: url(#' + gid + 'f); opacity: 1' }, svg);
     }
-    el('path', { d: d, class: 'line', style: root.dataset.area === 'neg' ? 'stroke: var(--bar-neg)' : '' }, svg);
+    el('path', { d: d, class: 'line', style: neg ? 'stroke: var(--bar-neg)' : 'stroke: url(#' + gid + 's)' }, svg);
     // Capital events (deposits / withdrawals) as dots on the curve.
     pts.forEach(function (p, i) { if (p.mark) el('circle', { cx: X(i), cy: Y(p.y), r: 5.5, class: 'mark ' + p.mark }, svg); });
     var nx = Math.min(pts.length, Math.max(2, Math.floor((w - pl) / 110)));

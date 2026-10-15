@@ -9,6 +9,15 @@ $colors = ['SMC' => 'c-violet', 'ICT' => 'c-blue', 'ORDER_FLOW' => 'c-cyan', 'VO
     <h2>The institutional intraday playbook</h2>
     <p><?= count($strategies) ?> strategies built on liquidity, volume and order flow. Read one end to end, add it to your strategies, then trade it in demo and review its numbers after 20–30 trades.</p>
   </header>
+  <a class="uni-course" href="<?= e(url('/terminal/university/course')) ?>">
+    <div>
+      <span class="uni-kicker"><?= icon('sparkles', 'icon icon-xs') ?> New · free mini-course · <?= \App\Trading\Course::minutes() ?> min</span>
+      <h3><?= e(\App\Trading\Course::TITLE) ?>: beginner to intermediate</h3>
+      <p>5 short visual modules — why most traders lose, market basics, risk management &amp; position sizing, trading psychology, and the habits of consistent traders. Start here if you are new.</p>
+    </div>
+    <span class="tm-btn tm-btn-primary"><?= icon('book', 'icon icon-sm') ?> Start the course</span>
+  </a>
+  <h3 class="uni-sub">Strategy playbook</h3>
   <ol class="uni-list">
     <?php foreach ($strategies as $i => $s): $owned = in_array(mb_substr($s['title'], 0, 80), $mine, true); ?>
     <li class="<?= $colors[$s['style']] ?? 'c-blue' ?>">

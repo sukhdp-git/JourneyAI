@@ -85,6 +85,8 @@ $router->get('/terminal/public-pnl', [PublicPnlController::class, 'index']);
 $router->post('/terminal/public-pnl', [PublicPnlController::class, 'store']);
 $router->post('/terminal/public-pnl/{id}', [PublicPnlController::class, 'update']);
 $router->get('/terminal/university', [UniversityController::class, 'index']);
+$router->get('/terminal/university/course', [UniversityController::class, 'course']);
+$router->get('/terminal/university/course/{slug}', [UniversityController::class, 'module']);
 $router->get('/terminal/university/{slug}', [UniversityController::class, 'show']);
 
 $router->get('/terminal/coach', [CoachController::class, 'index']);

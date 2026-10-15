@@ -22,9 +22,9 @@ if ($l['show_equity'] && count($pts) > 1) {
     $line = implode(' ', $xy);
     $up = end($vals) >= $start;
     $svg = '<svg class="pnl-eq ' . ($up ? 'is-up' : 'is-down') . '" viewBox="0 0 ' . $W . ' ' . $H . '" role="img" aria-label="Equity curve for the period">'
-        . '<defs><linearGradient id="pnlg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="currentColor" stop-opacity=".28"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></linearGradient></defs>'
+        . '<defs><linearGradient id="pnlg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#8a5ddc" stop-opacity=".34"/><stop offset="1" stop-color="#feb2b4" stop-opacity="0"/></linearGradient><linearGradient id="pnls" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="' . $W . '" y2="0"><stop offset="0" stop-color="#6541e9"/><stop offset=".35" stop-color="#8a5ddc"/><stop offset=".65" stop-color="#b17ace"/><stop offset="1" stop-color="#feb2b4"/></linearGradient></defs>'
         . '<polygon class="pnl-eq-area" points="0,' . $H . ' ' . $line . ' ' . $W . ',' . $H . '" fill="url(#pnlg)"/>'
-        . '<polyline class="pnl-eq-line" points="' . $line . '" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round" pathLength="1"/></svg>';
+        . '<polyline class="pnl-eq-line" points="' . $line . '" fill="none" stroke="url(#pnls)" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round" pathLength="1"/></svg>';
 }
 $dayMax = $r['days'] ? max(array_map('abs', $r['days'])) : 0;
 ?>

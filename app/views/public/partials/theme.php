@@ -25,7 +25,7 @@ $lum = function (string $hex): float {
     [$r, $g, $b] = array_map(fn ($x) => (($v = hexdec($x) / 255) <= .03928 ? $v / 12.92 : (($v + .055) / 1.055) ** 2.4), str_split(ltrim($hex, '#'), 2));
     return .2126 * $r + .7152 * $g + .0722 * $b;
 };
-$css = substr($css, 0, -1) . '--on-primary:' . ($lum($c('color_primary', '#d8b36a')) > .35 ? '#17120a' : '#ffffff') . ';}';
+$css = substr($css, 0, -1) . '--on-primary:' . ($lum($c('color_primary', '#6541e9')) > .35 ? '#17120a' : '#ffffff') . ';}';
 $custom = trim(setting('custom_css'));
 ?>
 <style id="theme"><?= $css ?></style>

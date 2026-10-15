@@ -256,8 +256,8 @@
   // green/red without glow, four stat tiles and a footer with "Verified by journzey.ai" and a QR code to /verify/{code}.
   function rr(cx, x, y, w, h, r) { cx.beginPath(); cx.moveTo(x + r, y); cx.arcTo(x + w, y, x + w, y + h, r); cx.arcTo(x + w, y + h, x, y + h, r); cx.arcTo(x, y + h, x, y, r); cx.arcTo(x, y, x + w, y, r); cx.closePath(); }
   var CARD_PAL = {
-    dark: { bg: '#080c16', tile: '#111a2c', line: 'rgba(255,255,255,.08)', text: '#f6f1e4', mute: '#8f97aa', pos: '#34c48c', neg: '#e2646c', chip: 'rgba(255,255,255,.06)', mark: '#d8b36a', markInk: '#18130a' },
-    light: { bg: '#f7f5f0', tile: '#ffffff', line: '#e4ddcf', text: '#101726', mute: '#5f6676', pos: '#0b7a55', neg: '#b3343d', chip: '#f0ece3', mark: '#15223f', markInk: '#f0dcaa' }
+    dark: { bg: '#080c16', tile: '#111a2c', line: 'rgba(255,255,255,.08)', text: '#f6f1e4', mute: '#8f97aa', pos: '#34c48c', neg: '#e2646c', chip: 'rgba(255,255,255,.06)', mark: '#8b6cf6', markInk: '#ffffff' },
+    light: { bg: '#f7f5f0', tile: '#ffffff', line: '#e4ddcf', text: '#101726', mute: '#5f6676', pos: '#0b7a55', neg: '#b3343d', chip: '#f0ece3', mark: '#6541e9', markInk: '#ffffff' }
   };
   function fitFont(cx, text, weight, size, family, maxW, min) { cx.font = weight + ' ' + size + 'px ' + family; while (cx.measureText(text).width > maxW && size > min) { size -= 4; cx.font = weight + ' ' + size + 'px ' + family; } return size; }
   function drawRecap(canvas, o, style) {
@@ -504,14 +504,15 @@
     }
     if (!SR) { mic.title = 'Voice needs Chrome, Edge or Safari'; mic.addEventListener('click', function () { toast('Voice logging needs Chrome, Edge or Safari with microphone access.', 'error'); }); return; }
     mic.addEventListener('click', function () {
-      if (rec) { try { rec.stop(); } catch (e) {} return; }
-      var finalText = '';
-      rec = new SR(); rec.lang = loc; rec.interimResults = true; rec.continuous = false;
-      mic.classList.add('rec'); mic.setAttribute('aria-pressed', 'true'); say('Listening… say your trade');
-      rec.onresult = function (ev) { var t = ''; for (var i = 0; i < ev.results.length; i++) { t += ev.results[i][0].transcript; if (ev.results[i].isFinal) finalText = t; } say('“' + t + '”'); };
-      rec.onerror = function (ev) { if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') say('Microphone access is blocked — allow it in your browser settings.', 'bad'); };
-      rec.onend = function () { rec = null; mic.classList.remove('rec'); mic.setAttribute('aria-pressed', 'false'); if (finalText.trim()) logSpoken(finalText.trim()); else if (!/blocked/.test(status.textContent)) say('Nothing heard — tap the mic and try again.', 'bad'); };
-      try { rec.start(); } catch (e) { rec = null; mic.classList.remove('rec'); }
+      if (rec) { rec.stop(); return; }
+      mic.classList.add('rec'); mic.setAttribute('aria-pressed', 'true'); say('Listening… say your trade — I stop when you pause');
+      var off = function () { rec = null; mic.classList.remove('rec'); mic.setAttribute('aria-pressed', 'false'); };
+      // Keeps listening through short pauses so the lot size at the end of the sentence is not lost
+      rec = window.jzRecognize({ lang: loc, continuous: true, silenceMs: 2200,
+        onInterim: function (t) { say('“' + t + '”'); },
+        onError: function (code) { if (code === 'not-allowed' || code === 'service-not-allowed') say('Microphone access is blocked — allow it in your browser settings.', 'bad'); },
+        onDone: function (t) { off(); if (t) logSpoken(t); else if (!/blocked/.test(status.textContent)) say('Nothing heard — tap the mic and try again.', 'bad'); } });
+      if (!rec) off();
     });
   });
 
@@ -603,4 +604,72 @@
       new MutationObserver(function () { if (el.textContent.trim() === '—') return; box.classList.remove('jz-bump'); void box.offsetWidth; box.classList.add('jz-bump'); }).observe(el, { childList: true, characterData: true, subtree: true });
     });
   }
+  /* ---------------------------------------------------------------- University course: quizzes, progress, calculators */
+  $$('[data-quiz]').forEach(function (qz) {
+    var qs = $$('.cx-q', qz), out = $('[data-quiz-score]', qz);
+    var score = function () { var done = 0, ok = 0; qs.forEach(function (q) { if (q.classList.contains('answered')) { done++; if (q.dataset.ok === '1') ok++; } }); if (out) out.textContent = done ? ok + ' of ' + qs.length + ' correct' + (done === qs.length ? (ok === qs.length ? ' — perfect!' : ' — read the explanations, then try the next module.') : '') : ''; };
+    qs.forEach(function (q) {
+      $$('input[type=radio]', q).forEach(function (r) {
+        r.addEventListener('change', function () {
+          if (q.classList.contains('answered')) return;
+          var right = r.value === q.dataset.a;
+          q.dataset.ok = right ? '1' : '0';
+          $$('label', q).forEach(function (l) { var i = $('input', l); if (i.value === q.dataset.a) l.classList.add('right'); else if (i === r) l.classList.add('wrong'); });
+          q.classList.add('answered'); score();
+        });
+      });
+    });
+  });
+  $$('[data-course]').forEach(function (root) {
+    var key = root.dataset.courseKey, total = 5, done = [];
+    try { done = JSON.parse(localStorage.getItem(key) || '[]') || []; } catch (e) { done = []; }
+    if (!Array.isArray(done)) done = [];
+    var save = function () { try { localStorage.setItem(key, JSON.stringify(done)); } catch (e) {} };
+    var paint = function () {
+      $$('[data-course-mod]', root).forEach(function (a) { a.classList.toggle('is-done', done.indexOf(+a.dataset.courseMod) > -1); });
+      var bar = $('[data-course-bar]', root); if (bar) bar.style.width = Math.round(done.length / total * 100) + '%';
+      var lab = $('[data-course-label]', root); if (lab) lab.textContent = done.length + ' of ' + total + ' modules complete' + (done.length === total ? ' — course finished!' : '');
+      var n = +root.dataset.courseN, btn = $('[data-course-complete]', root);
+      if (btn && n) { var on = done.indexOf(n) > -1; btn.classList.toggle('tm-btn-primary', on); btn.setAttribute('aria-pressed', on ? 'true' : 'false'); $('span', btn).textContent = on ? 'Completed ✓' : 'Mark module complete'; }
+    };
+    var btn = $('[data-course-complete]', root);
+    if (btn) btn.addEventListener('click', function () { var n = +root.dataset.courseN, i = done.indexOf(n); if (i > -1) done.splice(i, 1); else done.push(n); save(); paint(); });
+    paint();
+  });
+  $$('[data-calc="size"]').forEach(function (box) {
+    var v = function (k) { var el = $('[data-in="' + k + '"]', box); return el ? parseFloat(el.value) : NaN; };
+    var o = function (k, t) { var el = $('[data-out="' + k + '"]', box); if (el) el.textContent = t; };
+    var money = function (x) { return '$' + x.toLocaleString(undefined, { maximumFractionDigits: 2 }); };
+    var run = function () {
+      var bal = v('bal'), risk = v('risk'), mult = v('mult'), en = v('entry'), st = v('stop'), rr = v('rr');
+      var dist = Math.abs(en - st), riskUsd = bal * risk / 100, perLot = dist * mult;
+      if (!(bal > 0) || !(risk > 0) || !(dist > 0) || !(mult > 0)) { ['lots', 'perlot', 'target', 'reward'].forEach(function (k) { o(k, '—'); }); o('riskusd', riskUsd > 0 ? money(riskUsd) : '—'); return; }
+      var lots = Math.floor(riskUsd / perLot * 100 + 1e-9) / 100;
+      o('lots', lots.toFixed(2)); o('riskusd', money(riskUsd)); o('perlot', money(perLot));
+      if (rr > 0) { var tgt = en > st ? en + dist * rr : en - dist * rr; var dp = Math.min(5, Math.max(0, ((String($('[data-in="entry"]', box).value).split('.')[1] || '').length))); o('target', tgt.toLocaleString(undefined, { minimumFractionDigits: dp, maximumFractionDigits: dp })); o('reward', money(lots * perLot * rr)); } else { o('target', '—'); o('reward', '—'); }
+    };
+    $$('input, select', box).forEach(function (el) { el.addEventListener('input', run); el.addEventListener('change', run); });
+    run();
+  });
+  $$('[data-selfcheck]').forEach(function (box) {
+    var out = $('[data-selfcheck-out]', box), list = $('[data-selfcheck-list]', box), rules = [];
+    var paint = function () {
+      rules = $$('input:checked', box).map(function (i) { return i.value; });
+      list.textContent = ''; rules.forEach(function (r) { var li = d.createElement('li'); li.textContent = r; list.appendChild(li); });
+      out.hidden = !rules.length;
+    };
+    $$('input', box).forEach(function (i) { i.addEventListener('change', paint); });
+    var cp = $('[data-selfcheck-copy]', box);
+    if (cp) cp.addEventListener('click', function () { var t = 'My trading rules:\n' + rules.map(function (r, i) { return (i + 1) + '. ' + r; }).join('\n'); if (navigator.clipboard) navigator.clipboard.writeText(t).then(function () { cp.lastChild.textContent = ' Copied ✓'; }, function () {}); });
+  });
+  $$('[data-plan]').forEach(function (box) {
+    var key = 'jz-course-plan', fs = $$('[data-plan-f]', box), saved = {};
+    try { saved = JSON.parse(localStorage.getItem(key) || '{}') || {}; } catch (e) { saved = {}; }
+    fs.forEach(function (f) { if (typeof saved[f.dataset.planF] === 'string') f.value = saved[f.dataset.planF]; f.addEventListener('input', function () { saved[f.dataset.planF] = f.value; try { localStorage.setItem(key, JSON.stringify(saved)); } catch (e) {} }); });
+    var cp = $('[data-plan-copy]', box), msg = $('[data-plan-msg]', box);
+    if (cp) cp.addEventListener('click', function () {
+      var t = 'MY TRADING PLAN\n' + fs.map(function (f) { return f.dataset.planF + ': ' + (f.value.trim() || '—'); }).join('\n');
+      if (navigator.clipboard) navigator.clipboard.writeText(t).then(function () { msg.textContent = 'Copied — paste it into Notepad.'; }, function () { msg.textContent = 'Copy blocked by the browser — select the text manually.'; });
+    });
+  });
 })();

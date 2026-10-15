@@ -674,7 +674,7 @@ label.check { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 
   --ease: cubic-bezier(.2, .7, .2, 1);
   --header-h: 76px;
 }
-body { letter-spacing: -.004em; background: radial-gradient(1200px 700px at 80% -10%, rgb(48 84 160 / .12), transparent 60%), var(--bg); }
+body { letter-spacing: -.004em; background: radial-gradient(1200px 700px at 80% -10%, rgb(101 65 233 / .12), transparent 60%), var(--bg); }
 h1, h2, h3, h4 { letter-spacing: -.025em; }
 h1 { font-size: clamp(2.4rem, 5.2vw, 4.4rem); line-height: 1.04; letter-spacing: -.04em; font-weight: 650; }
 h2 { font-size: clamp(1.85rem, 3.4vw, 2.75rem); line-height: 1.08; letter-spacing: -.035em; }
@@ -687,7 +687,7 @@ h2 { font-size: clamp(1.85rem, 3.4vw, 2.75rem); line-height: 1.08; letter-spacin
 
 /* Buttons */
 .btn { min-height: 48px; padding: 0 22px; font-weight: 600; letter-spacing: -.005em; border-radius: var(--btn-radius); transition: transform .18s var(--ease), box-shadow .25s, background .25s, border-color .25s, color .2s; }
-.btn-primary, .btn-primary:hover { color: var(--on-primary, #17120a); background: var(--grad); }
+.btn-primary, .btn-primary:hover { color: var(--on-primary, #ffffff); background: var(--grad); }
 .btn-primary { box-shadow: inset 0 1px 0 rgb(255 255 255 / .35), 0 0 0 1px color-mix(in srgb, var(--primary) 60%, transparent), 0 14px 34px -16px color-mix(in srgb, var(--primary) calc(var(--btn-glow) * 75%), transparent); }
 .btn-primary:hover { box-shadow: inset 0 1px 0 rgb(255 255 255 / .4), 0 0 0 1px var(--primary), 0 18px 40px -16px color-mix(in srgb, var(--primary) calc(var(--btn-glow) * 90%), transparent); }
 .btn-ghost { color: var(--heading); background: color-mix(in srgb, var(--surface) 60%, transparent); border-color: var(--line); backdrop-filter: blur(8px); }
@@ -714,7 +714,7 @@ h2 { font-size: clamp(1.85rem, 3.4vw, 2.75rem); line-height: 1.08; letter-spacin
 
 /* Hero */
 .hero { min-height: min(100svh, 900px); padding: calc(var(--header-h) + 72px) 0 104px; }
-.hero-glow, .page-hero .hero-glow, .error-page .hero-glow { background: radial-gradient(640px 420px at 20% 28%, rgb(48 84 160 / .30), transparent 70%), radial-gradient(520px 360px at 82% 18%, color-mix(in srgb, var(--primary) 16%, transparent), transparent 70%); filter: blur(4px); }
+.hero-glow, .page-hero .hero-glow, .error-page .hero-glow { background: radial-gradient(640px 420px at 20% 28%, rgb(101 65 233 / .30), transparent 70%), radial-gradient(520px 360px at 82% 18%, color-mix(in srgb, var(--primary) 16%, transparent), transparent 70%); filter: blur(4px); }
 .hero-grid { background-image: linear-gradient(color-mix(in srgb, var(--heading) 4%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--heading) 4%, transparent) 1px, transparent 1px); background-size: 64px 64px; }
 .hero h1 { background: none; -webkit-background-clip: initial; background-clip: initial; color: var(--heading); margin-bottom: 24px; }
 .hero h1 .h-plain { display: block; }
@@ -753,7 +753,7 @@ h2 { font-size: clamp(1.85rem, 3.4vw, 2.75rem); line-height: 1.08; letter-spacin
 .section-head { margin-bottom: 48px; }
 .section-head .lead { margin-top: 4px; }
 .bg-muted { background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 55%, var(--bg)), var(--bg) 85%); border-block-color: var(--line); }
-.bg-brand { background: radial-gradient(900px 420px at 15% 0%, rgb(48 84 160 / .22), transparent 65%), radial-gradient(800px 420px at 90% 100%, color-mix(in srgb, var(--primary) 12%, transparent), transparent 65%), var(--bg); }
+.bg-brand { background: radial-gradient(900px 420px at 15% 0%, rgb(101 65 233 / .22), transparent 65%), radial-gradient(800px 420px at 90% 100%, color-mix(in srgb, var(--primary) 12%, transparent), transparent 65%), var(--bg); }
 .bg-dark { background: color-mix(in srgb, var(--bg) 70%, #000); }
 
 /* Cards */
@@ -775,14 +775,14 @@ h2 { font-size: clamp(1.85rem, 3.4vw, 2.75rem); line-height: 1.08; letter-spacin
 .loop-visual { color: color-mix(in srgb, var(--primary) 55%, transparent); }
 .loop-ring { animation-duration: 120s; }
 .loop-node { border-color: var(--hair); background: color-mix(in srgb, var(--surface) 96%, transparent); font-weight: 600; } .loop-node .icon { color: var(--primary); }
-.abstract-visual { background: radial-gradient(circle at 30% 30%, rgb(48 84 160 / .35), transparent 55%), radial-gradient(circle at 75% 70%, color-mix(in srgb, var(--primary) 18%, transparent), transparent 55%), var(--surface); }
+.abstract-visual { background: radial-gradient(circle at 30% 30%, rgb(101 65 233 / .35), transparent 55%), radial-gradient(circle at 75% 70%, color-mix(in srgb, var(--primary) 18%, transparent), transparent 55%), var(--surface); }
 
 /* Posts & blog */
 .post-card:hover { transform: translateY(-3px); border-color: var(--hair); }
-.thumb-fallback { background: radial-gradient(circle at 20% 20%, rgb(48 84 160 / .45), transparent 60%), radial-gradient(circle at 80% 90%, color-mix(in srgb, var(--primary) 18%, transparent), transparent 60%), var(--surface); color: color-mix(in srgb, var(--primary) 70%, var(--heading)); }
+.thumb-fallback { background: radial-gradient(circle at 20% 20%, rgb(101 65 233 / .45), transparent 60%), radial-gradient(circle at 80% 90%, color-mix(in srgb, var(--primary) 18%, transparent), transparent 60%), var(--surface); color: color-mix(in srgb, var(--primary) 70%, var(--heading)); }
 .post-meta a, .post-body h3 a:hover, .prose a, .field-check a, .form-note a, .auth-switch a, .auth-link-right { color: var(--primary); }
 .badge { background: color-mix(in srgb, var(--primary) 14%, transparent); color: var(--primary); }
-.chips a.is-active, .pagination [aria-current] { background: var(--primary); color: var(--on-primary, #17120a); border-color: var(--primary); }
+.chips a.is-active, .pagination [aria-current] { background: var(--primary); color: var(--on-primary, #ffffff); border-color: var(--primary); }
 .chips a:hover { border-color: var(--hair); }
 .search-form:focus-within { border-color: var(--primary); box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 16%, transparent); }
 .prose li::marker { color: var(--primary); }
@@ -798,13 +798,13 @@ h2 { font-size: clamp(1.85rem, 3.4vw, 2.75rem); line-height: 1.08; letter-spacin
 /* FAQ */
 .faq-item { border-radius: 12px; } .faq-item.is-open { border-color: var(--hair); }
 .faq-q button { padding: 18px 20px; font-weight: 550; min-height: 56px; }
-.faq-item.is-open .faq-icon { background: var(--primary); border-color: var(--primary); color: var(--on-primary, #17120a); }
+.faq-item.is-open .faq-icon { background: var(--primary); border-color: var(--primary); color: var(--on-primary, #ffffff); }
 
 /* CTA, contact, banners */
 .cta-panel { border-color: var(--hair); background: radial-gradient(700px 260px at 50% 0%, color-mix(in srgb, var(--primary) 14%, transparent), transparent 70%), linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, var(--heading) 2%), var(--surface)) !important; box-shadow: 0 50px 100px -60px rgb(0 0 0 / .9); }
 .cta-panel h2 { color: var(--heading); } .cta-panel .lead, .cta-panel .prose { color: var(--text); }
 .cta-panel .eyebrow { color: var(--primary); } .cta-panel .eyebrow::before { background: var(--hair); }
-.cta-panel .btn-light { background: var(--grad); color: var(--on-primary, #17120a); box-shadow: inset 0 1px 0 rgb(255 255 255 / .35), 0 14px 34px -16px color-mix(in srgb, var(--primary) 70%, transparent); }
+.cta-panel .btn-light { background: var(--grad); color: var(--on-primary, #ffffff); box-shadow: inset 0 1px 0 rgb(255 255 255 / .35), 0 14px 34px -16px color-mix(in srgb, var(--primary) 70%, transparent); }
 .contact-cards .icon, .contact-list .icon { color: var(--primary); }
 .contact-cards li { border-color: var(--line); }
 .footer-cta { border-color: var(--hair); background: radial-gradient(600px 200px at 0% 0%, color-mix(in srgb, var(--primary) 10%, transparent), transparent 70%), linear-gradient(180deg, var(--surface), color-mix(in srgb, var(--surface) 70%, var(--bg))) !important; }
@@ -830,7 +830,7 @@ h2 { font-size: clamp(1.85rem, 3.4vw, 2.75rem); line-height: 1.08; letter-spacin
 .price-card .amount { font: 650 2.5rem/1 var(--font-heading); letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
 .price-card .per { font-size: .9rem; }
 .price-features { gap: 10px; font-size: .94rem; } .price-features .icon { color: var(--primary); }
-.price-badge { background: var(--grad); color: var(--on-primary, #17120a); font-weight: 700; letter-spacing: .02em; box-shadow: 0 6px 16px -8px color-mix(in srgb, var(--primary) 80%, transparent); }
+.price-badge { background: var(--grad); color: var(--on-primary, #ffffff); font-weight: 700; letter-spacing: .02em; box-shadow: 0 6px 16px -8px color-mix(in srgb, var(--primary) 80%, transparent); }
 .pricing-note { font-size: .88rem; }
 .compare th, .compare td { border-bottom-color: var(--line); } .compare tbody tr:hover td { background: color-mix(in srgb, var(--primary) 4%, transparent); }
 
@@ -839,12 +839,12 @@ h2 { font-size: clamp(1.85rem, 3.4vw, 2.75rem); line-height: 1.08; letter-spacin
 .page-hero h1 { font-size: clamp(2.1rem, 4.4vw, 3.4rem); }
 
 /* Showcase */
-.sc-aura { background: radial-gradient(60% 60% at 30% 40%, rgb(48 84 160 / .45), transparent 70%), radial-gradient(50% 50% at 75% 70%, color-mix(in srgb, var(--primary) 22%, transparent), transparent 70%); }
+.sc-aura { background: radial-gradient(60% 60% at 30% 40%, rgb(101 65 233 / .45), transparent 70%), radial-gradient(50% 50% at 75% 70%, color-mix(in srgb, var(--primary) 22%, transparent), transparent 70%); }
 .sc-track { animation-duration: 70s; }
 .sc-track span { border-color: var(--line); } .sc-track .icon { color: var(--primary); }
 .sc-tab:hover { border-color: var(--hair); }
 .sc-tab.on { border-color: color-mix(in srgb, var(--primary) 55%, var(--line)); background: linear-gradient(90deg, color-mix(in srgb, var(--primary) 9%, var(--surface)), var(--surface)); }
-.sc-tab.on .sc-tab-ic { background: var(--grad); color: var(--on-primary, #17120a); }
+.sc-tab.on .sc-tab-ic { background: var(--grad); color: var(--on-primary, #ffffff); }
 .sc-progress { background: linear-gradient(90deg, var(--primary), var(--secondary)); }
 .sc-list .icon { color: var(--primary); }
 .motion-ready .has-motion .sc-row.reveal.is-visible .sc-duo .shot-frame:last-child { animation: none; }
@@ -868,3 +868,31 @@ h2 { font-size: clamp(1.85rem, 3.4vw, 2.75rem); line-height: 1.08; letter-spacin
 .hero-bg .hero-candles .hc-eq { stroke-width: 1.4; opacity: .75; }
 @media (max-width: 999px) { .hero-bg .hero-candles { opacity: .4; } } @media (max-width: 600px) { .hero-bg .hero-candles { display: none; } }
 @media (max-width: 899px) { .main-nav + .header-actions { margin-left: auto; } }
+
+/* =====================================================================================
+   BRAND THEME — violet → pink gradient (#6541E9 → #FEB2B4). Replaces the champagne-gold accents.
+   --ink is the readable accent for text on dark backgrounds.
+   ===================================================================================== */
+:root {
+  --ink: color-mix(in srgb, var(--primary) 52%, #ffffff);
+  --brand: linear-gradient(115deg, var(--primary) 0%, color-mix(in srgb, var(--primary) 70%, var(--secondary)) 35%, color-mix(in srgb, var(--primary) 40%, var(--secondary)) 62%, var(--secondary) 100%);
+  --grad: linear-gradient(115deg, var(--primary) 0%, color-mix(in srgb, var(--primary) 62%, var(--secondary)) 50%, color-mix(in srgb, var(--primary) 30%, var(--secondary)) 100%);
+  --hair: color-mix(in srgb, var(--primary) 45%, transparent);
+}
+body { background: radial-gradient(1100px 650px at 85% -10%, color-mix(in srgb, var(--primary) 16%, transparent), transparent 60%), radial-gradient(900px 600px at -10% 40%, color-mix(in srgb, var(--secondary) 6%, transparent), transparent 60%), var(--bg); }
+.btn-primary, .btn-primary:hover, .cta-panel .btn-light, .price-badge, .chips a.is-active, .pagination [aria-current], .sc-tab.on .sc-tab-ic, .faq-item.is-open .faq-icon { color: #fff; text-shadow: 0 1px 1px rgb(40 20 90 / .3); }
+.btn-primary { box-shadow: inset 0 1px 0 rgb(255 255 255 / .25), 0 14px 34px -16px color-mix(in srgb, var(--primary) 80%, transparent); }
+.chips a.is-active, .pagination [aria-current], .faq-item.is-open .faq-icon { background: var(--grad); border-color: transparent; }
+.eyebrow, .cta-panel .eyebrow, .card-link, .post-meta a, .prose a, .field-check a, .form-note a, .footer-col h3, .h-accent, .section-head h2 em, .cta-panel h2 em, .badge, .mobile-menu a[aria-current="page"] { color: var(--ink); }
+.card-link:hover, .post-body h3 a:hover { color: var(--secondary); }
+.card-icon, .feature-icon, .pillar-icon, .step-icon { color: var(--ink); background: linear-gradient(135deg, color-mix(in srgb, var(--primary) 18%, var(--surface)), color-mix(in srgb, var(--secondary) 10%, var(--surface))); }
+.hero-points .icon, .price-features .icon, .sc-list .icon, .sc-track .icon, .contact-cards .icon, .contact-list .icon, .float-chip .icon, .loop-node .icon { color: var(--ink); }
+.step-num { background: var(--brand); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.hero h1 .h-accent { background: linear-gradient(100deg, var(--ink) 0%, color-mix(in srgb, var(--primary) 30%, var(--secondary)) 55%, var(--secondary) 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.nav-link::after { background: var(--brand); }
+.hc-eq { stroke: url(#hc-brand); }
+.sc-progress { background: var(--brand); }
+.error-code { background: var(--brand); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.price-card.is-featured { border-color: color-mix(in srgb, var(--primary) 65%, transparent); background: radial-gradient(420px 200px at 50% 0%, color-mix(in srgb, var(--primary) 16%, transparent), transparent 70%), radial-gradient(300px 160px at 100% 100%, color-mix(in srgb, var(--secondary) 8%, transparent), transparent 70%), linear-gradient(180deg, color-mix(in srgb, var(--surface) 92%, var(--heading) 3%), var(--surface)); }
+.prose blockquote { border-left-color: var(--primary); }
+.announcement { background: linear-gradient(90deg, color-mix(in srgb, var(--primary) 30%, var(--surface)), color-mix(in srgb, var(--secondary) 18%, var(--surface))); }

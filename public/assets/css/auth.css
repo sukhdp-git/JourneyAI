@@ -7,7 +7,7 @@
 
 /* Brand side */
 .auth-brand { position: relative; overflow: hidden; isolation: isolate; padding: 36px clamp(28px, 5vw, 72px); display: flex; flex-direction: column; gap: 32px; border-right: 1px solid var(--line);
-  background: radial-gradient(900px 600px at 10% 0%, rgb(48 84 160 / .26), transparent 60%), radial-gradient(700px 500px at 100% 100%, color-mix(in srgb, var(--primary) 10%, transparent), transparent 65%), linear-gradient(180deg, #080d19, var(--bg)); }
+  background: radial-gradient(900px 600px at 10% 0%, rgb(101 65 233 / .26), transparent 60%), radial-gradient(700px 500px at 100% 100%, color-mix(in srgb, var(--primary) 10%, transparent), transparent 65%), linear-gradient(180deg, #080d19, var(--bg)); }
 .auth-market { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
 .am-grid { position: absolute; inset: -64px; background-image: linear-gradient(color-mix(in srgb, var(--heading) 5%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--heading) 5%, transparent) 1px, transparent 1px); background-size: 64px 64px;
   -webkit-mask-image: radial-gradient(ellipse 80% 70% at 40% 40%, #000 30%, transparent 80%); mask-image: radial-gradient(ellipse 80% 70% at 40% 40%, #000 30%, transparent 80%); animation: am-drift 40s linear infinite; }
@@ -82,7 +82,7 @@
 @media (max-width: 979px) {
   .auth-brand { display: none; }
   .auth-main { place-items: start center; align-content: start; padding: calc(20px + env(safe-area-inset-top)) 16px calc(32px + env(safe-area-inset-bottom)); min-height: 100svh;
-    background: radial-gradient(600px 300px at 0% 0%, rgb(48 84 160 / .22), transparent 70%), var(--bg); }
+    background: radial-gradient(600px 300px at 0% 0%, rgb(101 65 233 / .22), transparent 70%), var(--bg); }
   .auth-mobile-logo { display: inline-flex; justify-self: start; width: 100%; max-width: 420px; margin: 0 auto 4px; }
   .auth-card.wide + .auth-mobile-risk, .auth-mobile-risk { display: block; max-width: 420px; text-align: center; margin: 8px auto 0; }
   .auth-card > h2 { font-size: 1.65rem; }
@@ -95,3 +95,10 @@
   .auth-card::before { content: ""; position: absolute; left: 32px; right: 32px; top: 0; height: 1px; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--primary) 55%, transparent), transparent); }
   .auth-card.wide { max-width: 680px; }
 }
+/* Brand theme (violet → pink) */
+.auth-kicker, .auth-link-right, .auth-switch a, .auth-pitch li .icon { color: color-mix(in srgb, var(--primary) 52%, #fff); }
+.auth-pitch h1 em { background: linear-gradient(100deg, color-mix(in srgb, var(--primary) 50%, #fff), var(--secondary)); -webkit-background-clip: text; background-clip: text; color: transparent; padding-right: .06em; }
+.auth-brand { background: radial-gradient(900px 600px at 10% 0%, color-mix(in srgb, var(--primary) 26%, transparent), transparent 60%), radial-gradient(700px 500px at 100% 100%, color-mix(in srgb, var(--secondary) 12%, transparent), transparent 65%), linear-gradient(180deg, #0b0a1e, var(--bg)); }
+.av-eq { stroke: url(#av-brand); }
+.chip-select input:checked + span { background: color-mix(in srgb, var(--primary) 22%, transparent); }
+.steps-bar li.on { border-image: linear-gradient(90deg, var(--primary), var(--secondary)) 1; }

@@ -49,6 +49,8 @@ final class QuickTrade
             '/\bpoint\s+(\d+)/' => ' 0.$1',
             '/\bstandard\s+lots?\b/' => ' lot ',
             '/\bmicro\s+lots?\b/' => ' microlot ',
+            '/\bmini\s+lots?\b/' => ' minilot ',
+            '/\b(?:lot\s+size|position\s+size|trade\s+size|volume|quantity|qty)(?:\s+(?:is|of|was))?\b/' => ' lot ',
         ];
         foreach ($rules as $re => $rep) {
             $t = preg_replace($re, $rep, $t) ?? $t;
@@ -56,6 +58,7 @@ final class QuickTrade
         $t = preg_replace_callback('/\b(' . implode('|', array_keys(self::WORDS)) . ')\b(?=\s+(?:lots?|microlot))/', fn ($m) => self::WORDS[$m[1]], $t) ?? $t;
         $t = preg_replace('/\b(\d+(?:\.\d+)?)\s+microlots?\b/', '$1 microlot', $t) ?? $t;
         $t = preg_replace_callback('/\b(\d+(?:\.\d+)?)\s+microlot\b/', fn ($m) => rtrim(rtrim(number_format((float) $m[1] / 100, 4, '.', ''), '0'), '.') . ' lot', $t) ?? $t;
+        $t = preg_replace_callback('/\b(\d+(?:\.\d+)?)\s+minilots?\b/', fn ($m) => rtrim(rtrim(number_format((float) $m[1] / 10, 4, '.', ''), '0'), '.') . ' lot', $t) ?? $t;
         // Filler words that carry no trade information in speech.
         $t = preg_replace('/\b(i|we|my|the|a|an|and|with|of|for|on|trade|position|price|was|then|it|size|sized|lot\s+size\s+of|took|take|placed|put|set|order|market)\b/', ' ', $t) ?? $t;
         return trim(preg_replace('/\s+/', ' ', $t) ?? $t);
@@ -63,6 +66,8 @@ final class QuickTrade
 
     public static function parse(string $command, bool $voice = false): array
     {
+        // ".15 lot" / "0. 15" (how speech engines and quick typing often write 0.15) are the same number as 0.15
+        $command = preg_replace(['/(?<![\d.])\.(\d)/', '/\b0\.\s+(\d)/'], ['0.$1', '0.$1'], $command) ?? $command;
         if ($voice) {
             $command = self::normalize($command);
         }

@@ -27,6 +27,7 @@ $siteName = setting('site_name', 'journzey.ai');
       $cd = [[40, 52], [52, 47], [47, 58], [58, 55], [55, 66], [66, 61], [61, 70], [70, 78], [78, 73], [73, 84], [84, 80], [80, 91]]; ?>
       <figure class="auth-visual" aria-hidden="true">
         <svg viewBox="0 0 320 150" focusable="false">
+          <defs><linearGradient id="av-brand" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="320" y2="0"><stop offset="0" stop-color="var(--primary)"/><stop offset="1" stop-color="var(--secondary)"/></linearGradient></defs>
           <g class="av-grid"><line x1="0" x2="320" y1="37" y2="37"/><line x1="0" x2="320" y1="75" y2="75"/><line x1="0" x2="320" y1="113" y2="113"/></g>
           <?php foreach ($cd as $i => [$o, $c]): $x = 22 + $i * 25; $y = fn ($v) => 150 - $v * 1.45; $up = $c >= $o; ?>
           <g class="av-c <?= $up ? 'up' : 'dn' ?>" style="--i:<?= $i ?>"><line x1="<?= $x ?>" x2="<?= $x ?>" y1="<?= round($y(max($o, $c) + 4), 1) ?>" y2="<?= round($y(min($o, $c) - 4), 1) ?>"/><rect x="<?= $x - 5 ?>" y="<?= round($y(max($o, $c)), 1) ?>" width="10" height="<?= round(abs($c - $o) * 1.45, 1) ?>" rx="1.5"/></g>

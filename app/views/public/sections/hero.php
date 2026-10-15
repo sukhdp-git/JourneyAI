@@ -29,6 +29,7 @@ $split = preg_match('/^(.+?[.!?])\s+(\S.*)$/u', $heading, $hm) ? [$hm[1], $hm[2]
     for ($i = 0; $i < 56; $i++) { $o = $p; $p = max(20, min(100, $p + sin($i * 1.7) * 9 + cos($i * .55) * 4 + .7)); $cs[] = [$o, $p, max($o, $p) + 2 + abs(sin($i * 2.3)) * 4, min($o, $p) - 2 - abs(cos($i * 1.9)) * 4]; }
     ?>
     <svg class="hero-candles" viewBox="0 0 1280 140" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+      <defs><linearGradient id="hc-brand" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="1280" y2="0"><stop offset="0" stop-color="var(--primary)"/><stop offset="1" stop-color="var(--secondary)"/></linearGradient></defs>
       <?php foreach ($cs as $i => [$o, $c, $hi, $lo]): $x = 14 + $i * 22.6; $y = fn ($v) => round(150 - $v * 1.25, 1); ?>
       <g class="hc <?= $c >= $o ? 'hc-up' : 'hc-dn' ?>" style="--i:<?= $i ?>"><line x1="<?= $x ?>" x2="<?= $x ?>" y1="<?= $y($hi) ?>" y2="<?= $y($lo) ?>"/><rect x="<?= $x - 5 ?>" y="<?= $y(max($o, $c)) ?>" width="10" height="<?= max(1.5, round(abs($c - $o) * 1.25, 1)) ?>" rx="1.5"/></g>
       <?php endforeach; ?>
