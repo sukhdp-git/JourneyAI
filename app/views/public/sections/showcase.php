@@ -21,7 +21,7 @@ $chips = ['Voice logging in 4 languages', 'Prop firm rule tracker', 'Unlimited b
         <div class="shot-bar" aria-hidden="true"><span></span><span></span><span></span><em>journzey.ai · Home Hub</em></div>
         <?= $img('home', 'journzey.ai Home Hub: greeting, daily focus quote, execution desk with voice logging and session clock (demo data)') ?>
       </div>
-      <img class="sc-pop sc-pop-a" src="<?= $pi('prop.webp') ?>" width="1400" height="300" alt="Prop firm rules: profit target, daily loss, max loss and trading days" loading="lazy">
+      <img class="sc-pop sc-pop-a" src="<?= $pi('prop.webp') ?>" width="1400" height="319" alt="Prop firm rules: profit target, daily loss, max loss and trading days" loading="lazy">
       <img class="sc-pop sc-pop-b" src="<?= $pi('flexcard.webp') ?>" width="720" height="900" alt="Shareable flex card with Verified by journzey.ai QR code" loading="lazy">
     </div>
   </div>
