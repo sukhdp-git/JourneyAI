@@ -33,17 +33,30 @@
     var o = function (k) { return $('[data-o="' + k + '"]', out); };
     var sel = $('[data-inst-select]', f), specOut = $('[data-spec-out]', f);
     var showSpec = function () { var sp = JSON.parse(sel.selectedOptions[0].dataset.spec); specOut.textContent = 'Contract ' + sp.contract.toLocaleString() + ' · tick ' + sp.tick + ' · pip/point ' + sp.pip + ' · quoted in ' + sp.quote + ' · lot step ' + sp.step; };
-    var reset = function () { $$('dd', out).forEach(function (dd) { dd.textContent = '—'; }); o(mode === 'size' ? 'lots' : 'pnl').textContent = '—'; };
+    // One state machine for the results panel: idle/invalid/failed all clear every output (main figure,
+    // explanation line, monetary values, percentages and colours); only the newest request may write results.
+    var noteKey = mode === 'size' ? 'lots_note' : 'pnl_note', mainKey = mode === 'size' ? 'lots' : 'pnl';
+    var idleNote = o(noteKey).textContent, seq = 0;
+    var reset = function (note) {
+      $$('dd', out).forEach(function (dd) { dd.textContent = '—'; dd.classList.remove('up', 'down'); });
+      if (mode === 'size') { o('profit').classList.add('up'); o('gain_pct').classList.add('up'); o('loss_pct').classList.add('down'); } else o('risk').classList.add('down');
+      o(mainKey).textContent = '—'; o(mainKey).className = '';
+      o(noteKey).textContent = note || idleNote;
+    };
     var run = function () {
       clearTimeout(timer);
+      var my = ++seq; // invalidates any response still in flight
       timer = setTimeout(function () {
         var fd = new FormData(f);
-        if (!fd.get('entry') || !fd.get('stop')) return;
+        if (!fd.get('entry') || !fd.get('stop')) { o('errors').textContent = ''; out.removeAttribute('aria-busy'); reset(); return; }
+        out.setAttribute('aria-busy', 'true');
         post(base + '/calculator/compute', fd).then(function (r) {
+          if (my !== seq) return; // an older request finished after a newer one started
+          out.removeAttribute('aria-busy');
           var errs = o('errors'); errs.textContent = '';
           var rateF = $('[data-rate-field]', f);
           if (r.needs_rate) { rateF.hidden = false; $('[data-rate-label]', f).textContent = '(1 ' + r.quote + ' = ? ' + (mode === 'size' ? $('[data-calc-account]', f).selectedOptions[0].dataset.currency : fd.get('currency')) + ')'; }
-          if (!r.ok) { (r.errors || [r.error || 'Cannot calculate.']).forEach(function (m) { errs.appendChild(txt('li', '', m)); }); reset(); return; }
+          if (!r.ok) { (r.errors || [r.error || 'Cannot calculate.']).forEach(function (m) { errs.appendChild(txt('li', '', m)); }); reset(r.errors ? 'Fix the inputs above to see a result' : 'Calculation failed — please try again'); return; }
           var c = r.currency;
           if (mode === 'size') {
             var dec = String(r.lot_step).indexOf('.') >= 0 ? String(r.lot_step).split('.')[1].length : 0;

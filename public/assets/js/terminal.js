@@ -14,7 +14,7 @@
     if (!(data instanceof FormData)) Object.keys(data || {}).forEach(function (k) { fd.append(k, data[k]); });
     fd.append('_csrf', csrf);
     return fetch(url, { method: 'POST', body: fd, credentials: 'same-origin', headers: { 'X-CSRF-Token': csrf, 'X-Requested-With': 'XMLHttpRequest', Accept: 'application/json' } })
-      .then(function (r) { return r.json().catch(function () { return { ok: false, httpStatus: r.status, error: r.status >= 500 ? 'The server did not respond properly (HTTP ' + r.status + '). Nothing was changed by this response — please try again.' : 'Unexpected server response (HTTP ' + r.status + ').' }; }).then(function (j) { if (r.status === 401) location.href = '/login'; return j; }); },
+      .then(function (r) { return r.json().catch(function () { return { ok: false, httpStatus: r.status, error: r.status >= 500 ? 'The server did not respond properly (HTTP ' + r.status + '). Please try again — if you were saving something, refresh first to check whether it was already saved.' : 'Unexpected server response (HTTP ' + r.status + ').' }; }).then(function (j) { if (r.status === 401) location.href = '/login'; return j; }); },
         // Network failure (offline, connection reset, HTTP/2 stream closed): resolve with an error instead of rejecting,
         // so callers always leave their loading state.
         function () { return { ok: false, network: true, error: 'Connection problem — the request did not complete. Check your connection and try again.' }; });
