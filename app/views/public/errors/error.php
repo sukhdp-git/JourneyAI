@@ -15,6 +15,7 @@ $isAdmin = str_starts_with((string) parse_url($_SERVER['REQUEST_URI'] ?? '/', PH
     <p class="error-code"><?= (int) $status ?></p>
     <h1><?= e($title) ?></h1>
     <p class="lead"><?= e($message !== '' && $status !== 500 ? $message : ($copy[$status] ?? $copy[500])) ?></p>
+    <?php if ($status >= 500): ?><p class="muted small">Reference: <code><?= e(App\Core\ErrorHandler::requestId()) ?></code></p><?php endif; ?>
     <div class="actions center">
       <?php if ($isAdmin): ?>
       <a class="btn btn-primary" href="<?= e(admin_url('dashboard')) ?>"><?= icon('dashboard', 'icon icon-sm') ?> Back to dashboard</a>

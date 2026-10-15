@@ -25,7 +25,8 @@ final class Logger
                 $context[$k] = '[redacted]';
             }
         }
-        $line = sprintf("[%s] %s %s %s\n", gmdate('c'), $level, $message, $context ? json_encode($context, JSON_UNESCAPED_SLASHES) : '');
+        $context = ['rid' => ErrorHandler::requestId()] + $context; // matches the X-Request-Id response header
+        $line = sprintf("[%s] %s %s %s\n", gmdate('c'), $level, $message, json_encode($context, JSON_UNESCAPED_SLASHES));
         $dir = STORAGE_PATH . '/logs';
         if (!is_dir($dir)) {
             @mkdir($dir, 0750, true);

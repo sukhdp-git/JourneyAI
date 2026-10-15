@@ -5,6 +5,7 @@ namespace App\Controllers\Terminal;
 
 use App\Core\Request;
 use App\Core\Response;
+use App\Core\Session;
 use App\Trading\MarketData;
 use App\Trading\Runner;
 use App\Trading\Analytics;
@@ -68,6 +69,7 @@ final class EdgeController extends TerminalController
         if (!$demo && !MarketData::configured()) {
             Response::json(['ok' => false, 'error' => 'The runner audit needs market data. The site owner can add a Twelve Data key in Control Panel → Integrations.'], 503);
         }
+        Session::release(); // market-data requests can be slow
         $done = 0;
         $failed = null;
         foreach (Runner::pending($this->uid, (int) $this->acc['id']) as $t) {

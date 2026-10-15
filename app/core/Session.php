@@ -38,6 +38,19 @@ final class Session
         session_start();
     }
 
+    /**
+     * Ends the session write lock early. PHP file sessions lock per member, so a request that waits on a slow
+     * external service (AI provider, market data) would otherwise block every other page that member opens
+     * until it finishes — which a hosting proxy can turn into 502/504 errors. Call only when the request will
+     * not write to the session afterwards.
+     */
+    public static function release(): void
+    {
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
+    }
+
     public static function regenerate(): void
     {
         session_regenerate_id(true);

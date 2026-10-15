@@ -159,6 +159,7 @@ final class TradeController extends TerminalController
         if (!$demo && !\App\Trading\MarketData::configured()) {
             Response::json(['ok' => false, 'error' => 'The runner audit needs market data, which has not been set up on this site yet.'], 503);
         }
+        Session::release();
         $r = Runner::audit($t, $demo);
         if ($r['status'] !== 'ok') {
             Response::json(['ok' => false, 'error' => $r['message']], 503);
@@ -272,9 +273,10 @@ final class TradeController extends TerminalController
         imagejpeg($img, null, 85);
         $jpeg = (string) ob_get_clean();
         imagedestroy($img);
+        Session::release();
         $r = AiCoach::readChart($jpeg, 'image/jpeg', array_keys(Instruments::all()));
         if (!$r['ok']) {
-            Response::json(['ok' => false, 'error' => $r['error']], 502);
+            Response::json(['ok' => false, 'error' => $r['error']], 503);
         }
         Response::json(['ok' => true, 'fields' => $r['fields'], 'note' => $r['note']]);
     }

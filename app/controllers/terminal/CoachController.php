@@ -6,6 +6,7 @@ namespace App\Controllers\Terminal;
 use App\Core\Database;
 use App\Core\Request;
 use App\Core\Response;
+use App\Core\Session;
 use App\Trading\AiCoach;
 use App\Trading\Domain;
 use App\Trading\Edge;
@@ -136,6 +137,7 @@ final class CoachController extends TerminalController
         $messages = array_map(fn ($r) => ['role' => $r['role'], 'content' => $r['content']], $history);
         $messages[] = ['role' => 'user', 'content' => $text];
 
+        Session::release(); // the provider call can take a while; don't block the member's other pages
         $res = AiCoach::complete($this->context((string) $req->post('lang', $this->m['language'])), $messages);
         if (!$res['ok']) {
             $this->unavailable($res);
@@ -159,6 +161,7 @@ final class CoachController extends TerminalController
         $label = strtolower($pl) . ' (' . $from . ' to ' . $to . ')';
         $prompt = 'Write my ' . $period . ' trading review for ' . $label . '. Use language like "based on your historical journal and trading data". Keep it short and scannable: "Summary:" 2 lines; "Strengths:" max 3 bullets; "Leaks:" max 3 bullets (discipline, emotions, mistakes, weak windows); "Next ' . ($period === 'weekly' ? 'week' : 'month') . ':" exactly 3 focus bullets. Each bullet under 20 words with the key number in **bold**. Never promise results. If there were no trades in this period, say so and give a short plan for getting quality data.';
         // The review prompt is fixed server-side; it counts toward the daily limit like a chat message.
+        Session::release();
         $res = AiCoach::complete($this->context((string) $req->post('lang', $this->m['language']), $from, $to, $label), [['role' => 'user', 'content' => $prompt]]);
         if (!$res['ok']) {
             $this->unavailable($res);
