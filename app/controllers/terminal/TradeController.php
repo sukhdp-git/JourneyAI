@@ -278,7 +278,54 @@ final class TradeController extends TerminalController
         if (!$r['ok']) {
             Response::json(['ok' => false, 'error' => $r['error']], 503);
         }
-        Response::json(['ok' => true, 'fields' => $r['fields'], 'note' => $r['note']]);
+        $f = $r['fields'];
+        $note = $r['note'];
+        if ($f['date'] !== null) {
+            // The time axis shows the chart's timezone; the trade form uses the member's timezone.
+            $chartTz = self::chartTimezone((string) $f['chart_timezone']);
+            $member = new \DateTimeZone($this->tz);
+            if ($chartTz && $f['time'] !== null) {
+                $local = (new \DateTimeImmutable($f['date'] . ' ' . $f['time'], $chartTz))->setTimezone($member);
+                $f['date'] = $local->format('Y-m-d');
+                $f['time'] = $local->format('H:i');
+                if ($chartTz->getName() !== $member->getName()) {
+                    $note = trim($note . ' Time converted from the chart timezone (' . $f['chart_timezone'] . ') to yours.');
+                }
+            } elseif ($f['time'] !== null) {
+                $note = trim($note . ' The chart timezone was not visible, so the time is shown exactly as on the chart — check it matches your timezone.');
+            }
+            if ($f['date'] > (new \DateTimeImmutable('now', $member))->format('Y-m-d')) {
+                $f['date'] = $f['time'] = null; // a future date means the axis was misread
+            }
+        }
+        unset($f['chart_timezone']);
+        Response::json(['ok' => true, 'fields' => $f, 'note' => $note]);
+    }
+
+    /** Chart timezone label ("UTC", "UTC+5:30", "(UTC-4) New York", "Asia/Kolkata") → timezone, or null if unclear. */
+    private static function chartTimezone(string $label): ?\DateTimeZone
+    {
+        $l = trim($label);
+        if ($l === '') {
+            return null;
+        }
+        if (preg_match('#\b([A-Z][a-z]+/[A-Za-z_]+(?:/[A-Za-z_]+)?)\b#', $l, $m) && in_array($m[1], \DateTimeZone::listIdentifiers(), true)) {
+            return new \DateTimeZone($m[1]);
+        }
+        foreach (['New York' => 'America/New_York', 'Chicago' => 'America/Chicago', 'Los Angeles' => 'America/Los_Angeles', 'Toronto' => 'America/Toronto', 'London' => 'Europe/London',
+            'Berlin' => 'Europe/Berlin', 'Paris' => 'Europe/Paris', 'Moscow' => 'Europe/Moscow', 'Dubai' => 'Asia/Dubai', 'Kolkata' => 'Asia/Kolkata', 'Singapore' => 'Asia/Singapore',
+            'Hong Kong' => 'Asia/Hong_Kong', 'Shanghai' => 'Asia/Shanghai', 'Tokyo' => 'Asia/Tokyo', 'Sydney' => 'Australia/Sydney'] as $city => $tz) {
+            if (stripos($l, $city) !== false) {
+                return new \DateTimeZone($tz);
+            }
+        }
+        if (preg_match('/(?:UTC|GMT)\s*([+-])\s*(\d{1,2})(?::?(\d{2}))?/i', $l, $m) && (int) $m[2] <= 14) {
+            return new \DateTimeZone(sprintf('%s%02d:%02d', $m[1], (int) $m[2], (int) ($m[3] ?? 0)));
+        }
+        if (preg_match('/^\(?\s*(UTC|GMT)\s*\)?$/i', $l)) {
+            return new \DateTimeZone('UTC');
+        }
+        return null;
     }
 
     public function deleteScreenshot(Request $req): never
