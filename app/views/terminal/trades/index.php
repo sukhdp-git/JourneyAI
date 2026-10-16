@@ -6,7 +6,17 @@ $sortLink = function (string $col, string $label) use ($f, $qs) { $on = ($f['sor
 ?>
 <?php $shots = ($f['view'] ?? '') === 'shots'; ?>
 <nav class="seg view-seg" aria-label="Trade log view"><a href="<?= e(url('/terminal/trades') . $qs(['view' => null])) ?>"<?= $shots ? '' : ' class="on" aria-current="page"' ?>><?= icon('list', 'icon icon-sm') ?> Table</a><a href="<?= e(url('/terminal/trades') . $qs(['view' => 'shots'])) ?>"<?= $shots ? ' class="on" aria-current="page"' : '' ?>><?= icon('camera', 'icon icon-sm') ?> Screenshot journal</a></nav>
+<?php if (!empty($needsDetails) && ($f['details'] ?? '') !== 'needed'): ?>
+<div class="needs-details" role="status">
+  <span class="nd-bell" aria-hidden="true"><?= icon('bell', 'icon icon-sm') ?><b><?= (int) $needsDetails ?></b></span>
+  <span><strong><?= (int) $needsDetails ?> quick-logged trade<?= $needsDetails == 1 ? '' : 's' ?> need<?= $needsDetails == 1 ? 's' : '' ?> details</strong> — add the setup or strategy, how you felt and notes so your stats are complete.</span>
+  <a class="tm-btn tm-btn-sm tm-btn-primary" href="<?= e(url('/terminal/trades?details=needed')) ?>">Complete now</a>
+</div>
+<?php elseif (($f['details'] ?? '') === 'needed'): ?>
+<div class="needs-details is-filter" role="status"><span>Showing trades that still need details. Open a trade’s <strong>Add details</strong> button; it leaves this list once a setup, strategy, emotion or note is saved.</span><a class="tm-btn tm-btn-sm" href="<?= e(url('/terminal/trades')) ?>">Show all trades</a></div>
+<?php endif; ?>
 <form class="toolbar" method="get" action="<?= e(url('/terminal/trades')) ?>">
+  <?php if (($f['details'] ?? '') === 'needed'): ?><input type="hidden" name="details" value="needed"><?php endif; ?>
   <?php if ($shots): ?><input type="hidden" name="view" value="shots"><?php endif; ?>
   <label class="sr-only" for="tq">Search</label><input id="tq" class="grow" type="search" name="q" value="<?= e($f['q'] ?? '') ?>" placeholder="Search symbol, setup or notes">
   <label class="sr-only" for="tsym">Instrument</label><select id="tsym" name="symbol" data-autosubmit><option value="">All instruments</option><?php foreach ($symbols as $s): ?><option<?= ($f['symbol'] ?? '') === $s ? ' selected' : '' ?>><?= e($s) ?></option><?php endforeach; ?></select>
@@ -61,7 +71,7 @@ $sortLink = function (string $col, string $label) use ($f, $qs) { $on = ($f['sor
         <td data-label="Lot" class="r num"><?= e($lots) ?></td>
         <td data-label="P&amp;L" class="pnl r num <?= $pnl === null ? '' : ((float) $pnl >= 0 ? 'up' : 'down') ?>"><?= $pnl === null ? '<span class="badge">OPEN</span>' : e(money($pnl, $cur, true)) ?></td>
         <td data-label="R" class="r num <?= $t['rr'] === null ? '' : ((float) $t['rr'] >= 0 ? 'up' : 'down') ?>"><?= $rTxt ?: '—' ?></td>
-        <td data-label="Strategy"><?= e($t['strategy_name'] ?: '—') ?></td>
+        <td data-label="Strategy"><?= e($t['strategy_name'] ?: '—') ?><?php if (App\Trading\QuickLog::needsDetails($t) && $acc['writable']): ?> <a class="nd-badge" href="<?= e(url('/terminal/trades/' . $t['id'] . '/edit')) ?>"><?= icon('bell', 'icon icon-xs') ?> Add details</a><?php endif; ?></td>
         <td class="act" data-label="Actions">
           <a class="tm-icon-btn" href="<?= e(url('/terminal/trades/' . $t['id'])) ?>" title="View details (setup, emotion, notes)" aria-label="View trade"><?= icon('eye', 'icon icon-sm') ?></a>
           <button type="button" class="tm-icon-btn" data-share-trade="<?= e(json_encode($share)) ?>" title="Share image" aria-label="Share <?= e($t['symbol']) ?> trade"<?= $pnl === null ? ' disabled' : '' ?>><?= icon('share', 'icon icon-sm') ?></button>

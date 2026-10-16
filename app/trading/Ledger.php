@@ -118,7 +118,11 @@ final class Ledger
         if (!empty($f['strategy']) && ctype_digit((string) $f['strategy'])) {
             $w[] = 't.strategy_id = :st';
             $p['st'] = (int) $f['strategy'];
-        } elseif (($f['strategy'] ?? '') === 'none') {
+        }
+        if (($f['details'] ?? '') === 'needed') {
+            $w[] = '(' . QuickLog::NEEDS_DETAILS_SQL . ')'; // fast-logged trades still missing setup / emotion / notes
+        }
+        if (($f['strategy'] ?? '') === 'none') {
             $w[] = 't.strategy_id IS NULL'; // "No strategy assigned" (a setup tag alone is not a strategy)
         }
         if (($f['result'] ?? '') === 'win') {

@@ -21,7 +21,7 @@ final class TradeController extends TerminalController
     private function filters(Request $req): array
     {
         $f = [];
-        foreach (['q', 'symbol', 'side', 'session', 'strategy', 'result', 'from', 'to', 'emotion', 'mistake', 'sort', 'dir', 'view'] as $k) {
+        foreach (['q', 'symbol', 'side', 'session', 'strategy', 'result', 'from', 'to', 'emotion', 'mistake', 'sort', 'dir', 'view', 'details'] as $k) {
             $v = mb_substr(trim((string) $req->query($k, '')), 0, 60);
             if ($v !== '') {
                 $f[$k] = $v;
@@ -38,7 +38,7 @@ final class TradeController extends TerminalController
         $pg = new Paginator($total, $per, $req->int('page', 1));
         [$rows] = Ledger::trades($this->uid, (int) $this->acc['id'], $f, $this->tz, $per, $pg->offset);
         $symbols = array_column(Database::all('SELECT DISTINCT symbol FROM trades WHERE user_id = :u AND account_id = :a ORDER BY symbol', ['u' => $this->uid, 'a' => $this->acc['id']]), 'symbol');
-        $this->render('trades/index', ['rows' => $rows, 'pager' => $pg, 'f' => $f, 'symbols' => $symbols, 'strategies' => Ledger::strategies($this->uid), 'weeks' => $this->cardWeeks()], 'Trade Log', 'trades');
+        $this->render('trades/index', ['rows' => $rows, 'pager' => $pg, 'f' => $f, 'symbols' => $symbols, 'strategies' => Ledger::strategies($this->uid), 'weeks' => $this->cardWeeks(), 'needsDetails' => \App\Trading\QuickLog::needsDetailsCount($this->uid, (int) $this->acc['id'])], 'Trade Log', 'trades');
     }
 
     /** Weeks (Monday => label + trade count) with closed trades in the last ~6 months, newest first, for the weekly card picker. */

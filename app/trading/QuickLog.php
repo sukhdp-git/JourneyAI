@@ -131,6 +131,14 @@ final class QuickLog
      */
     public const NEEDS_DETAILS_SQL = "t.source IN ('QUICK_LOG', 'QUICK_COMMAND', 'VOICE') AND t.strategy_id IS NULL AND (t.setup_tag IS NULL OR t.setup_tag = '') AND (t.emotion IS NULL OR t.emotion = '') AND (t.notes IS NULL OR t.notes = '' OR t.notes LIKE 'Quick command:%' OR t.notes LIKE 'Voice log:%')";
 
+    /** Same rule as NEEDS_DETAILS_SQL for one trade row. */
+    public static function needsDetails(array $t): bool
+    {
+        $notes = (string) ($t['notes'] ?? '');
+        return in_array($t['source'] ?? '', ['QUICK_LOG', 'QUICK_COMMAND', 'VOICE'], true) && empty($t['strategy_id']) && (string) ($t['setup_tag'] ?? '') === ''
+            && (string) ($t['emotion'] ?? '') === '' && ($notes === '' || str_starts_with($notes, 'Quick command:') || str_starts_with($notes, 'Voice log:'));
+    }
+
     public static function needsDetailsCount(int $uid, int $accountId): int
     {
         return (int) Database::value('SELECT COUNT(*) FROM trades t WHERE t.user_id = :u AND t.account_id = :a AND ' . self::NEEDS_DETAILS_SQL, ['u' => $uid, 'a' => $accountId]);

@@ -1647,3 +1647,12 @@ body.tm { background: radial-gradient(1000px 520px at 92% -12%, var(--glow-1), t
   .ql-lots input { width: 110px; }
 }
 @media (prefers-reduced-motion: reduce) { .ql-row, .ql-side { transition: none; } }
+/* Trade Log: quick-logged trades that still need context */
+.needs-details { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 0 0 12px; padding: 10px 14px; border-radius: 14px; border: 1px solid color-mix(in srgb, #f5a524 50%, var(--line)); background: color-mix(in srgb, #f5a524 10%, var(--panel)); font-size: 14px; }
+.needs-details > span:not(.nd-bell) { flex: 1 1 260px; }
+.needs-details .tm-btn { margin-left: auto; }
+.needs-details.is-filter { border-color: var(--gold-line); background: var(--gold-soft); }
+.nd-bell { position: relative; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: color-mix(in srgb, #f5a524 22%, transparent); color: #f5a524; flex: none; }
+.nd-bell b { position: absolute; top: -4px; right: -6px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; background: var(--neg); color: #fff; font: 700 11px/18px Inter, sans-serif; text-align: center; }
+.nd-badge { display: inline-flex; align-items: center; gap: 4px; margin-left: 6px; padding: 2px 8px; border-radius: 999px; font: 650 11.5px Inter, sans-serif; color: #b77905; background: color-mix(in srgb, #f5a524 16%, transparent); text-decoration: none !important; white-space: nowrap; }
+[data-theme="obsidian-pro"] .nd-badge, :root:not([data-theme="clean-light"]) .nd-badge { color: #f5c26b; }

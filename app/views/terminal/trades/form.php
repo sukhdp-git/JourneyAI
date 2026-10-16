@@ -61,6 +61,9 @@ if ($editing && $t['pnl'] !== null) {
     <a class="lt-x" href="<?= e($back) ?>" aria-label="Close"><?= icon('x', 'icon') ?></a>
   </header>
 
+  <?php if ($editing && App\Trading\QuickLog::needsDetails($t)): ?>
+  <div class="needs-details" role="note"><span class="nd-bell" aria-hidden="true"><?= icon('bell', 'icon icon-sm') ?></span><span><strong>Logged quickly on <?= e(fmt_date($t['executed_at'], 'M j, H:i')) ?></strong> (<?= e(Domain::SESSIONS[$t['session']] ?? 'session set automatically') ?>). Add the setup or strategy, your emotion and notes below — prices, time and session are already filled in.</span></div>
+  <?php endif; ?>
   <!-- C. Primary execution parameters -->
   <section class="lt-sec" aria-labelledby="lt-g1">
     <h3 class="lt-sec-title" id="lt-g1"><span>1</span> Instrument &amp; timing</h3>
