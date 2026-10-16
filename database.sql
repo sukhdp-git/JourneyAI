@@ -1476,3 +1476,15 @@ CREATE TABLE IF NOT EXISTS `public_pnl_links` (
 
 -- Record the schema version
 INSERT INTO `settings` (`key`, `value`, `group_name`) VALUES ('schema_version', '9', 'system') ON DUPLICATE KEY UPDATE `value` = IF(CAST(`value` AS UNSIGNED) < 9, '9', `value`);
+
+-- ---------------------------------------------------------------------------------------------
+-- Schema version 10: Quick Log preferences (favourite instruments, last lot size per instrument)
+-- Non-destructive: adds one nullable column if it is missing.
+-- ---------------------------------------------------------------------------------------------
+SET @s := (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `user_settings` ADD COLUMN `quick_prefs` TEXT NULL', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'user_settings' AND COLUMN_NAME = 'quick_prefs');
+PREPARE jz_stmt FROM @s;
+EXECUTE jz_stmt;
+DEALLOCATE PREPARE jz_stmt;
+
+-- Record the schema version
+INSERT INTO `settings` (`key`, `value`, `group_name`) VALUES ('schema_version', '10', 'system') ON DUPLICATE KEY UPDATE `value` = IF(CAST(`value` AS UNSIGNED) < 10, '10', `value`);

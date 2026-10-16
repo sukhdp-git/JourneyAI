@@ -1577,3 +1577,73 @@ body.tm { background: radial-gradient(1000px 520px at 92% -12%, var(--glow-1), t
 .chat .msg.error { border-color: color-mix(in srgb, var(--neg) 45%, var(--line)); background: color-mix(in srgb, var(--neg) 8%, var(--panel-2)); }
 .chat .msg.error .tm-btn { margin-top: 8px; }
 .sub-head { margin: 14px 0 8px; font: 650 13px var(--display, inherit); letter-spacing: .02em; color: var(--strong); } .sub-head .muted { font-weight: 500; }
+
+/* ===================================================================== QUICK LOG (4 steps + price wheel) */
+.ql { position: relative; }
+.ql-steps { display: flex; gap: 6px; list-style: none; margin: 0 0 14px; padding: 0; flex-wrap: wrap; }
+.ql-steps li { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); font: 600 12px Inter, sans-serif; }
+.ql-steps li span { display: grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--panel-2); font-size: 11px; }
+.ql-steps li.on { color: var(--strong); border-color: var(--gold-line); background: var(--gold-soft); }
+.ql-steps li.on span { background: var(--brand); color: #fff; }
+.ql-steps li.done { color: var(--pos); cursor: pointer; }
+.ql-step-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+.ql-step-head h3 { margin: 0; font: 700 16px var(--display); }
+.ql-link { background: none; border: 0; color: var(--gold); font: 600 13px Inter, sans-serif; cursor: pointer; display: inline-flex; gap: 5px; align-items: center; padding: 4px; }
+.ql-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.ql-chip { min-height: 44px; padding: 8px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel-2); color: var(--text); font: 600 14px Inter, sans-serif; cursor: pointer; transition: border-color var(--t-fast), background var(--t-fast); }
+.ql-chip:hover { border-color: var(--gold-line); }
+.ql-sym { display: grid; text-align: left; min-width: 104px; }
+.ql-sym b { font: 750 15px var(--num); color: var(--strong); } .ql-sym small { color: var(--muted); font-size: 11px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
+.ql-sym[aria-checked="true"] { border-color: transparent; background: var(--brand); } .ql-sym[aria-checked="true"] b, .ql-sym[aria-checked="true"] small { color: #fff; }
+.ql-editor { margin-top: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel-2); }
+.ql-editor input[type=search] { width: 100%; }
+.ql-all { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; max-height: 260px; overflow: auto; margin: 8px 0; }
+.ql-opt { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); cursor: pointer; font-size: 13px; }
+.ql-opt:has(input:checked) { border-color: var(--gold-line); background: var(--gold-soft); }
+.ql-opt b { font-family: var(--num); } .ql-opt .muted { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ql-sides { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.ql-side { min-height: 72px; border-radius: 16px; border: 2px solid transparent; font: 800 20px var(--display); letter-spacing: .04em; color: #fff; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 10px; transition: transform var(--t-fast), box-shadow var(--t-fast); }
+.ql-buy { background: linear-gradient(140deg, #1fa874, #34c48c); } .ql-sell { background: linear-gradient(140deg, #d24a55, #ef6b74); }
+.ql-side:hover { transform: translateY(-1px); } .ql-side[aria-checked="true"] { box-shadow: 0 0 0 3px var(--panel), 0 0 0 5px var(--strong); }
+.ql-lots { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.ql-lots input { width: 140px; text-align: center; font: 750 24px var(--num); padding: 10px; }
+.ql-pm { width: 52px; height: 52px; border-radius: 14px; border: 1px solid var(--line); background: var(--panel-2); color: var(--strong); font: 700 24px Inter, sans-serif; cursor: pointer; }
+.ql-lot-chips .ql-chip { min-width: 64px; font-family: var(--num); }
+.ql-prices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.ql-price { display: grid; gap: 4px; text-align: left; padding: 12px 14px; min-height: 72px; border-radius: 14px; border: 1px solid var(--line); background: var(--panel-2); color: var(--text); cursor: pointer; }
+.ql-price small { color: var(--muted); font-size: 11.5px; font-weight: 600; } .ql-price small em { font-style: normal; font-weight: 500; }
+.ql-price b { font: 750 20px var(--num); color: var(--strong); }
+.ql-price:hover { border-color: var(--gold-line); } .ql-price.bad { border-color: var(--neg); }
+.ql-result { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 4px; min-height: 8px; }
+.ql-kv { padding: 8px 12px; border-radius: 12px; background: var(--panel-2); border: 1px solid var(--line); } .ql-kv small { display: block; font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; } .ql-kv b { font: 700 16px var(--num); }
+.ql-err { margin: 4px 0; color: var(--neg); font-weight: 600; font-size: 13.5px; width: 100%; }
+.ql-ok { margin: 0 0 8px; color: var(--pos); font-weight: 650; }
+.ql-auto { margin: 10px 0 0; display: flex; gap: 6px; align-items: flex-start; }
+.ql-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.ql-done { padding: 14px; border-radius: 14px; border: 1px solid color-mix(in srgb, var(--pos) 40%, var(--line)); background: color-mix(in srgb, var(--pos) 8%, var(--panel-2)); }
+.ql-cmd { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 10px; } .ql-cmd summary { cursor: pointer; color: var(--muted); font-size: 13px; font-weight: 600; } .ql-cmd[open] summary { margin-bottom: 10px; }
+/* price wheel */
+.ql-wheel-sheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 30; padding: 14px; border-radius: 18px; border: 1px solid var(--gold-line); background: var(--panel); box-shadow: 0 -12px 40px rgb(0 0 0 / .35); }
+.ql-wheel-head { display: grid; gap: 2px; margin-bottom: 8px; } .ql-wheel-head b { font: 700 15px var(--display); }
+.ql-wheel-wrap { position: relative; height: 200px; border-radius: 14px; background: var(--panel-2); border: 1px solid var(--line); overflow: hidden; }
+.ql-wheel { height: 200px; overflow-y: auto; scroll-snap-type: y mandatory; overscroll-behavior: contain; scrollbar-width: none; cursor: grab; touch-action: pan-y; outline: none; -webkit-mask-image: linear-gradient(transparent, #000 30%, #000 70%, transparent); mask-image: linear-gradient(transparent, #000 30%, #000 70%, transparent); }
+.ql-wheel::-webkit-scrollbar { display: none; }
+.ql-wheel.dragging { cursor: grabbing; scroll-snap-type: none; }
+.ql-wheel:focus-visible { box-shadow: inset 0 0 0 2px var(--gold); }
+.ql-spacer { height: 80px; }
+.ql-row { height: 40px; display: grid; place-items: center; scroll-snap-align: center; font: 600 18px var(--num); color: var(--muted); user-select: none; transition: color .12s, transform .12s; }
+.ql-row.on { color: var(--strong); font-size: 24px; font-weight: 800; }
+.ql-row.live::after { content: "live"; position: absolute; right: 16px; font: 700 9px Inter, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--pos); }
+.ql-row.live { position: relative; }
+.ql-wheel-band { position: absolute; left: 8px; right: 8px; top: 80px; height: 40px; border-radius: 10px; border: 1px solid var(--gold-line); background: color-mix(in srgb, var(--gold) 10%, transparent); pointer-events: none; }
+.ql-wheel-empty { height: 200px; display: grid; place-items: center; color: var(--muted); font-size: 14px; padding: 0 20px; text-align: center; }
+.ql-wheel-tools { display: flex; gap: 8px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
+.ql-wheel-tools input { flex: 1 1 140px; min-width: 0; }
+.ql-stepbox { display: inline-flex; align-items: center; gap: 6px; } .ql-stepbox .small { min-width: 72px; text-align: center; color: var(--muted); font-family: var(--num); }
+@media (max-width: 640px) {
+  .ql-prices { grid-template-columns: 1fr; }
+  .ql-sym { min-width: calc(50% - 4px); flex: 1 1 calc(50% - 4px); }
+  .ql-wheel-sheet.ql-docked { position: fixed; left: 0; right: 0; bottom: 0; border-radius: 20px 20px 0 0; padding-bottom: calc(80px + env(safe-area-inset-bottom)); z-index: 300; }
+  .ql-lots input { width: 110px; }
+}
+@media (prefers-reduced-motion: reduce) { .ql-row, .ql-side { transition: none; } }

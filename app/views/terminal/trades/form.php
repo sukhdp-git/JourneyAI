@@ -38,7 +38,7 @@ if ($curEmo !== '' && !isset($emotions[$curEmo])) $emotions[$curEmo] = ucfirst(s
 if (!isset($mistakes[$curMis])) $mistakes[$curMis] = Domain::MISTAKES[$curMis] ?? $curMis;
 $sessions = ['ASIA' => 'Asian', 'LONDON' => 'London', 'NEW_YORK' => 'New York', 'NY_PM' => 'NY PM'];
 $curSession = $v('session');
-$mini = fn (string $field, string $label) => '<button type="button" class="lt-mic-mini" data-lt-mic="' . $field . '" aria-label="Speak ' . e($label) . '" title="Speak ' . e($label) . '">' . icon('mic', 'icon icon-xs') . '</button>';
+$mini = fn (string $field, string $label) => ''; // voice entry was removed from this form
 if ($editing && $t['pnl'] !== null) {
     $fmt = fn ($x) => Instruments::format($t['symbol'], $x);
     $share = ['id' => (int) $t['id'], 'symbol' => $t['symbol'], 'side' => $t['side'], 'pnl' => money($t['pnl'], $acc['currency'], true), 'positive' => (float) $t['pnl'] >= 0, 'r' => $t['rr'] === null ? '' : ((float) $t['rr'] > 0 ? '+' : '') . number_format((float) $t['rr'], 2) . 'R',
@@ -47,7 +47,7 @@ if ($editing && $t['pnl'] !== null) {
 }
 ?>
 <div class="lt-stage">
-<form data-lt-examples="<?= e(json_encode(array_map(fn ($x) => $x['trade'], App\Trading\Domain::VOICE_EXAMPLES), JSON_UNESCAPED_UNICODE)) ?>" method="post" action="<?= e($action) ?>" class="lt-modal" id="trade-form" enctype="multipart/form-data" novalidate
+<form method="post" action="<?= e($action) ?>" class="lt-modal" id="trade-form" enctype="multipart/form-data" novalidate
   data-lt data-currency="<?= e($acc['currency']) ?>" data-specs="<?= e(json_encode($specs)) ?>" data-strategies="<?= e(json_encode($stratData)) ?>" data-base="<?= e(url('/terminal')) ?>">
   <?= csrf_field() ?>
 
@@ -60,25 +60,6 @@ if ($editing && $t['pnl'] !== null) {
     </div>
     <a class="lt-x" href="<?= e($back) ?>" aria-label="Close"><?= icon('x', 'icon') ?></a>
   </header>
-
-  <!-- B. Voice console -->
-  <section class="lt-voice" data-lt-voice aria-label="Voice input">
-    <div class="lt-voice-row">
-      <button type="button" class="lt-mic" data-lt-mic="all" aria-pressed="false"><span class="lt-mic-on"><?= icon('mic', 'icon') ?></span><span class="lt-mic-label">Speak trade</span></button>
-      <span class="lt-listen" data-lt-listen hidden><i></i> Listening… Speak your trade details</span>
-      <div class="lt-locales" role="group" aria-label="Voice language">
-        <?php foreach (App\Trading\Domain::VOICE_CHIPS as $code => [$lb, $fl]): $lbl = $fl . ' ' . $lb; ?><button type="button" class="lt-chip" data-lt-locale="<?= $code ?>"><?= $lbl ?></button><?php endforeach; ?>
-      </div>
-      <button type="button" class="lt-audio" data-lt-audio aria-pressed="true" title="Spoken confirmation"><span data-lt-audio-on><?= icon('volume', 'icon icon-sm') ?> Audio on</span><span data-lt-audio-off hidden><?= icon('volume-off', 'icon icon-sm') ?> Audio off</span></button>
-    </div>
-    <div class="lt-heard" aria-live="polite"><span class="muted">Heard:</span> <q data-lt-heard>—</q></div>
-    <ul class="lt-changes" data-lt-changes aria-live="polite"></ul>
-    <div class="lt-sims"><span class="muted small">Try it:</span>
-      <?php foreach (App\Trading\Domain::VOICE_EXAMPLES as $code => $vx): ?><button type="button" class="lt-chip" data-lt-sim="<?= e($code) ?>" data-text="<?= e($vx['sim']) ?>" dir="auto"><?= e(App\Trading\Domain::VOICE_CHIPS[$code][1] . ' ' . $vx['sim_label']) ?></button><?php endforeach; ?>
-      <span class="lt-example muted small" data-lt-example dir="auto"></span>
-    </div>
-    <p class="muted small" data-lt-unsupported hidden>This browser has no speech recognition — the “Try it” examples and typing still work. Use Chrome, Edge or Safari for voice.</p>
-  </section>
 
   <!-- C. Primary execution parameters -->
   <section class="lt-sec" aria-labelledby="lt-g1">

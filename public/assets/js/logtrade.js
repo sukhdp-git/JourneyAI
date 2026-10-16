@@ -18,21 +18,7 @@
   function extract(raw, loc) { return P.extract(raw, loc); }
   function findAsset(x) { return P.findAsset(x); }
 
-  /* ------------------------------------------------------------------ speech output */
-  var SAY = {
-    en: { symbol: 'Asset set to', side: 'Direction set to', entry: 'Entry price set to', exit: 'Exit price set to', stop: 'Stop loss set to', tp: 'Take profit set to', lots: 'Lot size set to', session: 'Session set to', strategy: 'Strategy set to', LONG: 'long', SHORT: 'short' },
-    ru: { symbol: 'Актив', side: 'Направление', entry: 'Цена входа', exit: 'Цена выхода', stop: 'Стоп-лосс', tp: 'Тейк-профит', lots: 'Объём лота', session: 'Сессия', strategy: 'Стратегия', LONG: 'покупка', SHORT: 'продажа' },
-    zh: { symbol: '品种', side: '方向', entry: '入场价', exit: '出场价', stop: '止损', tp: '止盈', lots: '手数', session: '时段', strategy: '策略', LONG: '做多', SHORT: '做空' },
-    pt: { symbol: 'Ativo', side: 'Direção', entry: 'Preço de entrada', exit: 'Preço de saída', stop: 'Stop loss', tp: 'Alvo', lots: 'Lote', session: 'Sessão', strategy: 'Estratégia', LONG: 'compra', SHORT: 'venda' },
-    hi: { symbol: 'एसेट', side: 'दिशा', entry: 'एंट्री प्राइस', exit: 'एग्जिट प्राइस', stop: 'स्टॉप लॉस', tp: 'टारगेट', lots: 'लॉट साइज़', session: 'सेशन', strategy: 'रणनीति', LONG: 'खरीद', SHORT: 'बिक्री' },
-    ar: { symbol: 'الأصل', side: 'الاتجاه', entry: 'سعر الدخول', exit: 'سعر الخروج', stop: 'وقف الخسارة', tp: 'جني الأرباح', lots: 'حجم اللوت', session: 'الجلسة', strategy: 'الاستراتيجية', LONG: 'شراء', SHORT: 'بيع' }
-  };
-  var LABEL = { symbol: 'Asset', side: 'Direction', entry: 'Entry', exit: 'Exit', stop: 'Stop loss', tp: 'Take profit', lots: 'Lot size', session: 'Session', strategy: 'Strategy' };
-  var locale = d.documentElement.dataset.voiceLang || 'en-US', audioOn = store.get('jz-lt-audio') !== 'off';
-  function speak(lines) {
-    if (!audioOn || !window.speechSynthesis || !lines.length) return;
-    try { window.speechSynthesis.cancel(); var u = new SpeechSynthesisUtterance(lines.join('. ')); u.lang = locale; u.rate = 1.05; window.speechSynthesis.speak(u); } catch (e) {}
-  }
+  var LABEL = { symbol: 'Asset', side: 'Direction', entry: 'Entry', exit: 'Exit', stop: 'Stop loss', tp: 'Take profit', lots: 'Lot size', session: 'Session', strategy: 'Strategy', date: 'Date', time: 'Time' };
 
   /* ------------------------------------------------------------------ apply values */
   var el = {
@@ -43,72 +29,24 @@
   function flash(x) { if (!x) return; x.classList.add('filled'); setTimeout(function () { x.classList.remove('filled'); }, 1800); }
   function setSide(v) { var r = $('input[name=side][value="' + v + '"]'); if (r) { r.checked = true; r.dispatchEvent(new Event('change', { bubbles: true })); flash(r.parentNode); } }
   function setSession(v) { el.session.value = v || ''; $$('[data-lt-session-btn]').forEach(function (b) { var on = b.dataset.ltSessionBtn === v; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); }); }
+  // Fills form fields (used by "Read chart"); returns the list of fields that were set.
   function apply(fields, only) {
-    var said = [], lang = locale.slice(0, 2), S = SAY[lang] || SAY.en;
-    changes.textContent = '';
+    var set = [];
+    if (changes) changes.textContent = '';
     Object.keys(fields).forEach(function (k) {
-      var v = fields[k]; if (v === null || v === undefined || (only && only !== k)) return;
+      var v = fields[k]; if (v === null || v === undefined || v === '' || (only && only !== k)) return;
       var shown = v;
-      if (k === 'side') { setSide(v); shown = v === 'LONG' ? 'LONG' : 'SHORT'; }
-      else if (k === 'session') { setSession(v); shown = ($('[data-lt-session-btn="' + v + '"]') || {}).textContent || v; flash($('[data-lt-session-btn="' + v + '"]')); }
+      if (k === 'side') { setSide(v); }
+      else if (k === 'session') { setSession(v); shown = ($('[data-lt-session-btn="' + v + '"]') || {}).textContent || v; }
       else if (k === 'strategy') { selectStrategy(String(v)); shown = (strategies.filter(function (s) { return s.id === v; })[0] || {}).name || v; }
+      else if (k === 'date' || k === 'time') { var f = $('#t-' + k); if (!f) return; f.value = v; f.dispatchEvent(new Event('input', { bubbles: true })); flash(f); }
       else { el[k].value = v; el[k].dispatchEvent(new Event('input', { bubbles: true })); flash(el[k]); }
-      var li = d.createElement('li'); li.textContent = '✓ ' + LABEL[k] + ': ' + shown; changes.appendChild(li);
-      said.push(S[k] + ' ' + (k === 'side' ? S[v] : shown));
+      set.push(LABEL[k] + ': ' + shown);
+      if (changes) { var li = d.createElement('li'); li.textContent = '✓ ' + LABEL[k] + ': ' + shown; changes.appendChild(li); }
     });
-    speak(said);
     calc();
-    return said.length;
+    return set;
   }
-
-  /* ------------------------------------------------------------------ voice console */
-  var SR = window.SpeechRecognition || window.webkitSpeechRecognition, rec = null, heard = $('[data-lt-heard]'), listenBadge = $('[data-lt-listen]');
-  var EXAMPLES = JSON.parse(form.dataset.ltExamples || '{}');
-  function markLocale() {
-    $$('[data-lt-locale]').forEach(function (b) { b.classList.toggle('on', b.dataset.ltLocale === locale); b.setAttribute('aria-pressed', String(b.dataset.ltLocale === locale)); });
-    // "Try it" and the example sentence follow the chosen language
-    var any = false; $$('[data-lt-sim]').forEach(function (b) { var on = b.dataset.ltSim === locale; b.hidden = !on; any = any || on; });
-    if (!any) $$('[data-lt-sim]').forEach(function (b) { b.hidden = b.dataset.ltSim !== 'en-US'; });
-    var ex = $('[data-lt-example]'); if (ex) ex.textContent = EXAMPLES[locale] ? 'e.g. “' + EXAMPLES[locale] + '”' : '';
-  }
-  $$('[data-lt-locale]').forEach(function (b) { b.addEventListener('click', function () { locale = b.dataset.ltLocale; markLocale(); }); });
-  markLocale();
-  var audioB = $('[data-lt-audio]');
-  function markAudio() { audioB.setAttribute('aria-pressed', String(audioOn)); $('[data-lt-audio-on]').hidden = !audioOn; $('[data-lt-audio-off]').hidden = audioOn; }
-  audioB.addEventListener('click', function () { audioOn = !audioOn; store.set('jz-lt-audio', audioOn ? 'on' : 'off'); if (!audioOn && window.speechSynthesis) window.speechSynthesis.cancel(); markAudio(); });
-  markAudio();
-  function handleSpeech(text, field) {
-    heard.textContent = text;
-    if (field === 'all') {
-      var r = extract(text, locale);
-      if (!apply(r.fields)) toast('Nothing recognised — try “bought gold at 2862.5, stop 2855, exit 2872, 0.5 lots”.', 'error');
-      return;
-    }
-    var x = extract(text, locale), f = {};
-    if (['entry', 'exit', 'stop', 'tp', 'lots'].indexOf(field) >= 0) {
-      var n = x.fields[field]; if (n === null) { var m = x.norm.match(/-?\d+(?:\.\d+)?/); n = m ? parseFloat(m[0]) : null; }
-      f[field] = n;
-    } else if (field === 'symbol') f.symbol = x.fields.symbol || (text.trim().split(/\s+/)[0] || '').toUpperCase();
-    else f[field] = x.fields[field];
-    if (f[field] === null || f[field] === undefined || f[field] === '') { toast('Not recognised — please try again.', 'error'); return; }
-    apply(f, field);
-  }
-  function stopRec() { if (rec) rec.stop(); }
-  function listen(field, btn) {
-    if (!SR) { toast('Voice needs Chrome, Edge or Safari — you can type or use the “Try it” examples.', 'error'); return; }
-    if (rec) { stopRec(); return; }
-    var done = function () { rec = null; btn.classList.remove('rec'); btn.setAttribute('aria-pressed', 'false'); listenBadge.hidden = true; };
-    btn.classList.add('rec'); btn.setAttribute('aria-pressed', 'true'); listenBadge.hidden = false;
-    // The whole-trade mic keeps listening through pauses and stops ~2 s after you finish (or when you tap it again)
-    rec = window.jzRecognize({ lang: locale, continuous: field === 'all', silenceMs: 2200,
-      onInterim: function (t) { heard.textContent = t; },
-      onError: function (code) { if (code === 'not-allowed' || code === 'service-not-allowed') toast('Microphone access is blocked — allow it in your browser settings.', 'error'); },
-      onDone: function (t) { done(); if (t) handleSpeech(t, field); } });
-    if (!rec) done();
-  }
-  if (!SR) $('[data-lt-unsupported]').hidden = false;
-  $$('[data-lt-mic]').forEach(function (b) { b.addEventListener('click', function () { listen(b.dataset.ltMic, b); }); });
-  $$('[data-lt-sim]').forEach(function (b) { b.addEventListener('click', function () { locale = b.dataset.ltSim; markLocale(); handleSpeech(b.dataset.text, 'all'); }); });
 
   /* ------------------------------------------------------------------ asset / direction */
   function resolveSym(v) {
@@ -273,8 +211,8 @@
     window.tmPost(readB.dataset.shotRead, fd).then(function (r) {
       readB.disabled = false; readB.classList.remove('busy');
       if (!r || !r.ok) { msg.textContent = (r && r.error) || 'Could not read the chart — please type the values.'; return; }
-      var n = apply({ symbol: r.fields.symbol, side: r.fields.side, entry: r.fields.entry, stop: r.fields.stop, tp: r.fields.tp, exit: r.fields.exit });
-      msg.textContent = n ? '✓ Filled from the screenshot — check every value before saving.' + (r.note ? ' ' + r.note : '') : 'No position tool or prices found — please type the values.';
+      var got = apply({ symbol: r.fields.symbol, side: r.fields.side, entry: r.fields.entry, stop: r.fields.stop, tp: r.fields.tp, exit: r.fields.exit, date: r.fields.date, time: r.fields.time });
+      msg.textContent = got.length ? '✓ Read from the screenshot — ' + got.join(' · ') + '. Check every value before saving.' + (r.note ? ' ' + r.note : '') : 'No position tool or prices found — please type the values.';
     });
   });
 

@@ -137,5 +137,6 @@ $initials = mb_strtoupper(mb_substr($m['name'], 0, 1));
 <script src="<?= e(asset('js/vendor/qrcode.js')) ?>" defer></script>
 <script src="<?= e(asset('js/voice-parse.js')) ?>" defer></script>
 <script src="<?= e(asset('js/tools.js')) ?>" defer></script>
+<script src="<?= e(asset('js/quicklog.js')) ?>" defer></script>
 </body>
 </html>

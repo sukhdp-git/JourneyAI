@@ -10,6 +10,7 @@ use App\Trading\Analytics;
 use App\Trading\Domain;
 use App\Trading\Ledger;
 use App\Trading\Members;
+use App\Trading\QuickLog;
 use App\Trading\QuickTrade;
 use App\Trading\Sessions;
 use App\Trading\TradeMath;
@@ -80,6 +81,74 @@ final class HomeController extends TerminalController
         $lim = \App\Trading\RiskLimits::status($this->m, $this->acc, Ledger::balance($this->acc), $this->tz);
         $alerts = array_values(array_filter([$lim['daily']['reached'] ? 'DAILY RISK LIMIT REACHED' : null, $lim['weekly']['reached'] ? 'WEEKLY RISK LIMIT REACHED' : null, $this->tiltActive() ? 'TILT RISK DETECTED — cooldown started' : null]));
         Response::json(['ok' => true, 'id' => $id, 'alerts' => $alerts, 'message' => $row['symbol'] . ' ' . $row['side'] . ' logged' . ($row['pnl'] !== null ? ' · ' . money($row['pnl'], $this->acc['currency'], true) : ' as OPEN') . '.']);
+    }
+
+    // ------------------------------------------------------------------ Quick Log (4 steps, no voice)
+
+    /** Saves the member's favourite instruments for the Quick Log (comma-separated symbols). */
+    public function quickPrefs(Request $req): never
+    {
+        $symbols = array_filter(array_map('trim', explode(',', (string) $req->post('symbols', ''))));
+        if (!$symbols) {
+            Response::json(['ok' => false, 'error' => 'Choose at least one instrument.'], 422);
+        }
+        $p = QuickLog::savePrefs($this->uid, (int) $this->acc['id'], $symbols);
+        Response::json(['ok' => true, 'symbols' => $p['symbols']]);
+    }
+
+    /** Reference price for the price wheel: live (Twelve Data) when configured, else the member's last logged price, else none. */
+    public function price(Request $req): never
+    {
+        $sym = strtoupper((string) ($req->params['symbol'] ?? ''));
+        $inst = \App\Trading\Instruments::get($sym);
+        if (!$inst) {
+            Response::json(['ok' => false, 'error' => 'Unknown instrument.'], 404);
+        }
+        \App\Core\Session::release();
+        $ref = QuickLog::reference($this->uid, (int) $this->acc['id'], $sym);
+        $p = QuickLog::prefs($this->uid, (int) $this->acc['id']);
+        Response::json(['ok' => true, 'symbol' => $sym, 'price' => $ref['price'], 'source' => $ref['source'], 'label' => $ref['label'],
+            'step' => QuickLog::step($sym, $ref['price']), 'tick' => (float) $inst['tick'], 'pip' => (float) $inst['pip'], 'class' => $inst['class'], 'decimals' => (int) $inst['decimals'],
+            'lot_step' => (float) ($inst['lot_step'] ?? 0.01), 'min_lot' => (float) ($inst['min_lot'] ?? 0.01), 'last_lots' => $p['lots'][$sym] ?? null]);
+    }
+
+    /**
+     * Saves a Quick Log trade. Date, time and session are taken from the moment of logging (member's timezone);
+     * the same validation as the full form applies. Context (setup, emotion, notes) is added later from the Trade Log.
+     */
+    public function quickLog(Request $req): never
+    {
+        $this->requireWritable();
+        if ($tilt = $this->tiltActive()) {
+            Response::json(['ok' => false, 'error' => 'JOURNZEY TERMINAL LOCK: tilt cooldown is active until ' . fmt_date(gmdate('Y-m-d H:i:s', $tilt), 'H:i') . '. Quick logging is paused; use the full trade form if you must record a trade.'], 423);
+        }
+        $side = (string) $req->post('side');
+        $in = [
+            'symbol' => strtoupper(trim((string) $req->post('symbol', ''))), 'side' => in_array($side, ['LONG', 'SHORT'], true) ? $side : '',
+            'executed_at' => '', 'entry_price' => trim((string) $req->post('entry', '')), 'exit_price' => trim((string) $req->post('exit', '')),
+            'stop_loss' => trim((string) $req->post('stop', '')), 'take_profit' => '', 'lot_size' => trim((string) $req->post('lots', '')),
+            'strategy_id' => '', 'setup_tag' => '', 'emotion' => '', 'mistake_tag' => 'NONE', 'rules_followed' => '1', 'notes' => '',
+        ];
+        $errors = [];
+        if (!\App\Trading\Instruments::get($in['symbol'])) {
+            $errors['symbol'] = 'Choose an instrument.';
+        }
+        if ($in['side'] === '') {
+            $errors['side'] = 'Choose Buy or Sell.';
+        }
+        if (!$errors) {
+            [$errors, $row] = Ledger::validateTrade($this->m, $this->acc, $in);
+        }
+        if ($errors) {
+            Response::json(['ok' => false, 'errors' => $errors, 'error' => implode(' ', $errors)], 422);
+        }
+        $id = Database::insert('trades', $row + ['user_id' => $this->uid, 'account_id' => $this->acc['id'], 'source' => 'QUICK_LOG']);
+        QuickLog::savePrefs($this->uid, (int) $this->acc['id'], null, $row['symbol'], (float) $row['lot_size']);
+        $lim = \App\Trading\RiskLimits::status($this->m, $this->acc, Ledger::balance($this->acc), $this->tz);
+        $alerts = array_values(array_filter([$lim['daily']['reached'] ? 'DAILY RISK LIMIT REACHED' : null, $lim['weekly']['reached'] ? 'WEEKLY RISK LIMIT REACHED' : null, $this->tiltActive() ? 'TILT RISK DETECTED — cooldown started' : null]));
+        Response::json(['ok' => true, 'id' => $id, 'alerts' => $alerts, 'edit' => url('/terminal/trades/' . $id . '/edit'),
+            'message' => $row['symbol'] . ' ' . ($row['side'] === 'LONG' ? 'BUY' : 'SELL') . ' ' . rtrim(rtrim(number_format((float) $row['lot_size'], 2, '.', ''), '0'), '.') . ' lots logged'
+                . ($row['pnl'] !== null ? ' · ' . money($row['pnl'], $this->acc['currency'], true) : ' as OPEN') . ' · ' . (Domain::SESSIONS[$row['session']] ?? $row['session']) . ' session, ' . fmt_date($row['executed_at'], 'M j H:i') . '.']);
     }
 
     private function tiltActive(): ?int

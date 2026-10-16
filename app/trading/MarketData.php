@@ -24,6 +24,12 @@ final class MarketData
         'BTCUSDT' => ['112450.00', 1.24], 'ETHUSDT' => ['4310.50', 1.87],
     ];
 
+    /** Twelve Data symbol for an instrument, or null when it has no market-data mapping. */
+    public static function symbolFor(string $symbol): ?string
+    {
+        return self::MAP[$symbol] ?? null;
+    }
+
     public static function configured(): bool
     {
         return secret_setting('market_data_api_key') !== '';
