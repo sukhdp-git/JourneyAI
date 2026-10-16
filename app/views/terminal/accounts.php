@@ -103,18 +103,14 @@ $limFields = function (?array $a) use ($sel): string {
   </section>
 
   <section class="panel stack">
-    <h2>Import statement (CSV)</h2>
+    <h2>Import trade history (CSV)</h2>
     <?php if ((int) $acc['has_demo_data']): ?>
       <p class="muted small">Switch to one of your own accounts to import — the DEMO DATA journal stays separate.</p>
     <?php elseif (!$acc['writable']): ?>
       <p class="muted small">Live accounts need an active plan to import. <a href="<?= e(url('/pricing')) ?>">See plans</a>.</p>
     <?php else: ?>
-    <form method="post" action="<?= e(url('/terminal/accounts/' . $acc['id'] . '/import')) ?>" enctype="multipart/form-data" class="stack"><?= csrf_field() ?>
-      <p class="muted small">Into <strong><?= e($acc['name']) ?></strong>. MT4/MT5, cTrader and NinjaTrader exports are auto-detected; duplicates are skipped by ticket.</p>
-      <div class="f"><label for="im-f">CSV file (max 5 MB)</label><input id="im-f" type="file" name="file" accept=".csv,text/csv,.txt" required></div>
-      <div class="f"><label for="im-o">Broker server time</label><select id="im-o" name="offset_minutes"><?php foreach ([0 => 'UTC (GMT+0)', 60 => 'GMT+1', 120 => 'GMT+2 (common MT servers)', 180 => 'GMT+3 (MT servers in summer)', -240 => 'GMT−4 (New York, summer)', -300 => 'GMT−5', 330 => 'GMT+5:30 (India)'] as $k => $l): ?><option value="<?= $k ?>"><?= e($l) ?></option><?php endforeach; ?></select></div>
-      <button class="tm-btn">Import trades</button>
-    </form>
+    <p class="muted small">Bring in your past trades from any broker or platform (MT4/MT5, cTrader, NinjaTrader, TradeLocker, Zerodha, Binance, IBKR, TradingView…). Columns are matched automatically and you preview everything before it is saved; your dashboard then analyses the full history.</p>
+    <div><a class="tm-btn tm-btn-primary" href="<?= e(url('/terminal/import')) ?>"><?= icon('upload', 'icon icon-sm') ?> Import trades from CSV</a></div>
     <?php endif; ?>
   </section>
 </div>

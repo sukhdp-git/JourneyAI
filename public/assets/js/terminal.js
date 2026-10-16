@@ -34,6 +34,13 @@
     d.addEventListener('click', function () { m.classList.remove('open'); b.setAttribute('aria-expanded', 'false'); });
   });
   $$('[data-autosubmit]').forEach(function (s) { s.addEventListener('change', function () { s.form.submit(); }); });
+  // CSV import: after any mapping change the preview is stale, so the Import button waits for a new preview.
+  $$('[data-import]').forEach(function (f) {
+    f.addEventListener('change', function () {
+      var go = f.querySelector('[data-import-go]');
+      if (go && !go.disabled) { go.disabled = true; go.textContent = 'Preview again to import'; }
+    });
+  });
 
   // Modals
   var lastFocus;

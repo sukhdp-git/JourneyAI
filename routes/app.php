@@ -9,6 +9,7 @@ use App\Controllers\Terminal\CoachController;
 use App\Controllers\Terminal\EdgeController;
 use App\Controllers\Terminal\FlexController;
 use App\Controllers\Terminal\HomeController as Hub;
+use App\Controllers\Terminal\ImportController;
 use App\Controllers\Terminal\InsightsController;
 use App\Controllers\Terminal\NotepadController;
 use App\Controllers\Terminal\SettingsController;
@@ -105,6 +106,10 @@ $router->post('/terminal/accounts/{id}', [AccountsController::class, 'update']);
 $router->post('/terminal/accounts/{id}/archive', [AccountsController::class, 'archive']);
 $router->post('/terminal/accounts/{id}/capital', [AccountsController::class, 'capital']);
 $router->post('/terminal/accounts/{id}/import', [AccountsController::class, 'import']);
+$router->get('/terminal/import', [ImportController::class, 'index']);
+$router->post('/terminal/import', [ImportController::class, 'upload']);
+$router->get('/terminal/import/map', [ImportController::class, 'map']);
+$router->post('/terminal/import/run', [ImportController::class, 'run']);
 
 $router->get('/terminal/settings', [SettingsController::class, 'index']);
 $router->post('/terminal/settings', [SettingsController::class, 'save']);

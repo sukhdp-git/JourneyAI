@@ -1656,3 +1656,14 @@ body.tm { background: radial-gradient(1000px 520px at 92% -12%, var(--glow-1), t
 .nd-bell b { position: absolute; top: -4px; right: -6px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; background: var(--neg); color: #fff; font: 700 11px/18px Inter, sans-serif; text-align: center; }
 .nd-badge { display: inline-flex; align-items: center; gap: 4px; margin-left: 6px; padding: 2px 8px; border-radius: 999px; font: 650 11.5px Inter, sans-serif; color: #b77905; background: color-mix(in srgb, #f5a524 16%, transparent); text-decoration: none !important; white-space: nowrap; }
 [data-theme="obsidian-pro"] .nd-badge, :root:not([data-theme="clean-light"]) .nd-badge { color: #f5c26b; }
+
+/* ---------- CSV IMPORT ---------- */
+.imp .imp-list { margin: 0; padding-left: 18px; display: grid; gap: 4px; color: var(--text); }
+.imp-map { border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin: 0; }
+.imp-map legend { padding: 0 6px; font-weight: 600; color: var(--strong); }
+.imp-map .req { color: var(--neg); }
+.imp-sample summary { cursor: pointer; font-weight: 600; }
+.imp-sample .tbl td, .imp-sample .tbl th { white-space: nowrap; }
+.imp-errs ul { margin: 6px 0 0; padding-left: 18px; }
+.imp-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; position: sticky; bottom: 0; padding: 10px 0; background: linear-gradient(transparent, var(--bg) 35%); }
+@media (max-width: 640px) { .imp-actions { position: static; background: none; } .imp-actions .tm-btn { flex: 1 1 auto; justify-content: center; } }

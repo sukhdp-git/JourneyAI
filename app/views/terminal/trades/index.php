@@ -31,6 +31,7 @@ $sortLink = function (string $col, string $label) use ($f, $qs) { $on = ($f['sor
   <span style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">
     <button type="button" class="tm-btn tm-btn-sm wk-open" data-week-card<?= $weeks ? '' : ' disabled title="Close a trade to create your first weekly card"' ?>><?= icon('sparkles', 'icon icon-sm') ?> Weekly card</button>
     <a class="tm-btn tm-btn-sm" href="<?= e(url('/terminal/trades/export') . $qs([])) ?>"><?= icon('download', 'icon icon-sm') ?> <?= e(t('common.export')) ?></a>
+    <a class="tm-btn tm-btn-sm" href="<?= e(url('/terminal/import')) ?>" title="Import past trades from your broker's CSV"><?= icon('upload', 'icon icon-sm') ?> Import CSV</a>
     <?php if ($acc['writable']): ?><a class="tm-btn tm-btn-sm tm-btn-primary" href="<?= e(url('/terminal/trades/new')) ?>"><?= icon('plus', 'icon icon-sm') ?> <?= e(t('common.new_trade')) ?></a><?php endif; ?>
   </span>
 </form>

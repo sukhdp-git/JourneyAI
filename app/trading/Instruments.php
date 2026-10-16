@@ -126,6 +126,8 @@ final class Instruments
     public static function resolve(string $text): ?string
     {
         $raw = strtolower(trim($text));
+        $raw = preg_replace('/^[a-z0-9_]+:/', '', $raw) ?? $raw; // "OANDA:XAUUSD", "BINANCE:BTCUSDT"
+        $raw = preg_replace('/([._\-]?perp|\.p)$/', '', $raw) ?? $raw; // perpetual futures "BTCUSD.P", "BTCUSDT_PERP"
         if ($raw === '') {
             return null;
         }
