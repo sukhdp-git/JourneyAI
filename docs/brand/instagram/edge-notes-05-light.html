@@ -1,0 +1,103 @@
+<!doctype html><html><head><meta charset="utf-8"><title>EDGE NOTES · 05</title><style>
+@font-face { font-family: Jakarta; src: url(../../../public/assets/fonts/plus-jakarta-sans.woff2); font-weight: 200 800; }
+@font-face { font-family: InstrSerif; src: url(../../../public/assets/fonts/instrument-serif-italic.woff2); font-style: italic; }
+@font-face { font-family: Mono; src: url(../../../public/assets/fonts/jetbrains-mono.woff2); }
+:root { --bg: #f6f5fc; --panel: #fff; --line: #e5e1f5; --text: #2c2a40; --muted: #636080; --faint: #8f8ca8; --strong: #15132a; --up: #059669; --down: #dc2626;
+  --brand: linear-gradient(115deg, #6541e9 0%, #8a5ddc 32%, #b17ace 60%, #d996c1 82%, #feb2b4 100%); }
+* { box-sizing: border-box; } html, body { margin: 0; }
+body { width: 1080px; height: 1350px; overflow: hidden; background: var(--bg); color: var(--text); font-family: Jakarta, sans-serif; position: relative; }
+.glow { position: absolute; inset: 0; background: radial-gradient(ellipse 70% 40% at 50% 30%, rgb(101 65 233 / .10), transparent 70%), radial-gradient(ellipse 55% 35% at 85% 92%, rgb(254 178 180 / .22), transparent 70%); }
+.page { position: absolute; inset: 0; padding: 64px 72px; display: flex; flex-direction: column; }
+.top { display: flex; justify-content: space-between; align-items: center; }
+.word { font-weight: 600; font-size: 40px; letter-spacing: -.04em; background: var(--brand); -webkit-background-clip: text; background-clip: text; color: transparent; padding-bottom: 4px; }
+.tag { font: 500 20px Mono, monospace; letter-spacing: .14em; color: #5232d4; border: 1.5px solid rgb(101 65 233 / .3); background: #fff; border-radius: 999px; padding: 10px 20px; }
+.grad { background: var(--brand); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.serif { font-family: InstrSerif, serif; font-style: italic; font-weight: 400; letter-spacing: 0; }
+h1 { font-size: 96px; line-height: .98; letter-spacing: -.045em; color: var(--strong); margin: 52px 0 22px; font-weight: 700; }
+.sub { font-size: 32px; line-height: 1.35; margin: 0; }
+.card { background: var(--panel); border: 1.5px solid var(--line); border-radius: 26px; box-shadow: 0 20px 50px rgb(60 40 140 / .10); }
+.chartcard { margin-top: 40px; padding: 22px 22px 14px; }
+.ch-head { display: flex; justify-content: space-between; align-items: center; padding: 0 6px 10px; }
+.sym { display: flex; align-items: center; gap: 14px; font-weight: 700; font-size: 28px; color: var(--strong); }
+.sym i { font: 500 20px Mono, monospace; font-style: normal; color: var(--muted); background: #f3f1fb; border-radius: 8px; padding: 4px 10px; }
+.px { font: 600 24px Mono, monospace; color: var(--down); }
+svg text { font-family: Mono, monospace; }
+.foot { display: flex; justify-content: space-between; align-items: center; margin-top: auto; font-size: 24px; color: var(--muted); }
+.dots { display: flex; gap: 10px; } .dots i { width: 12px; height: 12px; border-radius: 50%; background: #ddd8f2; } .dots i.on { background: #8a5ddc; width: 36px; border-radius: 6px; }
+.swipe { font-size: 30px; font-weight: 600; color: var(--strong); display: flex; gap: 12px; align-items: center; }
+.note { font-size: 19px; color: var(--faint); margin: 10px 8px 0; }
+h2 { font-size: 64px; line-height: 1.04; letter-spacing: -.04em; color: var(--strong); margin: 44px 0 26px; font-weight: 700; }
+.steps { display: grid; gap: 14px; margin: 0; padding: 0; list-style: none; }
+.steps li { display: flex; gap: 20px; align-items: center; background: #fff; border: 1.5px solid var(--line); border-radius: 20px; padding: 16px 22px; font-size: 28px; line-height: 1.25; box-shadow: 0 8px 24px rgb(60 40 140 / .06); }
+.steps b { color: var(--strong); }
+.n { flex: none; width: 46px; height: 46px; border-radius: 13px; display: grid; place-items: center; font: 700 24px Mono, monospace; color: #fff; background: var(--brand); }
+.log { margin-top: 24px; overflow: hidden; }
+.log h3 { margin: 0; padding: 18px 26px; font-size: 24px; color: var(--muted); font-weight: 600; border-bottom: 1.5px solid var(--line); display: flex; justify-content: space-between; }
+.log h3 span { font: 500 20px Mono, monospace; color: var(--faint); }
+.log { flex: none; } .row { display: grid; grid-template-columns: 290px 1fr 140px 150px; white-space: nowrap; align-items: center; padding: 15px 26px; font: 500 26px Mono, monospace; border-bottom: 1.5px solid #f1eef9; }
+.row:last-child { border-bottom: 0; }
+.row .bar { height: 14px; border-radius: 7px; background: var(--up); opacity: .75; }
+.row .bar.dn { background: var(--down); }
+.row .tr { color: var(--faint); font-size: 22px; text-align: right; } .row .pl { text-align: right; font-weight: 700; }
+.up { color: var(--up); } .dn { color: var(--down); }
+.row.danger { background: #fdecec; }
+.row.danger .t::after { content: "danger hour"; margin-left: 10px; font: 700 15px Jakarta, sans-serif; color: #fff; background: var(--down); border-radius: 999px; padding: 4px 10px; vertical-align: 4px; }
+.auto { margin-top: 24px; display: flex; gap: 26px; align-items: center; }
+.auto img { width: 430px; border-radius: 18px; border: 1.5px solid rgb(220 38 38 / .25); box-shadow: 0 20px 44px rgb(60 40 140 / .14); }
+.auto p { margin: 0; font-size: 30px; line-height: 1.28; color: var(--strong); font-weight: 600; } .auto small { display: block; font-size: 19px; color: var(--faint); font-weight: 400; margin-top: 10px; }
+.cta { margin-top: 22px; display: flex; align-items: center; justify-content: space-between; background: var(--brand); border-radius: 22px; padding: 22px 30px; color: #fff; font-size: 31px; font-weight: 700; box-shadow: 0 18px 40px rgb(101 65 233 / .25); }
+.cta span { font-weight: 500; font-size: 25px; opacity: .95; }
+
+.lead { font-size: 30px; line-height: 1.35; margin: 0 0 26px; color: var(--text); }
+.tbl { margin-top: 34px; padding: 10px 0 6px; overflow: hidden; }
+.tbl h3 { margin: 0; padding: 14px 28px 16px; font-size: 24px; color: var(--muted); font-weight: 600; border-bottom: 1.5px solid var(--line); display: flex; justify-content: space-between; }
+.tbl h3 span { font: 500 20px Mono, monospace; color: var(--faint); }
+.tr { display: grid; align-items: center; padding: 18px 28px; border-bottom: 1.5px solid #f1eef9; font: 600 30px Mono, monospace; color: var(--strong); }
+.tr:last-child { border-bottom: 0; }
+.tr .bar { height: 18px; border-radius: 9px; background: linear-gradient(90deg, #8a5ddc, #b17ace); }
+.tr .muted { color: var(--faint); font-weight: 500; font-size: 24px; }
+.tr.hl { background: #f3effe; }
+.hdr { font: 600 19px Jakarta, sans-serif !important; letter-spacing: .08em; text-transform: uppercase; color: var(--faint) !important; padding-top: 14px !important; padding-bottom: 10px !important; }
+.formula { margin-top: 26px; padding: 22px 28px; border-radius: 22px; background: #fff; border: 1.5px dashed rgb(101 65 233 / .4); font: 600 28px Mono, monospace; color: #5232d4; text-align: center; }
+.formula small { display: block; font: 500 20px Jakarta, sans-serif; color: var(--muted); margin-top: 6px; }
+.ex { margin-top: 22px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.ex div { background: #fff; border: 1.5px solid var(--line); border-radius: 18px; padding: 18px; text-align: center; font: 700 30px Mono, monospace; color: var(--strong); }
+.ex div small { display: block; font: 500 18px Jakarta, sans-serif; color: var(--muted); margin-top: 4px; }
+.res { margin-top: 18px; padding: 22px 28px; border-radius: 22px; background: #ecfdf5; border: 1.5px solid #a7f3d0; font-size: 30px; font-weight: 700; color: #065f46; display: flex; justify-content: space-between; align-items: center; }
+.res b { font: 700 36px Mono, monospace; color: var(--up); }
+.tip { margin-top: 22px; font-size: 26px; color: var(--muted); display: flex; gap: 12px; } .tip b { color: var(--strong); }
+.quote { margin-top: 22px; padding: 24px 30px; border-radius: 22px; background: #fff; border: 1.5px solid var(--line); box-shadow: 0 8px 24px rgb(60 40 140 / .06); font-family: InstrSerif, serif; font-style: italic; font-size: 40px; line-height: 1.18; color: var(--strong); }
+.clock { margin-top: 30px; padding: 26px 26px 18px; }
+.lane { display: grid; grid-template-columns: 170px 1fr; align-items: center; gap: 16px; margin: 14px 0; }
+.lane b { font-size: 26px; color: var(--strong); } .lane b small { display: block; font: 500 17px Mono, monospace; color: var(--faint); }
+.track { position: relative; height: 46px; background: #f3f1fb; border-radius: 12px; }
+.seg { position: absolute; top: 0; bottom: 0; border-radius: 12px; display: flex; align-items: center; justify-content: center; font: 600 17px Mono, monospace; color: #fff; }
+.ov { position: absolute; top: -8px; bottom: -8px; border: 2.5px dashed #dc2626; border-radius: 12px; background: rgb(220 38 38 / .06); }
+.axis { display: grid; grid-template-columns: 170px 1fr; gap: 16px; margin-top: 6px; }
+.axis div { position: relative; height: 26px; font: 500 17px Mono, monospace; color: var(--faint); }
+.axis span { position: absolute; transform: translateX(-50%); }
+.sess { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 4px; }
+.sess div { background: #fff; border: 1.5px solid var(--line); border-radius: 20px; padding: 20px 22px; box-shadow: 0 8px 24px rgb(60 40 140 / .05); }
+.sess b { display: block; font-size: 28px; color: var(--strong); } .sess i { font: 500 18px Mono, monospace; font-style: normal; color: #5232d4; }
+.sess p { margin: 8px 0 0; font-size: 22px; line-height: 1.35; color: var(--muted); }
+#p2 h2 { margin-top: 0; }
+.page > .top + * { margin-top: auto !important; } .foot { margin-top: auto !important; }
+#p2 .lead { font-size: 32px; } #p2 .formula { font-size: 30px; padding: 26px 28px; } #p2 .quote { font-size: 44px; margin-top: 26px; }
+#p2 .tr { padding: 22px 28px; } #p2 .ex div { padding: 24px 18px; font-size: 34px; } #p2 .res { padding: 26px 28px; }
+#p2 .sess div { padding: 24px 24px; } #p2 .sess p { font-size: 24px; } #p2 .tip { font-size: 28px; }
+.clock { position: relative; }
+.ovl { position: absolute; top: 12px; bottom: 44px; left: calc(26px + 186px + (100% - 52px - 186px) * 13 / 24); width: calc((100% - 52px - 186px) * 4 / 24); border: 3px dashed #dc2626; border-radius: 14px; background: rgb(220 38 38 / .07); }
+.ovl span { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); background: #dc2626; color: #fff; font: 700 15px Jakarta; padding: 4px 10px; border-radius: 99px; white-space: nowrap; }
+</style></head><body><div class="glow"></div>
+<div class="page" id="p1"><div class="top"><div class="word">journzey</div><div class="tag">EDGE NOTES · 05</div></div><h1 style="font-size:86px">Lot size<br><span class="serif grad">cheat sheet.</span></h1>
+<p class="sub">$10,000 account · risking 1% ($100) per trade. Save it for your next entry.</p>
+<div class="card tbl"><h3>XAUUSD · gold <span>$1 move = $100 per lot</span></h3><div class="tr hdr" style="grid-template-columns:1fr 1fr 1fr"><span>Stop</span><span>Risk</span><span style="text-align:right">Lots</span></div><div class="tr" style="grid-template-columns:1fr 1fr 1fr"><span>$5</span><span class="muted">$100</span><span style="text-align:right;color:#5232d4">0.20</span></div><div class="tr" style="grid-template-columns:1fr 1fr 1fr"><span>$10</span><span class="muted">$100</span><span style="text-align:right;color:#5232d4">0.10</span></div><div class="tr" style="grid-template-columns:1fr 1fr 1fr"><span>$20</span><span class="muted">$100</span><span style="text-align:right;color:#5232d4">0.05</span></div></div>
+<div class="card tbl" style="margin-top:20px"><h3>EURUSD <span>1 pip = $10 per lot</span></h3><div class="tr hdr" style="grid-template-columns:1fr 1fr 1fr"><span>Stop</span><span>Risk</span><span style="text-align:right">Lots</span></div><div class="tr" style="grid-template-columns:1fr 1fr 1fr"><span>10 pips</span><span class="muted">$100</span><span style="text-align:right;color:#5232d4">1.00</span></div><div class="tr" style="grid-template-columns:1fr 1fr 1fr"><span>20 pips</span><span class="muted">$100</span><span style="text-align:right;color:#5232d4">0.50</span></div><div class="tr" style="grid-template-columns:1fr 1fr 1fr"><span>50 pips</span><span class="muted">$100</span><span style="text-align:right;color:#5232d4">0.20</span></div></div>
+<div class="note" style="margin-top:12px">Standard contract sizes. Check your broker's specs; some differ.</div>
+<div class="foot"><div class="swipe">Why 1% matters <span class="grad" style="font-size:40px">→</span></div><div class="dots"><i class="on"></i><i></i></div></div></div>
+<div class="page" id="p2" style="display:none"><div class="top"><div class="word">journzey</div><div class="tag">EDGE NOTES · 05</div></div><h2>10 losses in a row.<br><span class="serif grad">It happens.</span></h2>
+<p class="lead">Even good strategies hit losing streaks. Your risk per trade decides how much it hurts:</p>
+<div class="card tbl" style="margin-top:0"><h3>Risk per trade → account after 10 straight losses <span>compounded</span></h3><div class="tr" style="grid-template-columns:150px 1fr 150px"><span>0.5%</span><span><div class="bar" style="width:23%;background:#059669"></div></span><span style="text-align:right;color:#059669">−4.9%</span></div><div class="tr" style="grid-template-columns:150px 1fr 150px"><span>1%</span><span><div class="bar" style="width:44%;background:#8a5ddc"></div></span><span style="text-align:right;color:#8a5ddc">−9.6%</span></div><div class="tr" style="grid-template-columns:150px 1fr 150px"><span>2%</span><span><div class="bar" style="width:84%;background:#dc2626"></div></span><span style="text-align:right;color:#dc2626">−18.3%</span></div></div>
+<div class="formula" style="font-size:27px">Lots = (account × risk%) ÷ (stop × $ per point)<small>$10,000 × 1% ÷ ($10 stop × $100) = 0.10 lots of gold</small></div>
+<div class="quote">"Your stop decides your lot size. Not your mood."</div>
+<div class="cta">journzey is coming soon <span>Follow for launch day 🔔</span></div><div class="foot" style="margin-top:16px"><div>Send this to a friend who sizes by feel 📤</div><div class="dots"><i></i><i class="on"></i></div></div></div></body></html>
