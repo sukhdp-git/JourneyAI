@@ -14,3 +14,8 @@ Numbers are an explicit example ($40/day × 5 × 52 = $10,400) and are labelled 
 | 18–22s | "It hides in small losses spread across 250 trading days. Only a journal adds them up." | f4 zoom-in, then you writing in a journal / the journzey dashboard |
 | 22–26s solution | "Write down every trade for 30 days. Find that one habit. Fix it, and that money stops leaving." | you at the desk, calm; then count-f5.mp4: green +$10,400 counting up |
 | 26–28s close | "Your strategy makes money. Your journal keeps it. Follow." | f5.png hold, "journzey · coming soon" |
+
+## 4:3 version (MT5-style P&L)
+Files ending in `-4x3` (1440×1080): f1–f5-4x3.png and count-f1-4x3.mp4 / count-f5-4x3.mp4, built from `frames-4x3.html`.
+The P&L is shown on a generic MT5-style mobile Trade/History screen (no MetaQuotes logo): black background, losses in red,
+profits in blue (as the MT5 app shows them), numbers formatted like MT5 ("-10 400.00 USD"). Labelled "Illustration".

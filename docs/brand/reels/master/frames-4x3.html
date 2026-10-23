@@ -1,0 +1,126 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Master reel frames 4:3 (MT5 style)</title><style>
+@font-face { font-family: Jakarta; src: url(../../../../public/assets/fonts/plus-jakarta-sans.woff2); font-weight: 200 800; }
+@font-face { font-family: InstrSerif; src: url(../../../../public/assets/fonts/instrument-serif-italic.woff2); font-style: italic; }
+@font-face { font-family: Mono; src: url(../../../../public/assets/fonts/jetbrains-mono.woff2); }
+:root { --brand: linear-gradient(115deg,#7c5cff 0%,#9d6ce8 32%,#c084d8 60%,#e4a0c8 82%,#feb2b4 100%);
+  --mt-bg:#000; --mt-panel:#121212; --mt-line:#262626; --mt-text:#e6e6e6; --mt-dim:#8a8a8a; --mt-red:#f23645; --mt-blue:#2f80ed; }
+* { box-sizing: border-box; } html, body { margin: 0; }
+body { width: 1440px; height: 1080px; overflow: hidden; background: #060613; color: #dedcec; font-family: Jakarta, sans-serif; position: relative; }
+.f { position: absolute; inset: 0; display: none; align-items: center; gap: 70px; padding: 0 90px; }
+.glow-r { background: radial-gradient(ellipse 55% 60% at 28% 50%, rgb(242 54 69 / .20), transparent 70%), #060613; }
+.glow-b { background: radial-gradient(ellipse 55% 60% at 28% 50%, rgb(47 128 237 / .22), transparent 70%), #060613; }
+.glow-v { background: radial-gradient(ellipse 60% 60% at 50% 45%, rgb(124 92 255 / .22), transparent 70%), #060613; }
+/* ---------- MT5-style mobile Trade screen (generic look, no trademarks) ---------- */
+.phone { flex: none; width: 500px; height: 960px; border-radius: 54px; background: var(--mt-bg); border: 10px solid #1c1c22; box-shadow: 0 40px 90px rgb(0 0 0 / .6), 0 0 0 2px #2a2a33; overflow: hidden; font-family: Inter, Roboto, sans-serif; color: var(--mt-text); position: relative; }
+.sb { height: 44px; display: flex; justify-content: space-between; align-items: center; padding: 0 30px; font: 600 17px Inter; color: #fff; }
+.bar { height: 62px; display: flex; align-items: center; justify-content: space-between; padding: 0 22px; border-bottom: 1px solid var(--mt-line); }
+.bar b { font: 600 24px Inter; } .bar i { font-style: normal; color: var(--mt-dim); font: 400 26px Inter; letter-spacing: 6px; }
+.tot { text-align: center; font-variant-numeric: normal !important; padding: 26px 0 14px; font: 600 50px Inter; letter-spacing: -.5px; font-variant-numeric: tabular-nums; }
+.tot small { font: 500 22px Inter; color: var(--mt-dim); margin-left: 8px; }
+.kv { padding: 0 22px 12px; border-bottom: 8px solid var(--mt-panel); }
+.kv div { display: flex; justify-content: space-between; font: 400 19px Inter; padding: 6px 0; color: var(--mt-dim); }
+.kv div span:last-child { color: var(--mt-text); font-variant-numeric: tabular-nums; }
+.sec { padding: 12px 22px 4px; font: 600 17px Inter; color: var(--mt-dim); text-transform: none; display: flex; justify-content: space-between; }
+.pos { padding: 11px 22px; border-bottom: 1px solid var(--mt-line); display: flex; justify-content: space-between; align-items: center; position: relative; }
+.pos .l b { font: 600 20px Inter; color: #fff; } .pos .l b em { font-style: normal; font-weight: 500; }
+.pos .l div { font: 400 16px Inter; color: var(--mt-dim); margin-top: 3px; font-variant-numeric: tabular-nums; }
+.pos .p { font: 600 21px Inter; font-variant-numeric: tabular-nums; }
+.neg { color: var(--mt-red); } .posv { color: var(--mt-blue); }
+.pos.hl { background: rgb(242 54 69 / .12); }
+.tab { position: absolute; left: 0; right: 0; bottom: 0; height: 78px; border-top: 1px solid var(--mt-line); display: flex; justify-content: space-around; align-items: center; font: 500 14px Inter; color: var(--mt-dim); background: var(--mt-bg); }
+.tab span.on { color: var(--mt-blue); }
+/* ---------- right column ---------- */
+.txt { flex: 1; }
+.kick { font: 600 24px Mono, monospace; letter-spacing: .16em; color: #9d9abb; text-transform: uppercase; }
+.line { font-size: 68px; font-weight: 700; color: #faf8ff; letter-spacing: -.035em; line-height: 1.08; margin-top: 18px; }
+.sub { font-size: 32px; color: #9d9abb; margin-top: 26px; line-height: 1.35; }
+.grad { background: var(--brand); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.serif { font-family: InstrSerif, serif; font-style: italic; font-weight: 400; }
+.lbl { position: absolute; bottom: 28px; right: 40px; font: 500 18px Jakarta; color: #67648a; }
+.wm { font: 600 40px Jakarta; letter-spacing: -.03em; margin-top: 40px; }
+.calc { font: 700 70px/1.3 Mono, monospace; color: #faf8ff; margin-top: 26px; }
+.calc em { font-style: normal; color: #9d9abb; }
+.pills { display: grid; gap: 18px; margin-top: 36px; }
+.pills div { display: flex; align-items: center; gap: 16px; font-size: 34px; font-weight: 700; color: #faf8ff; }
+.pills b { width: 46px; height: 46px; border-radius: 50%; background: var(--mt-red); display: grid; place-items: center; font-size: 24px; color: #fff; }
+.tag { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); width: 34px; height: 34px; border-radius: 50%; background: var(--mt-red); color: #fff; font: 700 18px Inter; display: grid; place-items: center; }
+/* calendar frame */
+.cal { display: grid; grid-template-columns: repeat(26, 1fr); gap: 7px; width: 100%; margin: 34px 0; }
+.cal i { aspect-ratio: 1; border-radius: 5px; background: #1b2a26; } .cal i.r { background: var(--mt-red); box-shadow: 0 0 10px rgb(242 54 69 / .55); }
+.f4 { flex-direction: column; justify-content: center; text-align: center; gap: 0; padding: 0 120px; }
+</style></head><body>
+
+<!-- F1: one habit, one year (count-up on .tot) -->
+<div class="f glow-r" id="f1">
+  <div class="phone"><div class="sb"><span>9:41</span><span>▮▮▮ 100%</span></div>
+    <div class="bar"><b>Trade</b><i>⇅ ＋</i></div>
+    <div class="tot neg" data-count="-10400">-10 400.00<small>USD</small></div>
+    <div class="kv"><div><span>Balance:</span><span>25 000.00</span></div><div><span>Equity:</span><span data-eq>14 600.00</span></div><div><span>Margin:</span><span>0.00</span></div><div><span>Free margin:</span><span data-eq>14 600.00</span></div></div>
+    <div class="sec"><span>Positions</span><span>⋯</span></div>
+    <div id="rows1"></div>
+    <div class="tab"><span>Quotes</span><span>Chart</span><span class="on">Trade</span><span>History</span><span>Messages</span></div></div>
+  <div class="txt"><div class="kick">One bad habit · one year</div><div class="line">This is what <span class="grad">one habit</span> costs you.</div><div class="sub">$40 at a time. Every single trading day.</div></div>
+  <div class="lbl">Illustration · example: a habit costing $40 a day</div>
+</div>
+
+<!-- F2: which one is yours -->
+<div class="f glow-r" id="f2">
+  <div class="phone"><div class="sb"><span>15:02</span><span>▮▮▮ 100%</span></div>
+    <div class="bar"><b>Trade</b><i>⇅ ＋</i></div>
+    <div class="tot neg">-120.00<small>USD</small></div>
+    <div class="kv"><div><span>Balance:</span><span>25 000.00</span></div><div><span>Equity:</span><span>24 880.00</span></div></div>
+    <div class="sec"><span>Positions</span><span>⋯</span></div>
+    <div class="pos hl"><div class="l"><b>XAUUSD, <em class="posv">buy 0.40</em></b><div>4 112.30 → 4 111.30</div></div><span class="p neg" style="margin-right:46px">-40.00</span><span class="tag">1</span></div>
+    <div class="pos hl"><div class="l"><b>EURUSD, <em class="neg">sell 1.00</em></b><div>1.08420 → 1.08460</div></div><span class="p neg" style="margin-right:46px">-40.00</span><span class="tag">2</span></div>
+    <div class="pos hl"><div class="l"><b>NAS100, <em class="posv">buy 2.00</em></b><div>20 151.0 → 20 149.0</div></div><span class="p neg" style="margin-right:46px">-40.00</span><span class="tag">3</span></div>
+    <div class="tab"><span>Quotes</span><span>Chart</span><span class="on">Trade</span><span>History</span><span>Messages</span></div></div>
+  <div class="txt"><div class="line">Which one is <span class="serif grad">yours?</span></div>
+    <div class="pills"><div><b>1</b>Moving your stop</div><div><b>2</b>"Just one more" trade</div><div><b>3</b>The 3pm revenge trade</div></div>
+    <div class="sub">You don't even know. That's the problem.</div></div>
+  <div class="lbl">Illustration</div>
+</div>
+
+<!-- F3: the maths (History tab) -->
+<div class="f glow-v" id="f3">
+  <div class="phone"><div class="sb"><span>23:58</span><span>▮▮▮ 100%</span></div>
+    <div class="bar"><b>History</b><i>⇅ ▦</i></div>
+    <div class="sec" style="padding-top:16px"><span>Positions · Last year</span><span></span></div>
+    <div id="rows3"></div>
+    <div style="position:absolute;left:0;right:0;bottom:78px;background:#121212;border-top:1px solid #262626;padding:14px 22px" class="kv">
+      <div><span>Deals:</span><span>260</span></div><div><span>Commission:</span><span>0.00</span></div><div><span>Swap:</span><span>0.00</span></div>
+      <div style="font-weight:600"><span style="color:#e6e6e6">Profit:</span><span class="neg" style="font-size:24px;color:var(--mt-red)">-10 400.00</span></div></div>
+    <div class="tab"><span>Quotes</span><span>Chart</span><span>Trade</span><span class="on">History</span><span>Messages</span></div></div>
+  <div class="txt"><div class="kick">The maths nobody does</div><div class="calc">$40 <em>×</em> 5 days<br><em>×</em> 52 weeks<br><em>=</em> <span style="color:var(--mt-red)">$10,400</span></div><div class="sub">A car payment. A trip. A funded account.</div></div>
+  <div class="lbl">Illustration · example</div>
+</div>
+
+<!-- F4: never on your P&L -->
+<div class="f f4 glow-r" id="f4"><div class="line" style="margin:0">You'll <span class="serif grad">never</span> see it on your P&amp;L.</div><div class="cal" id="cal"></div><div class="sub" style="margin:0">It hides in small losses across 250 trading days. Only a journal adds them up.</div><div class="lbl">Illustration</div></div>
+
+<!-- F5: keep it (count-up on .tot) -->
+<div class="f glow-b" id="f5">
+  <div class="phone"><div class="sb"><span>9:41</span><span>▮▮▮ 100%</span></div>
+    <div class="bar"><b>Trade</b><i>⇅ ＋</i></div>
+    <div class="tot posv" data-count="10400">10 400.00<small>USD</small></div>
+    <div class="kv"><div><span>Balance:</span><span>25 000.00</span></div><div><span>Equity:</span><span data-eq>35 400.00</span></div><div><span>Margin:</span><span>0.00</span></div><div><span>Free margin:</span><span data-eq>35 400.00</span></div></div>
+    <div class="sec"><span>Kept this year</span><span>⋯</span></div>
+    <div id="rows5"></div>
+    <div class="tab"><span>Quotes</span><span>Chart</span><span class="on">Trade</span><span>History</span><span>Messages</span></div></div>
+  <div class="txt"><div class="kick">Find it. Fix it.</div><div class="line">That money <span class="grad">stays</span> in your account.</div><div class="sub" style="color:#faf8ff">Your strategy makes money.<br><span class="grad" style="font-weight:700">Your journal keeps it.</span></div><div class="wm grad">journzey · coming soon</div></div>
+  <div class="lbl">Illustration · example: fixing one habit that costs $40 a day</div>
+</div>
+
+<script>
+const fmt = (v) => { const s = Math.abs(v).toFixed(2).split('.'); return (v < 0 ? '-' : '') + s[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + '.' + s[1]; };
+let seed = 5; const r = () => (seed = seed * 16807 % 2147483647) / 2147483647;
+const syms = [['XAUUSD', 2, [4100, 4150]], ['EURUSD', 5, [1.081, 1.089]], ['GBPUSD', 5, [1.27, 1.29]], ['NAS100', 1, [20100, 20300]], ['US30', 1, [42000, 42300]], ['USDJPY', 3, [148, 151]]];
+function row(i, prof, cls) { const [s, d, [a, b]] = syms[i % syms.length]; const buy = r() > .5; const p1 = a + r() * (b - a), p2 = p1 + (buy ? -1 : 1) * (b - a) * .004 * (prof < 0 ? 1 : -1);
+  const f = (x) => x.toFixed(d).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return `<div class="pos"><div class="l"><b>${s}, <em class="${buy ? 'posv' : 'neg'}">${buy ? 'buy' : 'sell'} ${(Math.round((0.1 + r() * 0.9) * 100) / 100).toFixed(2)}</em></b><div>${f(p1)} → ${f(p2)}</div></div><span class="p ${cls}">${fmt(prof)}</span></div>`; }
+document.getElementById('rows1').innerHTML = [0,1,2,3,4,5].map(i => row(i, -40, 'neg')).join('');
+seed = 9; document.getElementById('rows3').innerHTML = [0,1,2,3,4,5,0].map(i => row(i, -40, 'neg')).join('');
+seed = 13; document.getElementById('rows5').innerHTML = [0,1,2,3,4,5].map(i => row(i, 40, 'posv')).join('');
+const cal = document.getElementById('cal'); seed = 3; for (let i = 0; i < 260; i++) { const e = document.createElement('i'); if (r() < .3) e.className = 'r'; cal.appendChild(e); }
+window.show = (id, v) => { document.querySelectorAll('.f').forEach(f => f.style.display = f.id === id ? 'flex' : 'none');
+  if (v !== undefined) { const fr = document.getElementById(id); fr.querySelector('[data-count]').firstChild.textContent = fmt(v); fr.querySelectorAll('[data-eq]').forEach(e => e.textContent = fmt(25000 + v)); } };
+</script></body></html>
