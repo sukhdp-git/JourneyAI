@@ -1667,3 +1667,13 @@ body.tm { background: radial-gradient(1000px 520px at 92% -12%, var(--glow-1), t
 .imp-errs ul { margin: 6px 0 0; padding-left: 18px; }
 .imp-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; position: sticky; bottom: 0; padding: 10px 0; background: linear-gradient(transparent, var(--bg) 35%); }
 @media (max-width: 640px) { .imp-actions { position: static; background: none; } .imp-actions .tm-btn { flex: 1 1 auto; justify-content: center; } }
+
+/* ---------- SMART COACH ---------- */
+.coach-mode { margin-left: auto; }
+.coach-mode label { cursor: pointer; } .coach-mode input { position: absolute; opacity: 0; pointer-events: none; }
+.coach-mode label span { display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; font-weight: 600; font-size: 12.5px; color: var(--muted); }
+.coach-mode label:has(input:checked) span { background: var(--gold-soft); color: var(--strong); box-shadow: 0 0 0 1px var(--gold-line) inset; }
+.coach-mode label:has(input:disabled) { opacity: .5; cursor: not-allowed; }
+.coach-chips { display: grid; gap: 6px; }
+.coach-chips .prompt-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.msg-links { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; white-space: normal; }

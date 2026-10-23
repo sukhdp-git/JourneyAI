@@ -5,10 +5,6 @@ use App\Trading\Edge;
 $cur = $acc['currency'];
 $rv = $review; $rs = $rv['summary'];
 ?>
-<?php if (!$configured): ?>
-<div class="tm-alert tm-alert-warn" role="status"><p><strong><?= e(t('ai.not_configured')) ?></strong> The site owner can add an Anthropic or Gemini API key in the Control Panel → Integrations. Your edge summary, reviews, journal and analytics below work without it.</p></div>
-<?php endif; ?>
-
 <!-- Automatic home state: computed from your data, no AI call needed -->
 <?php $topS = array_slice($home['strengths'], 0, 3); $topL = array_slice($home['leaks'], 0, 3); ?>
 <?php if ($home['enough'] && $topL): ?><div class="coach-focus"><?= icon('target', 'icon icon-sm') ?> <span>Today’s focus:</span> <strong><?= e($topL[0]['short'] ?? $topL[0]['title']) ?></strong> <mark class="down"><?= e($topL[0]['value'] ?? '') ?></mark></div><?php endif; ?>
@@ -32,27 +28,34 @@ $rv = $review; $rs = $rv['summary'];
   <section class="panel stack">
     <div class="panel-head">
       <h2><?= $conv ? e($conv['title']) : 'Ask your coach' ?></h2>
-      <span class="muted small"><span data-ai-remaining><?= (int) $remaining ?></span> / <?= (int) $limit ?> messages left today</span>
+      <div class="seg coach-mode" role="radiogroup" aria-label="Coach mode">
+        <label><input type="radio" name="coach-mode" value="smart" checked> <span><?= icon('zap', 'icon icon-xs') ?> Smart Coach · free</span></label>
+        <label<?= $configured ? '' : ' title="AI chat is not enabled on this site"' ?>><input type="radio" name="coach-mode" value="ai"<?= $configured ? '' : ' disabled' ?>> <span><?= icon('sparkles', 'icon icon-xs') ?> AI Coach</span></label>
+      </div>
     </div>
-    <p class="muted small">Short answers from your own trades and journal. AI-generated — not financial advice.</p>
+    <p class="muted small" data-mode-note="smart">Instant answers from <strong>your own trades and journal</strong> (<?= e($acc['name']) ?>), plus trading, psychology and University lessons. Free and unlimited.<?= $configured ? '' : ' AI chat is not enabled on this site.' ?></p>
+    <p class="muted small" data-mode-note="ai" hidden>AI-written answers from your statistics · <span data-ai-remaining><?= (int) $remaining ?></span> / <?= (int) $limit ?> messages left today · not financial advice.</p>
     <div class="chat" data-chat-log aria-live="polite">
       <?php foreach ($messages as $msg): ?>
         <div class="msg <?= e($msg['role']) ?>"><?= $msg['role'] === 'assistant' ? coach_text($msg['content']) : e($msg['content']) ?><?php if ($msg['role'] === 'assistant'): ?><small>AI-generated · <?= e(fmt_date($msg['created_at'], 'M j, H:i')) ?></small><?php endif; ?></div>
       <?php endforeach; ?>
-      <?php if (!$messages): ?><div class="msg assistant">Ask about your strongest setup, why you are losing money, sessions, emotions, discipline or your key lessons. I answer from your own data.</div><?php endif; ?>
+      <?php if (!$messages): ?><div class="msg assistant">Hi! Ask me about <strong>your trading</strong>: win rate, best session, worst habit, streaks, discipline, this month vs last. Or ask <strong>how to</strong> size a trade, stop revenge trading, or what a University strategy is. Tap a question below to start.</div><?php endif; ?>
     </div>
-    <div class="prompt-chips" style="display:flex;flex-wrap:wrap;gap:6px">
-      <?php foreach (array_slice($prompts, 0, 4) as $p): ?><button type="button" class="tm-btn tm-btn-sm tm-btn-ghost" data-prompt="<?= e($p) ?>"<?= $configured ? '' : ' disabled' ?>><?= e($p) ?></button><?php endforeach; ?>
+    <div class="coach-chips">
+      <span class="muted small">Your trading</span>
+      <div class="prompt-chips"><?php foreach ($smart['mine'] as $p): ?><button type="button" class="tm-btn tm-btn-sm tm-btn-ghost" data-prompt="<?= e($p) ?>" data-ask><?= e($p) ?></button><?php endforeach; ?></div>
+      <span class="muted small">Learn</span>
+      <div class="prompt-chips"><?php foreach ($smart['learn'] as $p): ?><button type="button" class="tm-btn tm-btn-sm tm-btn-ghost" data-prompt="<?= e($p) ?>" data-ask><?= e($p) ?></button><?php endforeach; ?></div>
     </div>
-    <form data-chat-form data-conversation="<?= $conv ? (int) $conv['id'] : '' ?>" class="stack">
+    <form data-chat-form data-conversation="<?= $conv ? (int) $conv['id'] : '' ?>" data-mode="smart" class="stack">
       <label class="sr-only" for="chat-q">Your question</label>
-      <textarea id="chat-q" rows="3" maxlength="4000" placeholder="e.g. Which setup made me the most money this month?"<?= $configured ? '' : ' disabled' ?>></textarea>
+      <textarea id="chat-q" rows="2" maxlength="4000" placeholder="e.g. Which session should I avoid this month?"></textarea>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <button type="button" class="tm-btn" data-voice-into="#chat-q" data-voice-note="#chat-voice-note"<?= $configured ? '' : ' disabled' ?>><?= icon('mic', 'icon icon-sm') ?> Speak</button>
+        <button type="button" class="tm-btn" data-voice-into="#chat-q" data-voice-note="#chat-voice-note"><?= icon('mic', 'icon icon-sm') ?> Speak</button>
         <label class="sr-only" for="chat-lang">Reply language</label>
-        <select id="chat-lang" name="lang" style="width:auto"><?php foreach (Domain::LANGUAGES as $k => $name): ?><option value="<?= e($k) ?>"<?= ($m['language'] ?: 'en') === $k ? ' selected' : '' ?>><?= e($name) ?></option><?php endforeach; ?></select>
-        <button class="tm-btn tm-btn-primary" type="submit"<?= $configured ? '' : ' disabled' ?>>Send</button>
-        <span class="muted small">Speech becomes editable text — nothing is sent until you press Send.</span>
+        <select id="chat-lang" name="lang" style="width:auto" data-ai-only hidden><?php foreach (Domain::LANGUAGES as $k => $name): ?><option value="<?= e($k) ?>"<?= ($m['language'] ?: 'en') === $k ? ' selected' : '' ?>><?= e($name) ?></option><?php endforeach; ?></select>
+        <button class="tm-btn tm-btn-primary" type="submit">Ask</button>
+        <span class="muted small">Ctrl/⌘ + Enter to send</span>
         <?php if ($conv): ?><a class="tm-btn tm-btn-sm tm-btn-ghost" href="<?= e(url('/terminal/coach')) ?>" style="margin-left:auto">New conversation</a><?php endif; ?>
       </div>
       <p class="muted small" id="chat-voice-note" hidden>Voice input needs Chrome, Edge or Safari with microphone access.</p>

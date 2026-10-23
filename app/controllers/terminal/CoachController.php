@@ -13,6 +13,7 @@ use App\Trading\Edge;
 use App\Trading\RiskLimits;
 use App\Trading\Ledger;
 use App\Trading\Members;
+use App\Trading\SmartCoach;
 
 /** AI Coach: chat grounded in the member's aggregated statistics, plus weekly/monthly reviews. */
 final class CoachController extends TerminalController
@@ -75,7 +76,27 @@ final class CoachController extends TerminalController
             'conv' => $conv,
             'messages' => $conv ? Database::all('SELECT role, content, model, created_at FROM ai_messages WHERE conversation_id = :c AND user_id = :u ORDER BY id', ['c' => $conv['id'], 'u' => $this->uid]) : [],
             'prompts' => self::PROMPTS, 'remaining' => $this->remaining(), 'limit' => (int) $this->m['ent']['ai_daily'],
-        ], 'AI Coach', 'coach');
+            'smart' => SmartCoach::suggestions(),
+        ], 'Coach', 'coach');
+    }
+
+    /**
+     * Smart Coach: free, instant answers from the member's own trades and journal plus the built-in knowledge base
+     * (trading, psychology, University strategies and course). No AI provider, no daily quota.
+     */
+    public function smart(Request $req): never
+    {
+        $q = trim((string) $req->post('message', ''));
+        if ($q === '' || mb_strlen($q) > 500) {
+            Response::json(['ok' => false, 'error' => 'Type a question (up to 500 characters).', 'retryable' => false], 422);
+        }
+        Session::release();
+        $acc = $this->acc;
+        $coach = new SmartCoach($this->m, $acc, $this->tz, $this->journals(null, null, 400), (float) Ledger::balance($acc)['equity'],
+            fn () => Ledger::forAnalytics($this->uid, (int) $acc['id'], $this->tz));
+        $r = $coach->answer($q);
+        Response::json(['ok' => true, 'reply' => $r['text'], 'meta' => 'Smart Coach · ' . ($r['source'] === 'data' ? 'from your journal (' . $acc['name'] . ')' : 'knowledge base') . ' · not financial advice',
+            'links' => array_map(fn ($l) => ['url' => url($l[0]), 'label' => $l[1]], $r['links'])]);
     }
 
     private function guard(): void

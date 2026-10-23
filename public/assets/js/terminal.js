@@ -141,24 +141,38 @@
       if (/^\*\*[^*]+\*\*$/.test(part)) el.appendChild(txt('mark', '', part.slice(2, -2))); else if (part) el.appendChild(d.createTextNode(part));
     });
   }
-  // AI Coach chat
+  // Coach chat: Smart Coach (free, instant, rule-based) or AI Coach (when configured)
   var chat = $('[data-chat-form]');
   if (chat) {
     var log = $('[data-chat-log]'), ta = $('textarea', chat);
-    var add = function (role, text, meta) { var m = txt('div', 'msg ' + role); setCoachText(m, text); if (meta) m.appendChild(txt('small', '', meta)); log.appendChild(m); log.scrollTop = log.scrollHeight; return m; };
-    $$('[data-prompt]').forEach(function (b) { b.addEventListener('click', function () { ta.value = b.dataset.prompt; ta.focus(); }); });
+    var add = function (role, text, meta, links) {
+      var m = txt('div', 'msg ' + role); setCoachText(m, text);
+      if (links && links.length) { var row = txt('div', 'msg-links'); links.forEach(function (l) { var a = txt('a', 'tm-btn tm-btn-sm', l.label + ' →'); a.href = l.url; row.appendChild(a); }); m.appendChild(row); }
+      if (meta) m.appendChild(txt('small', '', meta)); log.appendChild(m); log.scrollTop = log.scrollHeight; return m;
+    };
+    var mode = function () { return chat.dataset.mode || 'smart'; };
+    var setMode = function (v) {
+      chat.dataset.mode = v; try { localStorage.setItem('jz-coach-mode', v); } catch (e) {}
+      $$('[data-mode-note]').forEach(function (n) { n.hidden = n.dataset.modeNote !== v; });
+      $$('[data-ai-only]').forEach(function (n) { n.hidden = v !== 'ai'; });
+      $$('input[name=coach-mode]').forEach(function (r) { r.checked = r.value === v; });
+    };
+    $$('input[name=coach-mode]').forEach(function (r) { r.addEventListener('change', function () { if (r.checked) setMode(r.value); }); });
+    try { var saved = localStorage.getItem('jz-coach-mode'); var aiR = $('input[name=coach-mode][value=ai]'); if (saved === 'ai' && aiR && !aiR.disabled) setMode('ai'); else setMode('smart'); } catch (e) { setMode('smart'); }
     ta.addEventListener('keydown', function (e) { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) chat.requestSubmit(); });
     var sending = false;
     var ask = function (q) {
       if (sending) return; sending = true;
+      var smart = mode() === 'smart';
       var mine = add('user', q); ta.value = '';
-      var wait = add('assistant', 'Analysing your journal…'); var btn = $('[type=submit]', chat); btn.classList.add('busy'); btn.disabled = true;
-      post(base + '/coach/send', { message: q, conversation_id: chat.dataset.conversation || '', lang: ($('[name=lang]', chat) || {}).value || 'en' }).then(function (r) {
+      var wait = add('assistant', smart ? 'Looking through your journal…' : 'Analysing your journal…'); var btn = $('[type=submit]', chat); btn.classList.add('busy'); btn.disabled = true;
+      var req = smart ? post(base + '/coach/smart', { message: q }) : post(base + '/coach/send', { message: q, conversation_id: chat.dataset.conversation || '', lang: ($('[name=lang]', chat) || {}).value || 'en' });
+      req.then(function (r) {
         sending = false; btn.classList.remove('busy'); btn.disabled = false; wait.remove();
         if (!r.ok) {
           // Keep the question: put it back in the box and offer an explicit retry. Failed attempts do not use a daily message.
           mine.remove(); if (!ta.value) ta.value = q;
-          var err = add('assistant error', r.error || 'AI Coach is unavailable right now. Your journal and analytics remain available.');
+          var err = add('assistant error', r.error || (smart ? 'Could not answer right now. Please try again.' : 'AI Coach is unavailable right now. Switch to Smart Coach for instant answers.'));
           err.setAttribute('role', 'alert');
           if (r.retryable !== false && !r.upgrade) {
             var again = txt('button', 'tm-btn tm-btn-sm', 'Try again'); again.type = 'button';
@@ -167,10 +181,12 @@
           }
           return;
         }
-        add('assistant', r.reply, r.meta); if (r.conversation_id && !chat.dataset.conversation) { chat.dataset.conversation = r.conversation_id; history.replaceState(null, '', base + '/coach/' + r.conversation_id); }
+        add('assistant', r.reply, r.meta, r.links);
+        if (!smart && r.conversation_id && !chat.dataset.conversation) { chat.dataset.conversation = r.conversation_id; history.replaceState(null, '', base + '/coach/' + r.conversation_id); }
         if (r.remaining !== undefined) { var rem = $('[data-ai-remaining]'); if (rem) rem.textContent = r.remaining; }
       });
     };
+    $$('[data-prompt]').forEach(function (b) { b.addEventListener('click', function () { if (b.hasAttribute('data-ask')) { ask(b.dataset.prompt); } else { ta.value = b.dataset.prompt; ta.focus(); } }); });
     chat.addEventListener('submit', function (e) { e.preventDefault(); var q = ta.value.trim(); if (q) ask(q); });
   }
   $$('[data-review]').forEach(function (b) {

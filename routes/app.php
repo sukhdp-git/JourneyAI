@@ -96,6 +96,7 @@ $router->get('/terminal/university/{slug}', [UniversityController::class, 'show'
 
 $router->get('/terminal/coach', [CoachController::class, 'index']);
 $router->get('/terminal/coach/{id}', [CoachController::class, 'index']);
+$router->post('/terminal/coach/smart', [CoachController::class, 'smart']);
 $router->post('/terminal/coach/send', [CoachController::class, 'send']);
 $router->post('/terminal/coach/review', [CoachController::class, 'review']);
 $router->post('/terminal/coach/{id}/delete', [CoachController::class, 'delete']);
