@@ -1,0 +1,40 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Master reel frames</title><style>
+@font-face { font-family: Jakarta; src: url(../../../../public/assets/fonts/plus-jakarta-sans.woff2); font-weight: 200 800; }
+@font-face { font-family: InstrSerif; src: url(../../../../public/assets/fonts/instrument-serif-italic.woff2); font-style: italic; }
+@font-face { font-family: Mono; src: url(../../../../public/assets/fonts/jetbrains-mono.woff2); }
+:root { --brand: linear-gradient(115deg,#7c5cff 0%,#9d6ce8 32%,#c084d8 60%,#e4a0c8 82%,#feb2b4 100%); }
+* { box-sizing: border-box; } html, body { margin: 0; }
+body { width: 1080px; height: 1920px; overflow: hidden; background: #060613; color: #dedcec; font-family: Jakarta, sans-serif; position: relative; }
+.f { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 0 80px; }
+.glow-r { background: radial-gradient(ellipse 70% 40% at 50% 46%, rgb(248 113 113 / .22), transparent 70%), #060613; }
+.glow-g { background: radial-gradient(ellipse 70% 40% at 50% 46%, rgb(52 211 153 / .22), transparent 70%), #060613; }
+.glow-v { background: radial-gradient(ellipse 70% 40% at 50% 40%, rgb(124 92 255 / .25), transparent 70%), #060613; }
+.kick { font: 600 34px Mono, monospace; letter-spacing: .18em; color: #9d9abb; text-transform: uppercase; }
+.num { font: 800 176px/1 Jakarta; letter-spacing: -.06em; margin: 30px 0; font-variant-numeric: tabular-nums; }
+.red { color: #f87171; text-shadow: 0 0 80px rgb(248 113 113 / .45); } .green { color: #34d399; text-shadow: 0 0 80px rgb(52 211 153 / .45); }
+.line { font-size: 64px; font-weight: 700; color: #faf8ff; letter-spacing: -.03em; line-height: 1.12; }
+.sub { font-size: 40px; color: #9d9abb; margin-top: 30px; line-height: 1.3; }
+.grad { background: var(--brand); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.serif { font-family: InstrSerif, serif; font-style: italic; font-weight: 400; }
+.cards { display: grid; gap: 26px; width: 100%; margin-top: 60px; }
+.cards div { padding: 38px 40px; border-radius: 28px; background: #0e0e22; border: 2px solid #3a2030; font-size: 50px; font-weight: 700; color: #faf8ff; filter: blur(var(--b, 0)); text-align: left; display: flex; justify-content: space-between; }
+.cards div span { color: #f87171; font-family: Mono, monospace; }
+.calc { font: 700 92px/1.25 Mono, monospace; color: #faf8ff; margin: 40px 0; }
+.calc em { font-style: normal; color: #9d9abb; }
+.cal { display: grid; grid-template-columns: repeat(26, 1fr); gap: 7px; width: 100%; margin: 50px 0; }
+.cal i { aspect-ratio: 1; border-radius: 6px; background: #1b2a26; }
+.cal i.r { background: #f87171; box-shadow: 0 0 12px rgb(248 113 113 / .6); }
+.wm { position: absolute; bottom: 120px; left: 0; right: 0; text-align: center; font: 600 40px Jakarta; letter-spacing: -.03em; }
+.lbl { position: absolute; bottom: 70px; left: 0; right: 0; text-align: center; font: 500 24px Jakarta; color: #67648a; }
+</style></head><body>
+<div class="f glow-r" id="f1"><div class="kick">One bad habit · one year</div><div class="num red" data-count="-10400">−$10,400</div><div class="line">This is what <span class="grad">one habit</span> costs you.</div><div class="lbl">Example: a habit costing $40 a day</div></div>
+<div class="f glow-v" id="f2"><div class="line">Which one is <span class="serif grad">yours?</span></div><div class="cards"><div style="--b:0">Moving your stop <span>−$40</span></div><div style="--b:0">"Just one more" trade <span>−$40</span></div><div style="--b:0">The 3pm revenge trade <span>−$40</span></div></div><div class="sub">You don't even know. That's the problem.</div></div>
+<div class="f glow-v" id="f3"><div class="kick">The maths nobody does</div><div class="calc">$40 <em>×</em> 5 days<br><em>×</em> 52 weeks<br><em>=</em> <span class="red">$10,400</span></div><div class="sub">A car payment. A trip. A funded account.</div></div>
+<div class="f glow-r" id="f4"><div class="line">You'll <span class="serif grad">never</span> see it<br>on your P&amp;L.</div><div class="cal" id="cal"></div><div class="sub">It hides in small losses across 250 trading days.<br>Only a journal adds them up.</div></div>
+<div class="f glow-g" id="f5"><div class="kick">Find it. Fix it.</div><div class="num green" data-count="10400">+$10,400</div><div class="line">stays in your account.</div><div class="sub" style="margin-top:60px;font-size:46px;color:#faf8ff">Your strategy makes money.<br><span class="grad" style="font-weight:700">Your journal keeps it.</span></div><div class="wm grad">journzey</div><div class="lbl">Example: fixing one habit that costs $40 a day</div></div>
+<script>
+const cal = document.getElementById('cal'); let seed = 3; const r = () => (seed = seed * 16807 % 2147483647) / 2147483647;
+for (let i = 0; i < 260; i++) { const e = document.createElement('i'); if (r() < .3) e.className = 'r'; cal.appendChild(e); }
+window.show = (id, v) => { document.querySelectorAll('.f').forEach(f => f.style.display = f.id === id ? 'flex' : 'none');
+  if (v !== undefined) { const n = document.querySelector('#' + id + ' [data-count]'); const s = (v < 0 ? '−' : '+') + '$' + Math.abs(Math.round(v)).toLocaleString('en-US'); n.textContent = s; } };
+</script></body></html>
