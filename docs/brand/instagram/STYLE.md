@@ -25,3 +25,8 @@ Template: `edge-notes-01-v2-light.html` (copy it for each new post; render at 10
 - Pre-launch: call-to-action bar reads "journzey is coming soon · Follow for launch day 🔔". Do not say "free" or "link in bio" until the site is live and the user says so.
 - Do not mention CSV import (not working on the live site yet) unless the user says it is fixed.
 - Supply a ready-to-paste caption with each post (hook line, value, coming-soon line, question for comments, 5–8 hashtags).
+
+## Dark variant: "Trader Notes" (only when the user asks for a black background)
+- Generator: `docs/brand/instagram/dark/build_dark.py` (posts TRADER NOTES · 04–06). Tweet-card style: journzey avatar + @journzey handle top left, series tag top right, big bold hook on slide 1, numbered rule cards, slide counter bottom right.
+- Colours: background `#060613` with a violet glow top-left and soft pink bottom-right, subtle grain; cards `#0e0e22`/white 4% with border `#262448`; text `#faf8ff` / `#dedcec` / muted `#9d9abb`; brand gradient `#7c5cff → #feb2b4`; up `#34d399`, down `#f87171`.
+- Same fonts, same content rules (honest labels, no invented stats, pre-launch "coming soon" bar).
