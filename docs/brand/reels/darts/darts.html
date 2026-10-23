@@ -1,0 +1,87 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Darts reel</title><style>
+@font-face { font-family: Mono; src: url(../../../../public/assets/fonts/jetbrains-mono.woff2); }
+@font-face { font-family: Jakarta; src: url(../../../../public/assets/fonts/plus-jakarta-sans.woff2); font-weight: 200 800; }
+html,body{margin:0;background:#060613} canvas{display:block}
+</style></head><body><canvas id="c" width="1080" height="1920"></canvas><script>
+const C = document.getElementById('c'), g = C.getContext('2d');
+const W = 1080, H = 1920, T0 = 0.8, GAP = 2.1, WIND = .35, FLY = .3;
+const PANELS = [
+  { y0: 120, title: 'NO JOURNAL', sub: 'repeats the same miss', hits: [[-95,-92,-100],[-98,-88,-100],[-92,-96,-100],[-97,-90,-100],[-94,-94,-100]], notes: [], end: 'slump' },
+  { y0: 1010, title: 'JOURNALS EVERY TRADE', sub: 'adjusts after every miss', hits: [[-95,-92,-100],[-52,-46,-100],[-20,-16,100],[0,0,300],[4,-3,300]], notes: ['too high ↓', 'still left →', 'closer. same plan.'], end: 'cheer' },
+];
+const PH = 790; // panel height
+const ease = x => x < 0 ? 0 : x > 1 ? 1 : 1 - Math.pow(1 - x, 3);
+const clamp = x => Math.max(0, Math.min(1, x));
+function board(cx, cy) {
+  const rings = [[118,'#2a2550'],[100,'#7c5cff'],[78,'#1d1a3a'],[58,'#c084d8'],[38,'#1d1a3a'],[20,'#feb2b4'],[8,'#ffffff']];
+  rings.forEach(([r, c]) => { g.beginPath(); g.arc(cx, cy, r, 0, 7); g.fillStyle = c; g.fill(); });
+  g.strokeStyle = 'rgba(255,255,255,.12)'; g.lineWidth = 2; for (let a = 0; a < 20; a++) { g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.cos(a * Math.PI / 10) * 100, cy + Math.sin(a * Math.PI / 10) * 100); g.stroke(); }
+  g.fillStyle = '#3a3766'; g.fillRect(cx - 6, cy + 118, 12, 220); // stand
+}
+function dart(x, y, ang, a) { g.save(); g.globalAlpha = a; g.translate(x, y); g.rotate(ang); g.strokeStyle = '#e8e6f4'; g.lineWidth = 5; g.beginPath(); g.moveTo(-46, 0); g.lineTo(0, 0); g.stroke();
+  g.fillStyle = '#c084d8'; g.beginPath(); g.moveTo(-46, 0); g.lineTo(-60, -10); g.lineTo(-54, 0); g.lineTo(-60, 10); g.closePath(); g.fill(); g.restore(); }
+function stick(x, gy, o) { // o: {arm (0 rest..1 back..), slump, cheer, book, scribble}
+  g.strokeStyle = '#f2f0fa'; g.lineCap = 'round'; g.lineJoin = 'round'; g.lineWidth = 9;
+  const slump = o.slump || 0, hipY = gy - 150, neckY = gy - 300 + slump * 30, headX = x + slump * 18, headY = neckY - 44 + slump * 20;
+  g.beginPath(); g.moveTo(x - 38, gy); g.lineTo(x, hipY); g.lineTo(x + 40, gy); g.stroke();           // legs
+  g.beginPath(); g.moveTo(x, hipY); g.lineTo(x + slump * 10, neckY); g.stroke();                       // body
+  g.beginPath(); g.arc(headX, headY, 36, 0, 7); g.fillStyle = '#060613'; g.fill(); g.stroke();       // head
+  // face: dots
+  g.fillStyle = '#f2f0fa'; const fy = headY - 4 + slump * 10; g.beginPath(); g.arc(headX + 10, fy, 4, 0, 7); g.arc(headX + 22, fy, 4, 0, 7); g.fill();
+  const sx = x + slump * 10, sy = neckY + 22;
+  if (o.cheer) { const c = o.cheer; g.beginPath(); g.moveTo(sx, sy); g.lineTo(sx - 40, sy - 70 * c - 10); g.stroke(); g.beginPath(); g.moveTo(sx, sy); g.lineTo(sx + 44, sy - 72 * c - 10); g.stroke(); return; }
+  if (slump) { g.beginPath(); g.moveTo(sx, sy); g.lineTo(sx - 10, sy + 110); g.stroke(); g.beginPath(); g.moveTo(sx, sy); g.lineTo(sx + 26, sy + 106); g.stroke(); return; }
+  // throwing arm: angle from back (-200deg) to forward (-20deg)
+  const a = o.arm ?? 0; const ang = (-150 + a * 120) * Math.PI / 180; const el = { x: sx + Math.cos(ang) * 62, y: sy + Math.sin(ang) * 62 };
+  const ang2 = ang + (a > .5 ? -.2 : -.9); const hand = { x: el.x + Math.cos(ang2) * 58, y: el.y + Math.sin(ang2) * 58 };
+  g.beginPath(); g.moveTo(sx, sy); g.lineTo(el.x, el.y); g.lineTo(hand.x, hand.y); g.stroke();
+  if (o.hold) dart(hand.x + 30, hand.y, 0, 1);
+  // other arm: down, or holding a notebook
+  if (o.book) { const b = o.book; const bx = sx - 20, by = sy + 30 - 40 * b; g.beginPath(); g.moveTo(sx, sy); g.lineTo(sx - 46, sy + 50 - 20 * b); g.lineTo(bx - 40, by); g.stroke();
+    g.save(); g.globalAlpha = b; g.fillStyle = '#ffffff'; g.fillRect(bx - 110, by - 64, 78, 96); g.fillStyle = '#7c5cff'; g.fillRect(bx - 110, by - 64, 10, 96);
+    g.strokeStyle = '#8f8ca8'; g.lineWidth = 3; for (let i = 0; i < 4; i++) { const w = 46 * Math.min(1, Math.max(0, (o.scribble || 0) * 4 - i)); g.beginPath(); g.moveTo(bx - 94, by - 44 + i * 20); g.lineTo(bx - 94 + w, by - 44 + i * 20); g.stroke(); } g.restore(); }
+  else { g.beginPath(); g.moveTo(sx, sy); g.lineTo(sx - 30, sy + 64); g.lineTo(sx - 36, sy + 124); g.stroke(); }
+}
+function txt(s, x, y, size, col, align, weight, alpha) { g.save(); g.globalAlpha = alpha ?? 1; g.font = `${weight || 600} ${size}px Mono`; g.fillStyle = col; g.textAlign = align || 'center'; g.fillText(s, x, y); g.restore(); }
+function money(v) { return (v < 0 ? '−$' : '+$') + Math.abs(v); }
+function panel(P, t) {
+  const y0 = P.y0, gy = y0 + PH - 70, fx = 300, bx = 800, by = gy - 330;
+  g.fillStyle = '#0b0b1d'; g.fillRect(0, gy, W, 70); g.fillStyle = '#1d1c38'; g.fillRect(0, gy, W, 3);
+  txt(P.title, W / 2, y0 + 30, 40, '#faf8ff', 'center', 700); txt(P.sub, W / 2, y0 + 72, 24, '#9d9abb', 'center', 500);
+  board(bx, by);
+  let pnl = 0, arm = 0, hold = true, book = 0, scrib = 0;
+  P.hits.forEach(([dx, dy, v], k) => {
+    const T = T0 + k * GAP, rel = T + WIND, hit = rel + FLY;
+    if (t >= T && t < rel) { arm = -ease((t - T) / WIND) * 0.4; }               // wind back
+    if (t >= rel && t < hit + .25) { arm = Math.min(1, (t - rel) / .12); hold = false; }
+    if (t >= hit + .25 && t < T + GAP) { arm = 0; hold = k < 4; }
+    if (t >= rel && t < hit) { const p = (t - rel) / FLY; const sx = fx + 70, sy = gy - 330, ex = bx + dx, ey = by + dy; dart(sx + (ex - sx) * p, sy + (ey - sy) * p - Math.sin(p * Math.PI) * 70, -0.15 + p * .3, 1); }
+    if (t >= hit) { dart(bx + dx - 4, by + dy, 0.1, 1); pnl += v; const p = (t - hit) / 1.0; if (p < 1) txt(money(v), bx + dx, by + dy - 40 - p * 60, 44, v < 0 ? '#f87171' : '#34d399', 'center', 700, 1 - p * p); }
+    const note = P.notes[k];
+    if (note && t >= hit + .15 && t < T + GAP - .05) { const p = (t - hit - .15) / (GAP - WIND - FLY - .2); book = clamp(Math.min(p * 5, (1 - p) * 6)); scrib = clamp(p * 1.6);
+      if (p > .2) { g.save(); g.globalAlpha = clamp(Math.min((p - .2) * 5, (1 - p) * 6)); g.fillStyle = '#ffffff'; const nx = fx - 150, ny = gy - 470; g.beginPath(); g.roundRect(nx - 10, ny - 44, note.length * 21 + 40, 62, 16); g.fill(); txt(note, nx + 10, ny, 30, '#15132a', 'left', 700); g.restore(); } }
+  });
+  const tEnd = T0 + 4 * GAP + WIND + FLY + .5;
+  const o = { arm, hold: hold && t < tEnd, book, scribble: scrib };
+  if (t > tEnd) { const p = clamp((t - tEnd) / .5); if (P.end === 'slump') o.slump = p; else o.cheer = p; }
+  stick(fx, gy, o);
+  const c = pnl < 0 ? '#f87171' : pnl > 0 ? '#34d399' : '#9d9abb';
+  txt('P&L', W - 60, y0 + 130, 22, '#67648a', 'right', 500); txt((pnl === 0 ? '$0' : money(pnl)), W - 60, y0 + 170, 38, c, 'right', 700);
+}
+const L1 = 'SAME FIRST MISS.', L2a = 'ONLY ONE ', L2b = 'WROTE IT DOWN.';
+window.draw = (t) => {
+  g.fillStyle = '#060613'; g.fillRect(0, 0, W, H);
+  const gr = g.createRadialGradient(W * .2, 0, 0, W * .2, 0, 900); gr.addColorStop(0, 'rgba(124,92,255,.16)'); gr.addColorStop(1, 'rgba(124,92,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, W, H);
+  PANELS.forEach(P => panel(P, t));
+  const dimStart = 11.6; if (t > dimStart) { g.fillStyle = `rgba(6,6,19,${.9 * clamp((t - dimStart) / .6)})`; g.fillRect(0, 0, W, H); }
+  if (t > dimStart) { g.fillStyle = `rgba(6,6,19,${clamp((t - dimStart) / .6)})`; g.fillRect(0, 880, W, 160); }
+  // typewriter in the middle band
+  const ty = 975, tw0 = 12.2, cps = 16; const n = Math.max(0, Math.floor((t - tw0) * cps));
+  if (n > 0) { g.font = '700 54px Mono'; const s1 = L1.slice(0, n); txt(s1, W / 2, ty - 46, 54, '#faf8ff', 'center', 700);
+    const m = Math.max(0, n - L1.length - 4); if (m > 0) { const a = L2a.slice(0, m), b = L2b.slice(0, Math.max(0, m - L2a.length)); const full = g.measureText(L2a + L2b).width; let x = W / 2 - full / 2;
+      g.textAlign = 'left'; g.fillStyle = '#faf8ff'; g.fillText(a, x, ty + 40); x += g.measureText(L2a).width;
+      const gg = g.createLinearGradient(x, 0, x + g.measureText(L2b).width, 0); gg.addColorStop(0, '#7c5cff'); gg.addColorStop(.6, '#c084d8'); gg.addColorStop(1, '#feb2b4'); g.fillStyle = gg; g.fillText(b, x, ty + 40); } }
+  if (t > 14.6) { const a = clamp((t - 14.6) / .5); g.save(); g.globalAlpha = a; g.font = '600 46px Jakarta'; g.textAlign = 'center'; const gg = g.createLinearGradient(W / 2 - 110, 0, W / 2 + 110, 0); gg.addColorStop(0, '#7c5cff'); gg.addColorStop(1, '#feb2b4'); g.fillStyle = gg; g.fillText('journzey', W / 2, 1760); g.font = '500 24px Mono'; g.fillStyle = '#9d9abb'; g.fillText('coming soon', W / 2, 1800); g.restore(); }
+};
+window.ready = Promise.all(['600 46px Jakarta','700 54px Mono','500 24px Mono','600 40px Mono'].map(f => document.fonts.load(f))).then(() => draw(0));
+</script></body></html>
