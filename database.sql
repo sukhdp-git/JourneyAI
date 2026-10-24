@@ -1488,3 +1488,64 @@ DEALLOCATE PREPARE jz_stmt;
 
 -- Record the schema version
 INSERT INTO `settings` (`key`, `value`, `group_name`) VALUES ('schema_version', '10', 'system') ON DUPLICATE KEY UPDATE `value` = IF(CAST(`value` AS UNSIGNED) < 10, '10', `value`);
+
+-- ---------------------------------------------------------------------------------------------
+-- Schema version 11: autopay (Razorpay / Stripe subscriptions), plan reminder emails, sign-in alerts
+-- Non-destructive: adds one table, nullable columns and new email templates; existing rows are untouched.
+-- Rollback (if ever needed): DROP TABLE `subscriptions`; the new columns are nullable and can stay.
+-- ---------------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `subscriptions` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id` INT UNSIGNED NOT NULL,
+  `plan_id` INT UNSIGNED NULL,
+  `gateway` ENUM('razorpay','stripe') NOT NULL,
+  `gateway_sub_id` VARCHAR(120) NULL,
+  `checkout_ref` VARCHAR(190) NULL,
+  `status` VARCHAR(20) NOT NULL DEFAULT 'created',
+  `cancel_at_period_end` TINYINT(1) NOT NULL DEFAULT 0,
+  `amount` DECIMAL(12,2) NOT NULL,
+  `currency` CHAR(3) NOT NULL,
+  `period_days` SMALLINT UNSIGNED NOT NULL DEFAULT 30,
+  `last_charge_at` DATETIME NULL,
+  `failed_notice_at` DATETIME NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_sub_gateway` (`gateway`, `gateway_sub_id`),
+  KEY `idx_sub_checkout` (`checkout_ref`),
+  KEY `idx_sub_user` (`user_id`, `status`),
+  CONSTRAINT `fk_sub_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_sub_plan` FOREIGN KEY (`plan_id`) REFERENCES `plans` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+SET @s := (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `payments` ADD COLUMN `subscription_id` INT UNSIGNED NULL AFTER `plan_id`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'payments' AND COLUMN_NAME = 'subscription_id');
+PREPARE jz_stmt FROM @s;
+EXECUTE jz_stmt;
+DEALLOCATE PREPARE jz_stmt;
+SET @s := (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `plans` ADD COLUMN `razorpay_plan_ref` VARCHAR(190) NULL', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'plans' AND COLUMN_NAME = 'razorpay_plan_ref');
+PREPARE jz_stmt FROM @s;
+EXECUTE jz_stmt;
+DEALLOCATE PREPARE jz_stmt;
+SET @s := (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `users` ADD COLUMN `plan_reminder_for` DATETIME NULL', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'plan_reminder_for');
+PREPARE jz_stmt FROM @s;
+EXECUTE jz_stmt;
+DEALLOCATE PREPARE jz_stmt;
+SET @s := (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `users` ADD COLUMN `plan_expired_notice_for` DATETIME NULL', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'plan_expired_notice_for');
+PREPARE jz_stmt FROM @s;
+EXECUTE jz_stmt;
+DEALLOCATE PREPARE jz_stmt;
+
+INSERT IGNORE INTO `email_templates` (`template_key`, `name`, `description`, `subject`, `body`, `is_enabled`) VALUES
+('plan_expiring', 'Plan expiring soon', 'Sent 3 days before a plan ends when autopay is off.', 'Your {plan} plan ends in {days_left}', '<p>Hi {name},</p><p>Your <strong>{plan}</strong> plan ends on <strong>{expires_on}</strong> ({days_left} left).</p><p>Renew now to keep your live accounts, analytics and Edge Matrix running without a break. Turn on <strong>autopay</strong> at checkout and you will never have to renew by hand again.</p><p><a href="{renew_url}">Renew {plan} →</a></p><p>Nothing is deleted when a plan ends: your live accounts simply become read-only until you renew.</p><p>— The {site_name} team</p>', 1),
+('plan_renewing', 'Autopay renewal reminder', 'Sent 3 days before an autopay charge.', 'Your {plan} plan renews on {expires_on}', '<p>Hi {name},</p><p>Heads-up: autopay will renew your <strong>{plan}</strong> plan on <strong>{expires_on}</strong> for <strong>{amount}</strong>. You do not need to do anything.</p><p>Want to change or stop it? You can turn autopay off any time under <a href="{billing_url}">Plan &amp; Billing</a>; your access stays active until {expires_on}.</p><p>— The {site_name} team</p>', 1),
+('plan_expired', 'Plan ended', 'Sent once after a plan has ended.', 'Your {plan} plan has ended', '<p>Hi {name},</p><p>Your <strong>{plan}</strong> plan ended on {expires_on}. Your journal and trades are safe; live accounts are read-only until you renew.</p><p><a href="{renew_url}">Renew in one minute →</a></p><p>— The {site_name} team</p>', 1),
+('autopay_failed', 'Autopay payment failed', 'Sent when an automatic renewal payment fails.', 'Action needed: your {plan} renewal payment failed', '<p>Hi {name},</p><p>We could not collect the automatic renewal payment of {amount} for <strong>{plan}</strong>. The payment provider will retry, or you can update your payment method or pay once under <a href="{billing_url}">Plan &amp; Billing</a>.</p><p>— The {site_name} team</p>', 1),
+('login_alert', 'New sign-in alert', 'Sent when a member signs in from a new browser or device.', 'New sign-in to your {site_name} account', '<p>Hi {name},</p><p>Your account was just signed in to from a new browser or device.</p><p><strong>When:</strong> {time}<br><strong>Device:</strong> {device}<br><strong>IP address:</strong> {ip}<br><strong>Method:</strong> {method}</p><p>If this was you, you can ignore this email. If not, <a href="{reset_url}">reset your password</a> right away.</p><p>— The {site_name} team</p>', 1);
+
+-- Friendlier welcome email, only if the original text was never edited in the Control Panel
+UPDATE `email_templates` SET `subject` = 'Welcome to {site_name}, {name} 👋', `body` = '<p>Hi {name},</p><p>Welcome to <strong>{site_name}</strong>. Your trading journal is ready.</p><p><strong>Start in 3 steps:</strong></p><ol><li>Open the Home Hub and load the demo journal to see every tool with sample data.</li><li>Log your first trade with Quick Log (it takes about 10 seconds).</li><li>After a few trades, open the Edge Matrix to see your best window and your costliest habit.</li></ol><p><a href="{site_url}/terminal">Open your terminal →</a></p><p>Questions? Just reply to this email.</p><p>— The {site_name} team</p>'
+  WHERE `template_key` = 'welcome' AND `body` = '<p>Hi {name},</p><p>Your {site_name} account is ready. Sign in at {site_url}/login to start journaling. You can load the demo journal from the Home Hub to explore every tool.</p><p>— The {site_name} team</p>';
+
+INSERT IGNORE INTO `settings` (`key`, `value`, `group_name`) VALUES ('autopay_enabled', '1', 'integrations'), ('login_alerts_enabled', '1', 'integrations'), ('jobs_last_run', '0', 'system');
+
+-- Record the schema version
+INSERT INTO `settings` (`key`, `value`, `group_name`) VALUES ('schema_version', '11', 'system') ON DUPLICATE KEY UPDATE `value` = IF(CAST(`value` AS UNSIGNED) < 11, '11', `value`);

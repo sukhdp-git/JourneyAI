@@ -33,6 +33,12 @@ final class Payments
         return in_array($currency, self::ZERO_DECIMAL, true) ? (int) round($amount) : (int) round($amount * 100);
     }
 
+    /** Minor units (paise, cents) from a gateway back to the amount. */
+    public static function major(int $minor, string $currency): float
+    {
+        return in_array(strtoupper($currency), self::ZERO_DECIMAL, true) ? (float) $minor : $minor / 100;
+    }
+
     public static function plans(): array
     {
         return Database::all('SELECT * FROM plans WHERE is_active = 1 ORDER BY sort_order, price');
@@ -194,6 +200,10 @@ final class Payments
         }
         $j = json_decode($raw, true) ?: [];
         $event = (string) ($j['event'] ?? '');
+        if (str_starts_with($event, 'subscription.')) {
+            Subscriptions::razorpayEvent($event, $j);
+            return [200, 'ok'];
+        }
         $pay = $j['payload']['payment']['entity'] ?? null;
         $orderId = (string) ($pay['order_id'] ?? ($j['payload']['order']['entity']['id'] ?? ''));
         $p = $orderId !== '' ? Database::one("SELECT * FROM payments WHERE gateway = 'razorpay' AND gateway_order_id = :o", ['o' => $orderId]) : null;
@@ -233,6 +243,9 @@ final class Payments
         $j = json_decode($raw, true) ?: [];
         $obj = $j['data']['object'] ?? [];
         $type = (string) ($j['type'] ?? '');
+        if (Subscriptions::stripeEvent($type, $obj)) {
+            return [200, 'ok'];
+        }
         if (in_array($type, ['checkout.session.completed', 'checkout.session.async_payment_succeeded'], true) && ($obj['payment_status'] ?? '') === 'paid') {
             $p = Database::one("SELECT * FROM payments WHERE gateway = 'stripe' AND gateway_order_id = :o", ['o' => (string) ($obj['id'] ?? '')]);
             if ($p) {
@@ -252,7 +265,7 @@ final class Payments
     // ------------------------------------------------------------------ HTTP
 
     /** @return array{0: int, 1: array, 2: ?string} */
-    private static function http(string $method, string $url, array $data, string $provider, ?array $creds = null): array
+    public static function http(string $method, string $url, array $data, string $provider, ?array $creds = null): array
     {
         if (!function_exists('curl_init')) {
             return [0, [], 'cURL extension is not enabled'];

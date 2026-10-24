@@ -340,7 +340,27 @@ Go to **Members → All members**. Every account created on the website appears 
 - **Members → Plans & pricing:** name, checkout key (`/checkout/{key}`), price, currency, access period in days, period label, features (one per line), whether it unlocks live accounts, max live accounts, AI messages per day, “Most popular” highlight, availability. Plans can be reordered and switched off; a plan with members on it cannot be deleted.
 - The free plan's name, features and AI limit are under **Members → Integrations → Member sign-up & free plan**.
 - **Members → Payments:** every checkout with status (started, paid, failed, refunded), gateway reference and access period, plus revenue per currency (manual grants excluded).
-- Payments are **one-time** for the plan period (no auto-renewal). Buying the same plan again stacks on the remaining time.
+- At checkout members choose **Autopay** (default; renews automatically every period until they turn it off) or **Pay once** (no renewal). Buying the same plan again stacks on the remaining time.
+- **Settings** and **Plan & Billing** show a countdown card: days left, a progress bar for the current period, whether autopay is on, and **Turn off autopay** / **Renew** buttons. Turning autopay off stops future charges; the time already paid for is kept.
+
+### Member emails (automatic)
+All are editable or switchable under **Email → Templates**, sent through your SMTP settings and logged in **Email → Logs**.
+
+| Email | When |
+|---|---|
+| Welcome | After sign-up (email or first Google sign-in) |
+| New sign-in alert | When a member signs in from a browser/device that has not been used for their account before (switch off under **Members → Integrations → Member sign-up**) |
+| Payment receipt | After every successful payment, including each autopay renewal |
+| Plan ending soon | 3 days before the plan ends, when autopay is off |
+| Autopay renewal reminder | 3 days before an autopay charge |
+| Autopay payment failed | When a renewal charge fails (at most once a day) |
+| Plan ended | Once, 12 hours after a plan ended without renewal |
+
+**Scheduler (cron job) for the reminder emails** — cPanel → **Cron Jobs** → *Once Per Hour*, command:
+```
+php /home/USERNAME/public_html/cron.php
+```
+(Replace the path with the folder where journzey.ai is installed.) Without a cron job the site still checks at most once an hour when someone visits a page, but a cron job makes reminders punctual. Each reminder is sent only once per plan end date.
 
 ### Google sign-in setup
 1. Open [Google Cloud Console](https://console.cloud.google.com/) → *APIs & Services* → **OAuth consent screen**: choose *External*, add your app name, support email, your domain and the scopes `openid`, `email`, `profile`. Publish the app.
@@ -355,14 +375,15 @@ Choose one gateway under **Members → Integrations → Payments**.
 
 **Razorpay** (India — INR, cards, UPI):
 1. Razorpay Dashboard → *Account & Settings* → **API Keys** → generate. Paste the **Key ID** and **Key secret**.
-2. Razorpay Dashboard → **Webhooks** → add `https://YOUR-DOMAIN/webhooks/razorpay` with events `payment.captured`, `order.paid` and `payment.failed`. Type a secret and paste the same value as **Webhook secret**.
+2. Razorpay Dashboard → **Webhooks** → add `https://YOUR-DOMAIN/webhooks/razorpay` with events `payment.captured`, `order.paid`, `payment.failed` and, for autopay, `subscription.authenticated`, `subscription.activated`, `subscription.charged`, `subscription.pending`, `subscription.halted`, `subscription.cancelled`, `subscription.completed`. Type a secret and paste the same value as **Webhook secret**.
+   - **Autopay** uses Razorpay **Subscriptions** (ask Razorpay support to enable it on your account if the Subscriptions menu is missing). journzey creates the Razorpay plan automatically from your plan's price and period. Razorpay handles the card / UPI AutoPay mandate and the pre-debit notifications required in India; members may be asked to approve the mandate once in their bank or UPI app. Plans shorter than 7 days cannot use autopay.
 3. Set your plan currency to **INR** unless your Razorpay account is enabled for international currencies.
 
 **Stripe** (international):
 1. Stripe Dashboard → *Developers* → **API keys** → copy the **Secret key** (`sk_live_…`, or `sk_test_…` for testing).
-2. *Developers* → **Webhooks** → add endpoint `https://YOUR-DOMAIN/webhooks/stripe` with `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed` and `charge.refunded`. Paste the **Signing secret** (`whsec_…`).
+2. *Developers* → **Webhooks** → add endpoint `https://YOUR-DOMAIN/webhooks/stripe` with `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `charge.refunded` and, for autopay, `invoice.paid`, `invoice.payment_failed`, `customer.subscription.updated`, `customer.subscription.deleted`. Paste the **Signing secret** (`whsec_…`). Autopay uses Stripe Billing subscriptions created at checkout; no products need to be set up in Stripe.
 
-Use **Test connection** after saving. Plans are activated only after a verified signature (Razorpay checkout signature / webhook HMAC, Stripe `Stripe-Signature` with a 5-minute tolerance) or a server-side Stripe lookup — never because the browser says a payment succeeded. Use test keys first and make a test purchase.
+Autopay can be switched off for everyone with **Offer autopay at checkout**. Deleting a member account (by the member or in the Control Panel) cancels their autopay first. Use **Test connection** after saving. Plans are activated only after a verified signature (Razorpay checkout signature / webhook HMAC, Stripe `Stripe-Signature` with a 5-minute tolerance) or a server-side Stripe lookup — never because the browser says a payment succeeded. Use test keys first and make a test purchase.
 
 ### AI Coach & market data setup
 - **AI Coach:** **Members → Integrations → AI Coach**. Choose **Anthropic Claude** (key from console.anthropic.com; default model `claude-opus-5-5`) or **Google Gemini** (key from aistudio.google.com; default `gemini-2.5-flash`). Leave *Model* empty to use the default. Claude requests use adaptive thinking and server-side fallbacks, so a request the main model declines is retried on a fallback model automatically. The coach only receives aggregated statistics for the signed-in member plus their own short journal notes. Without a key, the AI mode is greyed out and members use the free **Smart Coach**, which works without any key or credits.

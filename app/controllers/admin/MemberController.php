@@ -175,6 +175,9 @@ final class MemberController extends AdminController
         if (trim((string) $req->post('confirm_email')) !== $u['email']) {
             $this->back(admin_url('members/' . $u['id']), 'error', 'Type the member\'s email exactly to delete the account.');
         }
+        if (\App\Trading\Subscriptions::renewing(\App\Trading\Subscriptions::current((int) $u['id'])) && !\App\Trading\Subscriptions::cancel((int) $u['id'])['ok']) {
+            $this->back(admin_url('members/' . $u['id']), 'error', 'This member has autopay on and the payment provider did not confirm cancelling it, so the account was not deleted. Try again, or cancel the subscription in the gateway dashboard first.');
+        }
         $dir = STORAGE_PATH . '/private/screenshots/' . (int) $u['id'];
         if (is_dir($dir)) {
             foreach (glob($dir . '/*') ?: [] as $file) {

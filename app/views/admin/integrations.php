@@ -34,13 +34,14 @@ $test = fn (string $which, string $label = 'Test connection') => '<button type="
 
   <section class="card form-card">
     <div class="card-head"><h2 class="card-title"><?= icon('zap', 'icon icon-sm') ?> Payments</h2><?= $badge($status['gateway'] !== 'none', $status['gateway'] === 'none' ? '' : ucfirst($status['gateway']) . ' active') ?></div>
-    <p class="muted small">Members pay a one-time amount for a plan period; access is activated only after the gateway confirms the payment (signature-verified). Choose one gateway. Manage prices in <a href="<?= e(admin_url('plans')) ?>">Plans</a>.</p>
+    <p class="muted small">Members pay once for a plan period or turn on autopay (a recurring subscription that renews automatically); access is activated or extended only after the gateway confirms each payment (signature-verified). Choose one gateway. Manage prices in <a href="<?= e(admin_url('plans')) ?>">Plans</a>.</p>
     <div class="form-grid">
       <?= $fld(['name' => 'payment_gateway', 'label' => 'Active gateway', 'type' => 'select', 'width' => 'half', 'options' => ['none' => 'None (manual grants only)', 'razorpay' => 'Razorpay (India — INR, cards, UPI)', 'stripe' => 'Stripe (international)']]) ?>
+      <?= $fld(['name' => 'autopay_enabled', 'label' => 'Offer autopay at checkout (Razorpay Subscriptions / Stripe Billing)', 'type' => 'checkbox']) ?>
       <?= $fld(['name' => 'payment_currency_note', 'label' => 'Note under pricing (optional)', 'type' => 'text', 'width' => 'half', 'help' => 'e.g. “Prices include GST.”']) ?>
     </div>
     <h3 class="h4">Razorpay</h3>
-    <p class="muted small">Dashboard → Account &amp; Settings → API Keys. Webhook (Dashboard → Webhooks): URL <code><?= e(url('/webhooks/razorpay')) ?></code>, events <code>payment.captured</code>, <code>order.paid</code>, <code>payment.failed</code>.</p>
+    <p class="muted small">Dashboard → Account &amp; Settings → API Keys. Webhook (Dashboard → Webhooks): URL <code><?= e(url('/webhooks/razorpay')) ?></code>, events <code>payment.captured</code>, <code>order.paid</code>, <code>payment.failed</code>, and for autopay <code>subscription.authenticated</code>, <code>subscription.activated</code>, <code>subscription.charged</code>, <code>subscription.pending</code>, <code>subscription.halted</code>, <code>subscription.cancelled</code>, <code>subscription.completed</code>. Autopay needs <em>Subscriptions</em> enabled on your Razorpay account.</p>
     <div class="form-grid">
       <?= $fld(['name' => 'razorpay_key_id', 'label' => 'Key ID', 'type' => 'text', 'width' => 'half', 'help' => 'rzp_test_… or rzp_live_…']) ?>
       <?= $secret('razorpay_key_secret', 'Key secret') ?>
@@ -48,7 +49,7 @@ $test = fn (string $which, string $label = 'Test connection') => '<button type="
     </div>
     <div class="form-foot"><?= $test('razorpay') ?></div>
     <h3 class="h4">Stripe</h3>
-    <p class="muted small">Developers → API keys → Secret key. Webhook endpoint: <code><?= e(url('/webhooks/stripe')) ?></code> with events <code>checkout.session.completed</code>, <code>checkout.session.async_payment_succeeded</code>, <code>checkout.session.async_payment_failed</code>, <code>charge.refunded</code>.</p>
+    <p class="muted small">Developers → API keys → Secret key. Webhook endpoint: <code><?= e(url('/webhooks/stripe')) ?></code> with events <code>checkout.session.completed</code>, <code>checkout.session.async_payment_succeeded</code>, <code>checkout.session.async_payment_failed</code>, <code>charge.refunded</code>, and for autopay <code>invoice.paid</code>, <code>invoice.payment_failed</code>, <code>customer.subscription.updated</code>, <code>customer.subscription.deleted</code>.</p>
     <div class="form-grid">
       <?= $secret('stripe_secret_key', 'Secret key', '', 'sk_live_…') ?>
       <?= $secret('stripe_webhook_secret', 'Webhook signing secret', '', 'whsec_…') ?>
@@ -81,6 +82,7 @@ $test = fn (string $which, string $label = 'Test connection') => '<button type="
     <h2 class="card-title"><?= icon('users', 'icon icon-sm') ?> Member sign-up &amp; free plan</h2>
     <div class="form-grid">
       <?= $fld(['name' => 'signup_enabled', 'label' => 'Allow new sign-ups', 'type' => 'checkbox']) ?>
+      <?= $fld(['name' => 'login_alerts_enabled', 'label' => 'Email members when they sign in from a new browser or device', 'type' => 'checkbox']) ?>
       <?= $fld(['name' => 'email_signup_enabled', 'label' => 'Allow email + password sign-up (Google sign-up is controlled by the keys above)', 'type' => 'checkbox']) ?>
       <?= $fld(['name' => 'free_plan_name', 'label' => 'Free plan name', 'type' => 'text', 'width' => 'half']) ?>
       <?= $fld(['name' => 'free_ai_daily_limit', 'label' => 'Free AI Coach messages per day', 'type' => 'number', 'width' => 'half']) ?>

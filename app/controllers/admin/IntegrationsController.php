@@ -64,6 +64,8 @@ final class IntegrationsController extends AdminController
         $values['ai_provider'] = in_array($_POST['ai_provider'] ?? '', ['none', 'anthropic', 'gemini'], true) ? $_POST['ai_provider'] : 'none';
         $values['signup_enabled'] = ($_POST['signup_enabled'] ?? '') === '1' ? '1' : '0';
         $values['email_signup_enabled'] = ($_POST['email_signup_enabled'] ?? '') === '1' ? '1' : '0';
+        $values['autopay_enabled'] = ($_POST['autopay_enabled'] ?? '') === '1' ? '1' : '0';
+        $values['login_alerts_enabled'] = ($_POST['login_alerts_enabled'] ?? '') === '1' ? '1' : '0';
         $limit = $_POST['free_ai_daily_limit'] ?? '';
         if (!ctype_digit((string) $limit) || (int) $limit > 1000) {
             $errors['free_ai_daily_limit'] = 'Enter 0–1000.';

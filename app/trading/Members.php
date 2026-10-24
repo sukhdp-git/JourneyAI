@@ -94,6 +94,7 @@ final class Members
         $_SESSION['_csrf'] = bin2hex(random_bytes(32));
         Database::query('UPDATE users SET last_login_at = UTC_TIMESTAMP(), last_login_ip = :ip, login_count = login_count + 1 WHERE id = :id', ['ip' => $req->ip(), 'id' => $user['id']]);
         self::logLogin((int) $user['id'], $user['email'], $method, true, null, $req);
+        Reminders::loginAlert($user, $method, $req);
         self::refresh();
     }
 

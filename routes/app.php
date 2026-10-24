@@ -126,6 +126,8 @@ $router->get('/checkout/{plan}', [BillingController::class, 'checkout']);
 $router->post('/checkout/{plan}', [BillingController::class, 'startPayment']);
 $router->post('/checkout/{plan}/coupon', [BillingController::class, 'applyCoupon']);
 $router->post('/checkout/razorpay/verify', [BillingController::class, 'razorpayVerify']);
+$router->post('/checkout/razorpay/subscription/verify', [BillingController::class, 'razorpaySubscriptionVerify']);
+$router->post('/terminal/billing/autopay/cancel', [BillingController::class, 'cancelAutopay']);
 $router->get('/checkout/stripe/success', [BillingController::class, 'stripeSuccess']);
 $router->post('/webhooks/razorpay', [WebhookController::class, 'razorpay']);
 $router->post('/webhooks/stripe', [WebhookController::class, 'stripe']);

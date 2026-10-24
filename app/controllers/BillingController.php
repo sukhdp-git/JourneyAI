@@ -10,6 +10,7 @@ use App\Core\Response;
 use App\Core\Session;
 use App\Trading\Members;
 use App\Trading\Payments;
+use App\Trading\Subscriptions;
 
 /** Public pricing, checkout (Razorpay / Stripe) and the member's Plan & Billing page. */
 final class BillingController extends Controller
@@ -38,6 +39,7 @@ final class BillingController extends Controller
             'coupon' => (string) ($_COOKIE[\App\Trading\Affiliates::COOKIE] ?? ''), 'referred' => (bool) \App\Core\Database::value('SELECT referred_by_affiliate_id FROM users WHERE id = :u', ['u' => $m['id']]),
             'plan' => $plan, 'm' => $m, 'gateway' => Payments::gateway(), 'cancelled' => $req->query('cancelled') === '1',
             'extends' => $m['ent']['paid'] && (int) $m['ent']['plan']['id'] === (int) $plan['id'],
+            'autopay' => Subscriptions::available() && Subscriptions::supports($plan), 'autopayOn' => Subscriptions::renewing(Subscriptions::current((int) $m['id'])),
         ], ['title' => 'Checkout — ' . $plan['name'], 'path' => '/checkout/' . $plan['slug'], 'noindex' => true]);
     }
 
@@ -80,11 +82,15 @@ final class BillingController extends Controller
         if (($couponErr = \App\Trading\Affiliates::attach((int) $m['id'], (string) $req->post('coupon', ''))) !== null) {
             $fail($couponErr);
         }
-        $r = Payments::start($m, $plan);
+        $auto = $req->post('autopay') === '1';
+        if ($auto && Subscriptions::renewing(Subscriptions::current((int) $m['id']))) {
+            $fail('Autopay is already on for your account. Turn it off under Plan & Billing before starting a new one.');
+        }
+        $r = $auto ? Subscriptions::start($m, $plan) : Payments::start($m, $plan);
         if (!$r['ok']) {
             $fail($r['error']);
         }
-        Members::audit((int) $m['id'], 'checkout_started', $plan['slug'] . ' via ' . $r['gateway']);
+        Members::audit((int) $m['id'], 'checkout_started', $plan['slug'] . ' via ' . $r['gateway'] . ($auto ? ' (autopay)' : ''));
         if ($r['gateway'] === 'stripe') {
             if ($req->isAjax()) {
                 Response::json(['ok' => true, 'redirect' => $r['redirect']]);
@@ -92,7 +98,7 @@ final class BillingController extends Controller
             header('Location: ' . $r['redirect'], true, 303);
             exit;
         }
-        Response::json(['ok' => true] + array_intersect_key($r, array_flip(['order_id', 'amount', 'currency', 'key_id'])));
+        Response::json(['ok' => true] + array_intersect_key($r, array_flip(['order_id', 'subscription_id', 'amount', 'currency', 'key_id'])));
     }
 
     public function razorpayVerify(Request $req): never
@@ -109,9 +115,38 @@ final class BillingController extends Controller
         Response::redirect('/terminal/billing');
     }
 
+    /** Razorpay Checkout handler for autopay (subscription) payments. */
+    public function razorpaySubscriptionVerify(Request $req): never
+    {
+        Csrf::verify($req);
+        $m = Members::current() ?? Response::redirect('/login');
+        $ok = Subscriptions::razorpayVerify((int) $m['id'], (string) $req->post('razorpay_subscription_id'), (string) $req->post('razorpay_payment_id'), (string) $req->post('razorpay_signature'));
+        if (!$ok) {
+            Session::flash('error', 'We could not verify this payment. If you were charged, it will be confirmed automatically by the payment provider shortly — or contact us with your payment reference.');
+            Response::redirect('/terminal/billing');
+        }
+        Members::refresh();
+        Session::flash('success', 'Payment received — autopay is on and your plan renews automatically. You can turn autopay off any time on this page.');
+        Response::redirect('/terminal/billing');
+    }
+
+    public function cancelAutopay(Request $req): never
+    {
+        Csrf::verify($req);
+        $m = Members::current() ?? Response::redirect('/login');
+        $r = Subscriptions::cancel((int) $m['id']);
+        Session::flash($r['ok'] ? 'success' : 'error', $r['ok'] ? 'Autopay is off. You will not be charged again; your access stays active until the end of the period you paid for.' : $r['error']);
+        Response::redirect('/terminal/billing');
+    }
+
     public function stripeSuccess(Request $req): never
     {
-        $p = Payments::stripeConfirm((string) $req->query('session_id', ''));
+        $sid = (string) $req->query('session_id', '');
+        if (preg_match('/^cs_[A-Za-z0-9_]{10,200}$/', $sid) && ($sub = Subscriptions::stripeConfirm($sid)) !== null) {
+            Session::flash($sub ? 'success' : 'info', $sub ? 'Payment received — autopay is on and your plan renews automatically.' : 'Your payment is being confirmed by Stripe. This page will show your plan as soon as it is confirmed.');
+            Response::redirect('/terminal/billing');
+        }
+        $p = Payments::stripeConfirm($sid);
         if ($p && $p['status'] === 'paid') {
             Session::flash('success', 'Payment received — your plan is active. Live accounts are now unlocked.');
         } else {

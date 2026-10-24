@@ -57,7 +57,8 @@ final class Mailer
                 $mail->isHTML(true);
                 $mail->Subject = str_replace(["\r", "\n"], ' ', $subject);
                 $mail->Body = self::wrap($subject, $html);
-                $mail->AltBody = trim(html_entity_decode(strip_tags(str_replace(['<br>', '<br/>', '<br />', '</p>'], "\n", $html)), ENT_QUOTES, 'UTF-8'));
+                $text = preg_replace('#<a\s[^>]*href="([^"]+)"[^>]*>(.*?)</a>#is', '$2 ($1)', $html) ?? $html; // keep link targets in the plain-text part
+                $mail->AltBody = trim(html_entity_decode(strip_tags(str_replace(['<br>', '<br/>', '<br />', '</p>', '</li>'], "\n", $text)), ENT_QUOTES, 'UTF-8'));
                 $mail->send();
             } catch (MailException|\Throwable $e) {
                 $result = ['status' => 'failed', 'error' => self::safeError($mail->ErrorInfo ?: $e->getMessage(), $password)];

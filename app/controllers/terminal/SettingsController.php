@@ -157,6 +157,9 @@ final class SettingsController extends TerminalController
         if ($hash !== '' && !password_verify((string) $req->post('password', ''), $hash)) {
             $this->back('/terminal/settings#danger', 'error', 'Your password is incorrect.');
         }
+        if (\App\Trading\Subscriptions::renewing(\App\Trading\Subscriptions::current($this->uid)) && !\App\Trading\Subscriptions::cancel($this->uid)['ok']) {
+            $this->back('/terminal/settings#danger', 'error', 'We could not switch off your autopay with the payment provider, so the account was not deleted. Please try again in a moment.');
+        }
         $dir = STORAGE_PATH . '/private/screenshots/' . $this->uid;
         if (is_dir($dir)) {
             foreach (glob($dir . '/*') ?: [] as $f) {

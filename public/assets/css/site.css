@@ -901,3 +901,12 @@ body { background: radial-gradient(1100px 650px at 85% -10%, color-mix(in srgb, 
 .draft-banner { margin: 0 0 24px; padding: 14px 18px; border-radius: 12px; border: 1px solid color-mix(in srgb, #f5a524 55%, transparent); background: color-mix(in srgb, #f5a524 12%, transparent); color: var(--text); font-size: 15px; }
 .draft-banner strong { color: var(--heading, inherit); }
 .todo-mark { background: color-mix(in srgb, #f5a524 22%, transparent); color: inherit; padding: 0 4px; border-radius: 4px; font-style: italic; }
+
+/* Checkout: autopay or pay once */
+.pay-mode { border: 0; padding: 0; margin: 0 0 16px; display: grid; gap: 10px; }
+.pay-mode legend { font-weight: 700; color: var(--heading); margin-bottom: 8px; }
+.pay-opt { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-2); cursor: pointer; }
+.pay-opt:has(input:checked) { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+.pay-opt input { margin-top: 4px; accent-color: var(--primary); }
+.pay-opt span { display: grid; gap: 3px; } .pay-opt strong { color: var(--heading); } .pay-opt small { color: var(--muted); font-size: .85rem; line-height: 1.45; }
+.pay-opt:has(input:disabled) { opacity: .55; cursor: not-allowed; }

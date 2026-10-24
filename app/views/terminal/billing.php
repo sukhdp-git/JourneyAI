@@ -1,4 +1,5 @@
 <?php $ent = $m['ent']; ?>
+<?= App\Core\View::partial('terminal/partials/plan-countdown', ['m' => $m]) ?>
 <div class="grid g-main">
   <section class="panel stack">
     <div class="panel-head"><h2>Current plan</h2><?= $ent['paid'] ? '<span class="badge win">active</span>' : '<span class="badge">free</span>' ?></div>

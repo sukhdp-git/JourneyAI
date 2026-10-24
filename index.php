@@ -31,6 +31,8 @@ if (!$installed && !str_starts_with($request->path, '/setup')) {
 if ($installed) {
     // One-time, non-destructive schema update after deploying a new version.
     App\Core\Migrator::ensure();
+    // Plan reminder emails: cron.php is the main scheduler; this hourly fallback covers hosts without a cron job.
+    register_shutdown_function([App\Trading\Reminders::class, 'maybeRun']);
 }
 
 if ($request->isAdmin()) {

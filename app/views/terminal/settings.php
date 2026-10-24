@@ -4,6 +4,7 @@ $v = fn ($k) => (string) old($k, $m[$k] ?? '');
 $sel = fn ($a, $b) => (string) $a === (string) $b ? ' selected' : '';
 $err = fn ($k) => field_error($k);
 ?>
+<?= App\Core\View::partial('terminal/partials/plan-countdown', ['m' => $m]) ?>
 <p class="settings-jump"><a class="tm-btn tm-btn-sm" href="#public-pnl"><?= icon('share', 'icon icon-sm') ?> Public verified P&amp;L link</a></p>
 <div class="grid g-main">
   <form method="post" action="<?= e(url('/terminal/settings')) ?>" class="panel stack"><?= csrf_field() ?>
