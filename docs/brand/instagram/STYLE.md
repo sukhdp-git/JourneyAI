@@ -20,6 +20,7 @@ Template: `edge-notes-01-v2-light.html` (copy it for each new post; render at 10
 - Highlight the key point on the visual in red (or green) with a pill label, e.g. "YOUR DANGER HOUR".
 
 ## Content rules
+- **Visuals first, very little text.** A slide must be understood from the visual alone: short title (2–5 words), one big visual (chart, bars, tiles, numbers), at most one short line (under ~8 words). No paragraphs, no long tips, no small print except the honest label. Multi-slide carousels (one idea per slide) are preferred, e.g. Edge Notes 07 / Trader Notes 07.
 - Page 2 gives a genuinely useful method a trader can apply without the app, then shows journzey doing it.
 - Label honestly: illustrative charts "Illustration", made-up tables "example", demo screenshots "sample data". Never invent statistics, results or testimonials.
 - Pre-launch: call-to-action bar reads "journzey is coming soon · Follow for launch day 🔔". Do not say "free" or "link in bio" until the site is live and the user says so.
