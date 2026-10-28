@@ -1,0 +1,167 @@
+<!doctype html><html><head><meta charset="utf-8"><title>TRADER NOTES · 08</title><style>
+@font-face { font-family: Jakarta; src: url(../../../../public/assets/fonts/plus-jakarta-sans.woff2); font-weight: 200 800; }
+@font-face { font-family: InstrSerif; src: url(../../../../public/assets/fonts/instrument-serif-italic.woff2); font-style: italic; }
+@font-face { font-family: Mono; src: url(../../../../public/assets/fonts/jetbrains-mono.woff2); }
+:root { --bg:#060613; --panel:#0e0e22; --panel2:#14142c; --line:#262448; --text:#dedcec; --strong:#faf8ff; --muted:#9d9abb; --faint:#67648a; --up:#34d399; --down:#f87171; --vio:#9d7cff;
+  --brand: linear-gradient(115deg,#7c5cff 0%,#9d6ce8 32%,#c084d8 60%,#e4a0c8 82%,#feb2b4 100%); }
+* { box-sizing:border-box; } html,body { margin:0; }
+body { width:1080px; height:1350px; overflow:hidden; background:var(--bg); color:var(--text); font-family:Jakarta,sans-serif; position:relative; }
+.glow { position:absolute; inset:0; background: radial-gradient(ellipse 65% 40% at 20% 0%, rgb(124 92 255 / .22), transparent 70%), radial-gradient(ellipse 50% 30% at 100% 100%, rgb(254 178 180 / .10), transparent 70%); }
+.grain { position:absolute; inset:0; opacity:.05; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+.page { position:absolute; inset:0; padding:72px 76px; display:none; flex-direction:column; }
+.who { display:flex; align-items:center; gap:18px; }
+.av { width:76px; height:76px; border-radius:50%; background:var(--brand); display:grid; place-items:center; font:800 40px Jakarta; color:#fff; box-shadow:0 0 0 4px #060613, 0 0 0 6px rgb(157 124 255 / .45); }
+.who b { display:block; font-size:30px; color:var(--strong); letter-spacing:-.01em; } .who span { font:500 24px Mono, monospace; color:var(--muted); }
+.tag { margin-left:auto; font:500 19px Mono, monospace; letter-spacing:.14em; color:#c4b5ff; border:1.5px solid rgb(157 124 255 / .4); border-radius:999px; padding:9px 18px; }
+.grad { background:var(--brand); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.serif { font-family:InstrSerif,serif; font-style:italic; font-weight:400; letter-spacing:0; }
+.mono { font-family:Mono, monospace; }
+.big { font-size:76px; line-height:1.06; letter-spacing:-.04em; font-weight:700; color:var(--strong); margin:auto 0; }
+.big small { display:block; font-size:36px; line-height:1.35; font-weight:500; letter-spacing:-.01em; color:var(--muted); margin-top:34px; }
+h2 { font-size:54px; line-height:1.08; letter-spacing:-.035em; color:var(--strong); margin:56px 0 34px; font-weight:700; }
+.rules { list-style:none; margin:0; padding:0; display:grid; gap:22px; }
+.rules li { display:flex; gap:24px; align-items:flex-start; padding:28px 30px; border-radius:24px; background:linear-gradient(180deg, rgb(255 255 255 / .045), rgb(255 255 255 / .02)); border:1.5px solid var(--line); }
+.rules .n { flex:none; font:700 30px Mono, monospace; width:60px; height:60px; border-radius:16px; display:grid; place-items:center; color:#fff; background:var(--brand); }
+.rules b { display:block; font-size:36px; line-height:1.18; color:var(--strong); letter-spacing:-.02em; }
+.rules small { display:block; font-size:26px; line-height:1.35; color:var(--muted); margin-top:8px; }
+.foot { margin-top:auto; display:flex; justify-content:space-between; align-items:center; font-size:26px; color:var(--muted); padding-top:24px; }
+.foot .swipe { color:var(--strong); font-weight:600; }
+.count { font:500 22px Mono, monospace; color:var(--faint); }
+.cta { margin-top:30px; display:flex; justify-content:space-between; align-items:center; padding:26px 32px; border-radius:22px; background:var(--brand); color:#fff; font-size:32px; font-weight:700; box-shadow:0 20px 50px rgb(124 92 255 / .35); }
+.cta span { font-size:25px; font-weight:500; opacity:.95; }
+.quote { font-family:InstrSerif,serif; font-style:italic; font-size:62px; line-height:1.15; color:var(--strong); margin:60px 0 0; }
+.tl { position:relative; margin-top:10px; padding-left:56px; display:grid; gap:24px; }
+.tl::before { content:""; position:absolute; left:20px; top:14px; bottom:14px; width:3px; border-radius:2px; background:var(--brand); }
+.tl .st { position:relative; }
+.tl .st::before { content:""; position:absolute; left:-46px; top:12px; width:22px; height:22px; border-radius:50%; background:#060613; border:4px solid #c084d8; }
+.tl .st.last::before { background:#feb2b4; border-color:#feb2b4; box-shadow:0 0 22px #feb2b4; }
+.tl i { font:700 24px Mono, monospace; font-style:normal; color:#c4b5ff; letter-spacing:.08em; }
+.tl b { display:block; font-size:36px; line-height:1.2; color:var(--strong); letter-spacing:-.02em; margin-top:4px; }
+.card { background:var(--panel); border:1.5px solid var(--line); border-radius:26px; padding:20px 18px 12px; }
+.pts { list-style:none; margin:26px 0 0; padding:0; display:grid; gap:16px; }
+.pts li { font-size:29px; line-height:1.32; padding-left:40px; position:relative; color:var(--text); }
+.pts li::before { content:""; position:absolute; left:6px; top:14px; width:14px; height:14px; border-radius:4px; background:var(--brand); }
+.pts b { color:var(--strong); }
+.legend { display:flex; gap:22px; flex-wrap:wrap; margin:8px 6px 4px; font:500 20px Mono, monospace; color:var(--muted); }
+.legend span::before { content:""; display:inline-block; width:22px; height:5px; border-radius:3px; margin-right:10px; vertical-align:5px; background:var(--c); }
+.note { font-size:20px; color:var(--faint); margin-top:14px; }
+svg text { font-family: Mono, monospace; }
+.page > .who + * { margin-top: auto !important; }
+.rules li { padding: 30px 32px; } .rules b { font-size: 40px; } .rules small { font-size: 28px; }
+.pts li { font-size: 31px; } .tl { gap: 34px; } .tl b { font-size: 40px; }
+.foot { margin-top: auto; }
+.rules.tight { gap: 16px; } .rules.tight li { padding: 22px 28px; } .rules.tight b { font-size: 34px; } .rules.tight small { font-size: 25px; }
+
+.hook { font-size:104px; line-height:.98; letter-spacing:-.045em; font-weight:700; color:var(--strong); margin:0 0 16px; }
+.sub { font-family:InstrSerif,serif; font-style:italic; font-size:48px; color:var(--muted); margin:0 0 26px; }
+.step { display:flex; align-items:center; gap:16px; margin-top:auto; font:600 22px Mono, monospace; letter-spacing:.14em; color:#c4b5ff; }
+.step .n { flex:none; width:58px; height:58px; border-radius:16px; display:grid; place-items:center; color:#fff; background:var(--brand); font:700 30px Mono, monospace; letter-spacing:0; }
+.ttl { font-size:96px; line-height:1; letter-spacing:-.045em; font-weight:700; color:var(--strong); margin:18px 0 14px; }
+.says { font-family:InstrSerif,serif; font-style:italic; font-size:54px; line-height:1.12; color:#c4b5ff; margin:0 0 28px; }
+.card { padding:20px 20px 10px; }
+.cap { display:flex; justify-content:space-between; font:500 19px Mono, monospace; color:var(--faint); padding:8px 8px 6px; }
+/* step 1 · one winning trade */
+.win { text-align:center; padding:70px 24px 56px; }
+.win .sym { font:600 26px Mono, monospace; color:var(--muted); letter-spacing:.06em; }
+.win .sym b { color:var(--up); }
+.win .pl { font:700 190px Mono, monospace; color:var(--up); letter-spacing:-.05em; line-height:1.1; margin:10px 0 4px; text-shadow:0 0 60px rgb(52 211 153 / .35); }
+.ego { margin:30px 10px 6px; text-align:left; }
+.ego div { display:flex; justify-content:space-between; font:600 24px Mono, monospace; color:var(--text); margin-bottom:12px; }
+.ego div b { color:#feb2b4; }
+.ego i { display:block; height:34px; border-radius:17px; background:var(--brand); box-shadow:0 0 30px rgb(157 124 255 / .5); }
+/* step 2 · lot ladder */
+.lots { display:grid; grid-template-columns:repeat(5,1fr); gap:18px; align-items:end; height:600px; padding:10px 10px 0; }
+.lots span { display:flex; flex-direction:column; justify-content:flex-end; height:100%; gap:10px; text-align:center; }
+.lots i { display:block; border-radius:14px 14px 4px 4px; background:linear-gradient(180deg,#f87171,#7f1d1d); }
+.lots b { font:700 30px Mono, monospace; color:var(--strong); }
+.lots small { font:600 22px Mono, monospace; color:var(--down); }
+/* step 4 · revenge log */
+.log { font:500 28px Mono, monospace; }
+.log div { display:grid; grid-template-columns:120px 1fr 150px 170px; align-items:center; padding:28px 20px; border-bottom:1.5px solid var(--line); color:var(--text); }
+.log div:last-child { border-bottom:0; }
+.log .h { font-size:19px; letter-spacing:.12em; color:var(--faint); padding-top:6px; padding-bottom:12px; }
+.log .r { text-align:right; } .log .d { color:var(--down); font-weight:700; }
+.log .tot { background:rgb(248 113 113 / .1); border-radius:16px; font-weight:700; color:var(--strong); }
+.log .tot .d { font-size:34px; }
+/* step 5 · $0 + excuses */
+.zero { position:relative; height:640px; display:grid; place-items:center; }
+.zero .bal { text-align:center; }
+.zero .bal small { display:block; font:600 22px Mono, monospace; letter-spacing:.14em; color:var(--muted); }
+.zero .bal b { display:block; font:700 170px Mono, monospace; letter-spacing:-.05em; color:var(--down); line-height:1.1; text-shadow:0 0 70px rgb(248 113 113 / .35); }
+.zero .bal s { font:600 34px Mono, monospace; color:var(--faint); }
+.ex { position:absolute; font-size:27px; font-weight:600; color:var(--text); background:var(--panel2); border:1.5px solid var(--line); border-radius:16px; padding:12px 20px; white-space:nowrap; }
+/* final */
+.flip { font-size:96px; line-height:1; letter-spacing:-.045em; font-weight:700; color:var(--strong); margin:46px 0 34px; }
+.rules { gap:16px; } .rules li { padding:22px 28px; align-items:center; } .rules b { font-size:36px; } .rules .n { width:54px; height:54px; font-size:26px; }
+.rules s { color:var(--faint); text-decoration-thickness:3px; text-decoration-color:rgb(248 113 113 / .7); font-size:24px; display:block; font-family:Mono, monospace; margin-bottom:4px; }
+.ask { margin-top:26px; font-size:32px; font-weight:600; color:var(--strong); }
+</style></head><body><div class="glow"></div><div class="grain"></div><div class="page" id="p1"><div class="who"><div class="av">j</div><div><b>journzey</b><span>@journzey</span></div><div class="tag">TRADER NOTES · 08</div></div><div class="hook">How to blow<br>your account<br><span class="grad">in 5 easy steps.</span></div>
+ <p class="sub">A tutorial. Please don't follow it. 🙃</p>
+ <div class="card"><svg id="cv" width="890" height="560"></svg></div><div class="foot"><div class="swipe">Step 1 →</div><div class="count">1 / 7</div></div></div><div class="page" id="p2"><div class="who"><div class="av">j</div><div><b>journzey</b><span>@journzey</span></div><div class="tag">TRADER NOTES · 08</div></div><div class="step"><span class="n">1</span>STEP 1 OF 5</div><div class="ttl">Win one trade.</div><p class="says">You're basically a hedge fund now.</p>
+ <div class="card win"><div class="sym">XAUUSD · <b>BUY</b> · 0.10 lot</div><div class="pl">+$84</div>
+ <div class="ego"><div><span>ego level</span><b>hedge fund 🧠</b></div><i></i></div></div><div class="foot"><div class="swipe">Step 2 →</div><div class="count">2 / 7</div></div></div><div class="page" id="p3"><div class="who"><div class="av">j</div><div><b>journzey</b><span>@journzey</span></div><div class="tag">TRADER NOTES · 08</div></div><div class="step"><span class="n">2</span>STEP 2 OF 5</div><div class="ttl">Double the size.</div><p class="says">Confidence is a risk model.</p>
+ <div class="card"><div class="lots">
+  <span><i style="height:22px"></i><b>0.10</b><small>1%</small></span>
+  <span><i style="height:46px"></i><b>0.20</b><small>2%</small></span>
+  <span><i style="height:114px"></i><b>0.50</b><small>5%</small></span>
+  <span><i style="height:228px"></i><b>1.00</b><small>10%</small></span>
+  <span><i style="height:440px"></i><b>2.00 🚀</b><small>20%</small></span>
+ </div><div class="cap"><span>lot size · risk per trade</span><span>example</span></div></div><div class="foot"><div class="swipe">Step 3 →</div><div class="count">3 / 7</div></div></div><div class="page" id="p4"><div class="who"><div class="av">j</div><div><b>journzey</b><span>@journzey</span></div><div class="tag">TRADER NOTES · 08</div></div><div class="step"><span class="n">3</span>STEP 3 OF 5</div><div class="ttl">Delete your stop.</div><p class="says">Stops are for people who plan to lose.</p>
+ <div class="card"><svg id="s3" width="890" height="620"></svg></div><div class="foot"><div class="swipe">Step 4 →</div><div class="count">4 / 7</div></div></div><div class="page" id="p5"><div class="who"><div class="av">j</div><div><b>journzey</b><span>@journzey</span></div><div class="tag">TRADER NOTES · 08</div></div><div class="step"><span class="n">4</span>STEP 4 OF 5</div><div class="ttl">Win it back. Now.</div><p class="says">The market owes you.</p>
+ <div class="card log">
+  <div class="h"><span>TIME</span><span>TRADE</span><span class="r">LOTS</span><span class="r">P&amp;L</span></div>
+  <div><span>14:02</span><span>“revenge”</span><span class="r">1.00</span><span class="r d">−$410</span></div>
+  <div><span>14:07</span><span>“revenge” 2</span><span class="r">2.00</span><span class="r d">−$780</span></div>
+  <div><span>14:13</span><span>“last one”</span><span class="r">3.00</span><span class="r d">−$1,240</span></div>
+  <div><span>14:20</span><span>“all in” 🙏</span><span class="r">5.00</span><span class="r d">−$2,950</span></div>
+  <div class="tot"><span></span><span>18 minutes</span><span></span><span class="r d">−$5,380</span></div>
+ </div><div class="cap"><span>trade log</span><span>example</span></div><div class="foot"><div class="swipe">Step 5 →</div><div class="count">5 / 7</div></div></div><div class="page" id="p6"><div class="who"><div class="av">j</div><div><b>journzey</b><span>@journzey</span></div><div class="tag">TRADER NOTES · 08</div></div><div class="step"><span class="n">5</span>STEP 5 OF 5</div><div class="ttl">Blame the market.</div><p class="says">It was definitely rigged.</p>
+ <div class="card zero">
+  <span class="ex" style="left:34px;top:30px">🎯 “stop hunt”</span>
+  <span class="ex" style="right:34px;top:62px">🤡 “manipulation”</span>
+  <span class="ex" style="left:56px;bottom:84px">📰 “the news”</span>
+  <span class="ex" style="right:44px;bottom:44px">🪐 “Mercury retrograde”</span>
+  <div class="bal"><small>ACCOUNT BALANCE</small><b>$0.00</b><s>$10,000</s></div>
+ </div><div class="foot"><div class="swipe">Now flip it →</div><div class="count">6 / 7</div></div></div><div class="page" id="p7"><div class="who"><div class="av">j</div><div><b>journzey</b><span>@journzey</span></div><div class="tag">TRADER NOTES · 08</div></div><div class="flip">Now do the<br><span class="grad">exact opposite.</span></div>
+ <ol class="rules">
+  <li><span class="n">1</span><span><s>win one, feel genius</s><b>One win is one data point</b></span></li>
+  <li><span class="n">2</span><span><s>double the size</s><b>Same size, win or lose</b></span></li>
+  <li><span class="n">3</span><span><s>delete the stop</s><b>A stop on every trade</b></span></li>
+  <li><span class="n">4</span><span><s>win it back now</s><b>2 losses = close the chart</b></span></li>
+  <li><span class="n">5</span><span><s>blame the market</s><b>Read your journal instead</b></span></li>
+ </ol>
+ <div class="ask">Which step are you on? Comment 1–5 👇</div>
+ <div class="cta">journzey is coming soon <span>Follow for launch day 🔔</span></div><div class="foot"><div class="swipe">Save this 🔖</div><div class="count">7 / 7</div></div></div><script>
+function rng(seed){ return () => (seed = (seed * 16807) % 2147483647) / 2147483647; }
+function candles(dr, start, seed, vol){ const r=rng(seed); let p=start; return dr.map(d=>{ const o=p, c=o+d+(r()-0.5)*vol; const h=Math.max(o,c)+r()*vol*.7, l=Math.min(o,c)-r()*vol*.7; p=c; return {o,c,h,l,v:400+r()*900+Math.abs(d)*260}; }); }
+function frame(svg, c, padR, extra){ const W=+svg.getAttribute('width'), H=+svg.getAttribute('height'), top=14, bot=H-40, left=4;
+  const ex=extra||[]; const hi=Math.max(...c.map(k=>k.h),...ex)+2, lo=Math.min(...c.map(k=>k.l),...ex)-2;
+  const y=v=>top+(hi-v)/(hi-lo)*(bot-top), N=c.length, step=(W-padR-left)/N, bw=step*.6, x=i=>left+i*step+step/2; return {W,H,top,bot,y,x,bw,hi,lo,step}; }
+function grid(F, padR){ let s=''; for(let t=0;t<=4;t++){ const v=F.lo+(F.hi-F.lo)*t/4, yy=F.y(v); s+=`<line x1="4" x2="${F.W-padR}" y1="${yy}" y2="${yy}" stroke="#1d1c38" stroke-width="1.5"/>`; } return s; }
+function drawC(F, c){ let s=''; c.forEach((k,i)=>{ const col=k.c>=k.o?'#34d399':'#f87171', yo=F.y(k.o), yc=F.y(k.c); s+=`<line x1="${F.x(i)}" x2="${F.x(i)}" y1="${F.y(k.h)}" y2="${F.y(k.l)}" stroke="${col}" stroke-width="2"/><rect x="${F.x(i)-F.bw/2}" y="${Math.min(yo,yc)}" width="${F.bw}" height="${Math.max(3,Math.abs(yc-yo))}" rx="2" fill="${col}"/>`; }); return s; }
+function pill(x, y, t, col, anchor){ const w=t.length*12+26; const xx=anchor==='end'?x-w:x; return `<rect x="${xx}" y="${y-17}" width="${w}" height="34" rx="9" fill="${col}"/><text x="${xx+w/2}" y="${y+6}" font-size="18" fill="#fff" text-anchor="middle" style="font-family:Jakarta;font-weight:700">${t}</text>`; }
+
+function hline(F, p, col, label, dash, side){ const yy=F.y(p); return `<line x1="4" x2="${F.W-6}" y1="${yy}" y2="${yy}" stroke="${col}" stroke-width="2.5" stroke-dasharray="${dash||'9 7'}"/>`+(label?pill(side==='left'?12:F.W-10, yy, label, col, side==='left'?'start':'end'):''); }
+function note(F, t){ return `<text x="12" y="${F.H-10}" font-size="17" fill="#67648a" style="font-family:Mono">${t||''}</text><text x="${F.W-8}" y="${F.H-10}" font-size="17" fill="#67648a" text-anchor="end">illustration</text>`; }
+// cover · equity curve: small rise, then the 5 steps take it to zero
+(function(){ const svg=document.getElementById('cv'); const W=890,H=560,L=20,R=20,T=40,B=500;
+  const v=[10000,10084,10300,10120,10600,11200,10400,9100,9600,8200,6900,7600,5200,3900,4600,2100,900,0];
+  const n=v.length-1, x=i=>L+i*(W-L-R)/n, y=p=>T+(11800-p)/11800*(B-T);
+  let s=''; [0,4000,8000].forEach(p=>{ s+=`<line x1="${L}" x2="${W-R}" y1="${y(p)}" y2="${y(p)}" stroke="#1d1c38" stroke-width="1.5"/>`; });
+  const d=v.map((p,i)=>(i?'L':'M')+x(i)+','+y(p)).join(' ');
+  s+=`<defs><linearGradient id="cg" x1="0" x2="1"><stop offset="0" stop-color="#34d399"/><stop offset=".3" stop-color="#9d7cff"/><stop offset=".6" stop-color="#f87171"/><stop offset="1" stop-color="#b91c1c"/></linearGradient></defs>`;
+  s+=`<path d="${d}" fill="none" stroke="url(#cg)" stroke-width="7" stroke-linejoin="round" stroke-linecap="round"/>`;
+  [[1,'1'],[5,'2'],[8,'3'],[12,'4'],[17,'5']].forEach(([i,k])=>{ const cx=x(i), cy=y(v[i]); s+=`<circle cx="${cx}" cy="${cy}" r="24" fill="#060613" stroke="#feb2b4" stroke-width="3"/><text x="${cx}" y="${cy+9}" font-size="24" fill="#faf8ff" text-anchor="middle" style="font-family:Mono;font-weight:700">${k}</text>`; });
+  s+=pill(x(17)-40, y(0)+30, '$0 · tutorial complete ✅', '#b91c1c', 'end');
+  s+=`<text x="${L}" y="24" font-size="18" fill="#67648a" style="font-family:Mono">account equity</text><text x="${W-R}" y="24" font-size="18" fill="#67648a" text-anchor="end">illustration</text>`;
+  svg.innerHTML=s; })();
+// step 3 · no stop: price walks away from the entry
+(function(){ const svg=document.getElementById('s3');
+  const dr=[.6,1,.4,-.8,-1.4,-.6,-1.8,-.4,.8,-1.6,-2.2,-.8,.6,-1.8,-2.4,-1.2,.4,-2,-2.6,-1.4,-.6,-2,-2.4];
+  const c=candles(dr,4120,5,2.2); const e=c[2].c, ghost=e-4;
+  const F=frame(svg,c,24,[e+3]); let s=grid(F,24);
+  s+=hline(F,e,'#7c5cff','entry')+hline(F,ghost,'#3a3766','where your stop was','5 7');
+  s+=drawC(F,c); s+=pill(F.x(4)+10, F.y(e)-44, 'stop: deleted 😎', '#5b3fd6');
+  const last=c[c.length-1]; s+=pill(F.W-10, F.y(last.c)-46, `${((last.c-e)/4).toFixed(1)}R · “it'll come back”`, '#b91c1c', 'end');
+  s+=note(F,'XAUUSD 5m'); svg.innerHTML=s; })();
+</script></body></html>
