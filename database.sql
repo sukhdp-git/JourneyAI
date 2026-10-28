@@ -1549,3 +1549,36 @@ INSERT IGNORE INTO `settings` (`key`, `value`, `group_name`) VALUES ('autopay_en
 
 -- Record the schema version
 INSERT INTO `settings` (`key`, `value`, `group_name`) VALUES ('schema_version', '11', 'system') ON DUPLICATE KEY UPDATE `value` = IF(CAST(`value` AS UNSIGNED) < 11, '11', `value`);
+
+-- ---------------------------------------------------------------------------------------------
+-- Schema version 12: Roast Mode setting and the Wall of L's (anonymised loss autopsies)
+-- Non-destructive: adds one column with a default and one new table. Rollback: DROP TABLE `wall_posts`.
+-- ---------------------------------------------------------------------------------------------
+SET @s := (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `user_settings` ADD COLUMN `roast_level` VARCHAR(10) NOT NULL DEFAULT ''savage''', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'user_settings' AND COLUMN_NAME = 'roast_level');
+PREPARE jz_stmt FROM @s;
+EXECUTE jz_stmt;
+DEALLOCATE PREPARE jz_stmt;
+
+CREATE TABLE IF NOT EXISTS `wall_posts` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id` INT UNSIGNED NULL,
+  `handle` VARCHAR(40) NULL,
+  `instrument` VARCHAR(20) NULL,
+  `mistake` VARCHAR(20) NOT NULL DEFAULT 'IGNORED_PLAN',
+  `loss_text` VARCHAR(40) NOT NULL,
+  `story` VARCHAR(600) NOT NULL,
+  `lesson` VARCHAR(300) NOT NULL,
+  `status` ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+  `react_skull` INT UNSIGNED NOT NULL DEFAULT 0,
+  `react_melt` INT UNSIGNED NOT NULL DEFAULT 0,
+  `react_hug` INT UNSIGNED NOT NULL DEFAULT 0,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `approved_at` DATETIME NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_wall_status` (`status`, `approved_at`),
+  KEY `idx_wall_user` (`user_id`),
+  CONSTRAINT `fk_wall_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Record the schema version
+INSERT INTO `settings` (`key`, `value`, `group_name`) VALUES ('schema_version', '12', 'system') ON DUPLICATE KEY UPDATE `value` = IF(CAST(`value` AS UNSIGNED) < 12, '12', `value`);

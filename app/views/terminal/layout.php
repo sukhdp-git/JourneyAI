@@ -6,7 +6,7 @@ use App\Trading\Domain;
 $theme = isset(Domain::THEMES[$m['theme']]) ? $m['theme'] : Domain::DEFAULT_THEME;
 $links = [
     ['home', '/terminal', 'nav.home', 'home'], ['dashboard', '/terminal/dashboard', 'nav.dashboard', 'dashboard'], ['calendar', '/terminal/calendar', 'nav.calendar', 'calendar'],
-    ['trades', '/terminal/trades', 'nav.trades', 'list'], ['calculator', '/terminal/calculator', 'nav.calculator', 'scale'], ['strategies', '/terminal/strategies', 'nav.strategies', 'target'], ['edge', '/terminal/edge', 'nav.edge', 'radar'],
+    ['trades', '/terminal/trades', 'nav.trades', 'list'], ['calculator', '/terminal/calculator', 'nav.calculator', 'scale'], ['strategies', '/terminal/strategies', 'nav.strategies', 'target'], ['edge', '/terminal/edge', 'nav.edge', 'radar'], ['mind', '/terminal/mind', 'nav.mind', 'brain'],
     ['notepad', '/terminal/notepad', 'nav.notepad', 'journal'], ['coach', '/terminal/coach', 'nav.coach', 'sparkles'], ['university', '/terminal/university', 'nav.university', 'book'], ['markets', '/terminal/markets', 'nav.markets', 'globe'],
 ];
 if (!App\Trading\MarketWidgets::enabled()) {
@@ -137,6 +137,7 @@ $initials = mb_strtoupper(mb_substr($m['name'], 0, 1));
 <script src="<?= e(asset('js/vendor/qrcode.js')) ?>" defer></script>
 <script src="<?= e(asset('js/voice-parse.js')) ?>" defer></script>
 <script src="<?= e(asset('js/tools.js')) ?>" defer></script>
+<?php if (in_array($nav, ['mind', 'home'], true)): ?><script src="<?= e(asset('js/mind.js')) ?>" defer></script><?php endif; ?>
 <script src="<?= e(asset('js/quicklog.js')) ?>" defer></script>
 </body>
 </html>

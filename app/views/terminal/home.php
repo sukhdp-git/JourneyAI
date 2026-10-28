@@ -24,6 +24,13 @@ $part = $hour < 5 ? 'Late session' : ($hour < 12 ? 'Good morning' : ($hour < 17 
   <div><h2>Hi <span><?= e($first) ?></span>,</h2><p><?= e($part) ?> — trade your plan, not your emotions.</p></div>
   <?php if (!empty($brief)): ?><button type="button" class="tm-btn tm-btn-sm hello-brief" data-brief-open><?= icon('message', 'icon icon-sm') ?> Weekly brief</button><?php endif; ?>
 </section>
+<?php if (!empty($roast) || in_array($clock['state'] ?? '', ['dying', 'alive'], true)): ?>
+<div class="home-mind" data-death-clock data-death-at="<?= (int) ($clock['death_at'] ?? 0) ?>" data-speed="<?= e($clock['speed'] ?? 'slow') ?>">
+  <?php if (!empty($roast)): ?><p class="mr-bubble" data-roast-strip="<?= e($roast['date']) ?>" hidden><span><?= e($roast['text']) ?></span><a href="<?= e(url('/terminal/mind')) ?>">Mind →</a><button type="button" class="hm-x" data-roast-dismiss aria-label="Dismiss for today">×</button></p><?php endif; ?>
+  <?php if (($clock['state'] ?? '') === 'dying'): ?><a class="hm-clock" href="<?= e(url('/terminal/mind')) ?>"><small>Account death clock</small><span class="mc-face" data-clock-face><span data-u="d">--</span><i>d</i> <span data-u="h">--</span><i>h</i> <span data-u="m">--</span><i>m</i> <span data-u="s">--</span><i>s</i></span></a>
+  <?php elseif (($clock['state'] ?? '') === 'alive'): ?><a class="hm-clock alive" href="<?= e(url('/terminal/mind')) ?>"><small>Account death clock</small><b>∞ Not dying. Keep it that way.</b></a><?php endif; ?>
+</div>
+<?php endif; ?>
 <section class="quote-hero" data-quotes="<?= e(json_encode(Domain::QUOTES)) ?>" data-start="<?= (int) $quoteStart ?>" aria-label="Trading psychology">
   <?php $q = Domain::QUOTES[$quoteStart]; ?>
   <div class="quote-hero-body">

@@ -118,6 +118,8 @@ $router->post('/terminal/settings/password', [SettingsController::class, 'passwo
 $router->get('/terminal/settings/export', [SettingsController::class, 'export']);
 $router->post('/terminal/settings/delete', [SettingsController::class, 'deleteAccount']);
 $router->post('/terminal/theme', [SettingsController::class, 'theme']);
+$router->get('/terminal/mind', [\App\Controllers\Terminal\MindController::class, 'index']);
+$router->post('/terminal/mind/level', [\App\Controllers\Terminal\MindController::class, 'level']);
 $router->get('/terminal/billing', [BillingController::class, 'billing']);
 
 // Pricing & payments
