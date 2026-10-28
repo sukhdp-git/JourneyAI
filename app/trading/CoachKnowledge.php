@@ -94,7 +94,13 @@ final class CoachKnowledge
             ['t' => 'app', 'q' => 'How do I log a trade quickly?', 'k' => ['quick log', 'log a trade', 'add trade', 'new trade', 'how to log'],
              'a' => ['Use **Quick Log**: instrument → buy/sell → lot size → prices on the scroll wheel. Date, time and session fill in automatically.', 'Add setup, emotions and notes later; the Trade Log reminds you.'], 'link' => '/terminal'],
             ['t' => 'app', 'q' => 'How do I use the University?', 'k' => ['university', 'course', 'learn', 'lessons', 'strategies to learn', 'playbook'],
-             'a' => ['The University has strategy lessons and a mini-course from beginner to intermediate.', 'Pick one strategy, learn its rules, and log every trade with that strategy tag to measure it.'], 'link' => '/terminal/university'],
+             'a' => ['The University has a free 13-lesson course from zero to a trader with a plan (4 levels: start here, read the market, build your edge, go pro) plus 10 strategy lessons.', 'New? Start with lesson 1 and do the quiz at the end of each one.'], 'link' => '/terminal/university/course'],
+            ['t' => 'app', 'q' => 'What is the Ghost?', 'k' => ['ghost', 'invisible copy', 'ghost trader', 'if i followed my rules', 'without mistakes'],
+             'a' => ['The **Ghost** is a copy of you that took the same trades but **followed your rules**: it skips trades that broke a rule and caps losses at your planned risk where the stop was moved or missing.', 'It never invents profits, so the gap between you and your Ghost is what your mistakes cost.'], 'link' => '/terminal/mind'],
+            ['t' => 'app', 'q' => 'What is Roast Mode and the Death Clock?', 'k' => ['roast', 'roast mode', 'death clock', 'account death', 'boss fight', 'boss', 'psych art', 'wallpaper', 'mind tab'],
+             'a' => ['The **Mind** tab turns your journal into a personality: **Roast Mode** texts you the morning after you break your rules (Off / Mild / Savage), the **Death Clock** shows when the account hits zero at your recent pace, the **Boss Fight** turns your costliest habit into a monster you beat with clean days, and **Psych Art** paints your week as a 4K wallpaper.'], 'link' => '/terminal/mind'],
+            ['t' => 'app', 'q' => "What is the Wall of L's?", 'k' => ['wall of ls', "wall of l's", 'wall of losses', 'post my loss', 'losing trade wall'],
+             'a' => ["The **Wall of L's** is a public page of real losing trades with the lesson behind each one, posted anonymously with the trader's permission.", 'Open a losing trade and use **Post to Wall of L\'s**, or submit from the Mind tab. The team reviews every post first.'], 'link' => '/terminal/wall'],
         ];
     }
 }
