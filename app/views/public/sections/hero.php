@@ -63,9 +63,9 @@ $split = preg_match('/^(.+?[.!?])\s+(\S.*)$/u', $heading, $hm) ? [$hm[1], $hm[2]
         <img src="<?= $pi('dashboard.webp') ?>" srcset="<?= $pi('dashboard-sm.webp') ?> 800w, <?= $pi('dashboard.webp') ?> 1600w" sizes="(max-width: 999px) 92vw, 640px" width="1600" height="1000" alt="journzey.ai dashboard: equity curve, win rate, profit factor and drawdown (demo data)" fetchpriority="high">
         <span class="shot-sweep" aria-hidden="true"></span>
       </div>
-      <img class="shot-float f-voice" src="<?= $pi('voice.webp') ?>" width="1000" height="373" alt="Voice logging: a spoken trade logged in one sentence" loading="lazy">
+      <img class="shot-float f-voice" src="<?= $pi('prop.webp') ?>" width="1400" height="319" alt="Prop firm rules: profit target, daily loss, max loss and trading days" loading="lazy">
       <img class="shot-float f-flex" src="<?= $pi('flexcard.webp') ?>" width="720" height="900" alt="Verified flex card with QR code" loading="lazy">
-      <div class="float-chip chip-a" aria-hidden="true"><?= icon('mic', 'icon icon-sm') ?>Speak your trades</div>
+      <div class="float-chip chip-a" aria-hidden="true"><?= icon('zap', 'icon icon-sm') ?>Log a trade in 10 seconds</div>
       <div class="float-chip chip-b" aria-hidden="true"><?= icon('shield', 'icon icon-sm') ?>Prop firm rules</div>
       <p class="shot-caption">Real product screens · demo data</p>
     </div>

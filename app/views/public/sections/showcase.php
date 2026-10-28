@@ -3,14 +3,13 @@
 $pi = fn ($f) => e(asset('images/product/' . $f));
 $img = fn (string $f, string $alt, string $cls = '', bool $lazy = true) => '<img class="' . $cls . '" src="' . $pi($f . '.webp') . '" srcset="' . $pi($f . '-sm.webp') . ' 800w, ' . $pi($f . '.webp') . ' 1600w" sizes="(max-width: 999px) 94vw, 760px" width="1600" height="1000" alt="' . e($alt) . '"' . ($lazy ? ' loading="lazy" decoding="async"' : '') . '>';
 $tour = [
-    ['voice', 'mic', 'Voice logging', 'Say it. It’s logged.', 'Speak one sentence — “sold gold at 2860, stop 2870, exit 2840, half a lot” — in English, Русский, 中文 or Português. Risk, R:R and P&L are calculated instantly.', 'logtrade', 'Log Trade with voice: every field filled from one spoken sentence'],
     ['dash', 'dashboard', 'Dashboard', 'Your whole account, one glance.', 'Equity curve with deposits and withdrawals, win rate, profit factor, drawdown and P&L by weekday, session, instrument and strategy — charts draw themselves live.', 'dashboard', 'Dashboard with equity curve, KPIs and drawdown'],
     ['edge', 'radar', 'Edge Matrix', 'Find the edge. Cut the leak.', 'Your best and worst trading windows, a blow-up probability radar, rule violations that cost money and a 20% runner audit — decoded into plain language.', 'edge', 'Edge Matrix: best trading window, anti-window and audit'],
     ['prop', 'shield', 'Prop firm rules', 'Never breach a challenge by surprise.', 'Add any prop firm, pick the challenge type and the rules set themselves up: profit target, daily loss, max drawdown (static or trailing), trading days and consistency — live on your dashboard.', 'dashboard-prop', 'Prop firm rules panel with live progress bars'],
     ['strat', 'target', 'Strategy analysis', 'Know which setup actually pays.', 'Rank every strategy by profit, win rate, average R and rule compliance, with win rate by Asian, London and New York session.', 'strategies', 'Strategy scoreboard and win rate by session'],
     ['cal', 'calendar', 'Calendar & flex cards', 'Green days you can prove.', 'A P&L calendar with weekly totals — and a shareable flex card for any day or trade, with a QR code that opens “Verified by journzey.ai”.', 'calendar', 'P&L calendar with green and red days'],
 ];
-$chips = ['Voice logging in 4 languages', 'Prop firm rule tracker', 'Unlimited broker accounts', 'Tilt breaker with alert beep', 'Blow-up probability radar', 'Verified flex cards', 'AI Coach', 'TradingView live charts', 'Position-size calculator', 'Daily psychology notepad', '10-strategy University', 'Dark & light premium themes'];
+$chips = ['Quick Log in 10 seconds', 'Prop firm rule tracker', 'Unlimited broker accounts', 'Tilt breaker with alert beep', 'Blow-up probability radar', 'Verified flex cards', 'Free Smart Coach', 'TradingView live charts', 'Position-size calculator', 'Daily psychology notepad', '10-strategy University', 'Dark & light premium themes'];
 ?>
 <section class="section showcase" aria-labelledby="sc-title">
   <div class="container">
@@ -19,7 +18,7 @@ $chips = ['Voice logging in 4 languages', 'Prop firm rule tracker', 'Unlimited b
       <div class="sc-aura" aria-hidden="true"></div>
       <div class="shot-frame sc-main">
         <div class="shot-bar" aria-hidden="true"><span></span><span></span><span></span><em>journzey.ai · Home Hub</em></div>
-        <?= $img('home', 'journzey.ai Home Hub: greeting, daily focus quote, execution desk with voice logging and session clock (demo data)') ?>
+        <?= $img('home', 'journzey.ai Home Hub: greeting, daily focus quote, execution desk and session clock (demo data)') ?>
       </div>
       <img class="sc-pop sc-pop-a" src="<?= $pi('prop.webp') ?>" width="1400" height="319" alt="Prop firm rules: profit target, daily loss, max loss and trading days" loading="lazy">
       <img class="sc-pop sc-pop-b" src="<?= $pi('flexcard.webp') ?>" width="720" height="900" alt="Shareable flex card with Verified by journzey.ai QR code" loading="lazy">

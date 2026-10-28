@@ -13,6 +13,9 @@ foreach ($sections as $s) {
     }
     $key = in_array($s['section_key'], $known, true) ? $s['section_key'] : 'generic';
     echo View::partial('public/sections/' . $key, get_defined_vars() + ['s' => $s, 'items' => json_list($s['items']), 'opt' => json_list($s['options'])]);
+    if ($key === 'hero') {
+        echo View::partial('public/sections/pnl-story'); // scroll story + 3D feature cards, right after the hero
+    }
 }
 if (!$customDone) {
     foreach ($custom as $c) {

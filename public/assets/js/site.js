@@ -148,3 +148,57 @@
     });
   });
 })();
+
+/* P&L scroll story + 3D tilt cards */
+(function () {
+  var d = document, reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // 3D tilt: rotate towards the cursor, measured from the card centre, with a glare that follows it
+  if (!reduce && window.matchMedia('(hover: hover)').matches) {
+    d.querySelectorAll('.service-card, .price-card, .plan-card').forEach(function (el) { el.setAttribute('data-tilt3d', ''); });
+    d.querySelectorAll('[data-tilt3d]').forEach(function (el) {
+      var raf = 0;
+      el.addEventListener('pointermove', function (e) {
+        cancelAnimationFrame(raf);
+        raf = requestAnimationFrame(function () {
+          var r = el.getBoundingClientRect(), x = (e.clientX - r.left - r.width / 2) / (r.width / 2), y = (e.clientY - r.top - r.height / 2) / (r.height / 2);
+          el.classList.add('tilting');
+          el.style.setProperty('--ry', (x * 9).toFixed(2) + 'deg'); el.style.setProperty('--rx', (-y * 7).toFixed(2) + 'deg');
+          el.style.setProperty('--gx', ((x + 1) * 50).toFixed(1) + '%'); el.style.setProperty('--gy', ((y + 1) * 50).toFixed(1) + '%');
+        });
+      });
+      el.addEventListener('pointerleave', function () { cancelAnimationFrame(raf); el.classList.remove('tilting'); el.style.setProperty('--ry', '0deg'); el.style.setProperty('--rx', '0deg'); });
+    });
+  }
+  // Scroll story: P&L moves red -> breakeven -> profit as the section scrolls
+  d.querySelectorAll('[data-pnl-story]').forEach(function (sec) {
+    var num = sec.querySelector('[data-ps-num]'), vals = JSON.parse(num.getAttribute('data-values')), steps = sec.querySelectorAll('[data-ps-step]'),
+        tags = sec.querySelectorAll('[data-ps-tag]'), pill = sec.querySelector('[data-ps-pill]'), card = sec.querySelector('.ps-card'),
+        line = sec.querySelector('[data-ps-line]'), area = sec.querySelector('[data-ps-area]'), dot = sec.querySelector('[data-ps-dot]');
+    var W = 600, Z = 150, N = 40, seed = 3, rnd = function () { seed = seed * 16807 % 2147483647; return seed / 2147483647; }, noise = [];
+    for (var i = 0; i <= N; i++) noise.push((rnd() - .5) * 26);
+    var fmt = function (v) { var a = Math.abs(Math.round(v)).toLocaleString('en-US'); return (v < -0.5 ? '−$' : v > 0.5 ? '+$' : '$') + a; };
+    var col = function (v) { return v < -300 ? 'var(--dn)' : v < 300 ? 'var(--flat)' : 'var(--up)'; };
+    function draw(p) {
+      var seg = p * (vals.length - 1), k = Math.min(vals.length - 2, Math.floor(seg)), f = seg - k, ease = f * f * (3 - 2 * f), v = vals[k] + (vals[k + 1] - vals[k]) * ease;
+      num.textContent = fmt(v); card.style.setProperty('--c', col(v));
+      var step = Math.min(vals.length - 1, Math.round(seg));
+      steps.forEach(function (s, j) { s.classList.toggle('on', j === step); });
+      tags.forEach(function (t, j) { t.classList.toggle('on', j <= step); });
+      pill.textContent = steps[step].querySelector('.ps-week').textContent;
+      // curve: dips first, then climbs to the current value; drawn up to the current progress
+      var upto = Math.max(2, Math.round(N * (0.25 + 0.75 * p))), pts = [];
+      for (var i = 0; i <= upto; i++) {
+        var t = i / N, base = t < .3 ? -Math.sin(t / .3 * Math.PI / 2) * 95 : -95 + (t - .3) / .7 * (95 + v / 2180 * 120);
+        pts.push([i / N * W, Z - base - noise[i] * (0.6 + 0.4 * (1 - p))]);
+      }
+      var dpath = pts.map(function (q, j) { return (j ? 'L' : 'M') + q[0].toFixed(1) + ' ' + q[1].toFixed(1); }).join(' ');
+      line.setAttribute('d', dpath); area.setAttribute('d', dpath + ' L' + pts[pts.length - 1][0].toFixed(1) + ' 260 L0 260 Z');
+      dot.setAttribute('cx', pts[pts.length - 1][0]); dot.setAttribute('cy', pts[pts.length - 1][1]);
+    }
+    if (reduce) { draw(1); return; }
+    var ticking = false;
+    function upd() { ticking = false; var r = sec.getBoundingClientRect(), total = r.height - window.innerHeight; draw(Math.max(0, Math.min(1, -r.top / (total || 1)))); }
+    window.addEventListener('scroll', function () { if (!ticking) { ticking = true; requestAnimationFrame(upd); } }, { passive: true });
+    window.addEventListener('resize', upd); upd();
+  });
+})();
