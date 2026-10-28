@@ -11,9 +11,9 @@ $colors = ['SMC' => 'c-violet', 'ICT' => 'c-blue', 'ORDER_FLOW' => 'c-cyan', 'VO
   </header>
   <a class="uni-course" href="<?= e(url('/terminal/university/course')) ?>">
     <div>
-      <span class="uni-kicker"><?= icon('sparkles', 'icon icon-xs') ?> New · free mini-course · <?= \App\Trading\Course::minutes() ?> min</span>
-      <h3><?= e(\App\Trading\Course::TITLE) ?>: beginner to intermediate</h3>
-      <p>5 short visual modules — why most traders lose, market basics, risk management &amp; position sizing, trading psychology, and the habits of consistent traders. Start here if you are new.</p>
+      <span class="uni-kicker"><?= icon('sparkles', 'icon icon-xs') ?> Free course · <?= count(\App\Trading\Course::MODULES) ?> lessons · about <?= round(\App\Trading\Course::minutes() / 60, 1) ?> hours</span>
+      <h3><?= e(\App\Trading\Course::TITLE) ?>: from zero to a trader with a plan</h3>
+      <p>Everything a beginner needs in 4 levels: market basics, risk, charts, indicators, news, psychology, building and testing a strategy, trade management, brokers and prop firms. Start here if you are new.</p>
     </div>
     <span class="tm-btn tm-btn-primary"><?= icon('book', 'icon icon-sm') ?> Start the course</span>
   </a>

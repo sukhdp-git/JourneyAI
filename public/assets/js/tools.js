@@ -754,14 +754,14 @@
     });
   });
   $$('[data-course]').forEach(function (root) {
-    var key = root.dataset.courseKey, total = 5, done = [];
+    var key = root.dataset.courseKey, total = +root.dataset.courseTotal || 5, done = [];
     try { done = JSON.parse(localStorage.getItem(key) || '[]') || []; } catch (e) { done = []; }
     if (!Array.isArray(done)) done = [];
     var save = function () { try { localStorage.setItem(key, JSON.stringify(done)); } catch (e) {} };
     var paint = function () {
       $$('[data-course-mod]', root).forEach(function (a) { a.classList.toggle('is-done', done.indexOf(+a.dataset.courseMod) > -1); });
       var bar = $('[data-course-bar]', root); if (bar) bar.style.width = Math.round(done.length / total * 100) + '%';
-      var lab = $('[data-course-label]', root); if (lab) lab.textContent = done.length + ' of ' + total + ' modules complete' + (done.length === total ? ' — course finished!' : '');
+      var lab = $('[data-course-label]', root); if (lab) lab.textContent = done.length + ' of ' + total + ' lessons complete' + (done.length === total ? ' — course finished!' : '');
       var n = +root.dataset.courseN, btn = $('[data-course-complete]', root);
       if (btn && n) { var on = done.indexOf(n) > -1; btn.classList.toggle('tm-btn-primary', on); btn.setAttribute('aria-pressed', on ? 'true' : 'false'); $('span', btn).textContent = on ? 'Completed ✓' : 'Mark module complete'; }
     };
@@ -769,6 +769,44 @@
     if (btn) btn.addEventListener('click', function () { var n = +root.dataset.courseN, i = done.indexOf(n); if (i > -1) done.splice(i, 1); else done.push(n); save(); paint(); });
     paint();
   });
+  /* Lessons as an accordion: one open at a time, so a module never looks like a wall of text */
+  $$('[data-cx-acc]').forEach(function (body) {
+    var secs = $$('.cx-sec', body);
+    secs.forEach(function (sec, i) {
+      var h = $('h3', sec); if (!h) return;
+      var inner = d.createElement('div'); inner.className = 'cx-acc-in';
+      while (h.nextSibling) inner.appendChild(h.nextSibling);
+      var wrap = d.createElement('div'); wrap.className = 'cx-acc-body'; wrap.appendChild(inner); sec.appendChild(wrap);
+      var btn = d.createElement('button'); btn.type = 'button'; btn.className = 'cx-acc-btn'; btn.id = 'cxh' + i;
+      while (h.firstChild) btn.appendChild(h.firstChild);
+      var chev = d.createElement('span'); chev.className = 'cx-acc-chev'; chev.setAttribute('aria-hidden', 'true'); btn.appendChild(chev);
+      h.appendChild(btn); wrap.setAttribute('role', 'region'); wrap.setAttribute('aria-labelledby', btn.id);
+      var set = function (open) { sec.classList.toggle('open', open); btn.setAttribute('aria-expanded', open ? 'true' : 'false'); if (open) sec.classList.add('seen'); };
+      set(i === 0);
+      btn.addEventListener('click', function () {
+        var open = !sec.classList.contains('open');
+        secs.forEach(function (o) { if (o !== sec && o.classList.contains('open')) { o.classList.remove('open'); var b = $('.cx-acc-btn', o); if (b) b.setAttribute('aria-expanded', 'false'); } });
+        set(open);
+        if (open) setTimeout(function () { var r = sec.getBoundingClientRect(); if (r.top < 70) window.scrollBy({ top: r.top - 90, behavior: 'smooth' }); }, 360);
+      });
+    });
+  });
+  /* Course cursor: a spotlight that follows the pointer on cards, and a soft ring that trails it */
+  var cxRoot = $('.cx');
+  if (cxRoot && window.matchMedia('(hover: hover) and (pointer: fine)').matches && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    cxRoot.addEventListener('pointermove', function (e) {
+      var card = e.target.closest('.cx-sec, .cx-card, .cx-stat, .cx-mod, .cx-tldr');
+      if (card) { var r = card.getBoundingClientRect(); card.style.setProperty('--sx', (e.clientX - r.left) + 'px'); card.style.setProperty('--sy', (e.clientY - r.top) + 'px'); }
+    });
+    var ring = d.createElement('div'); ring.className = 'cx-ring'; ring.setAttribute('aria-hidden', 'true'); d.body.appendChild(ring);
+    var tx = -100, ty = -100, rx = -100, ry = -100, live = false;
+    d.addEventListener('pointermove', function (e) {
+      tx = e.clientX; ty = e.clientY; var inside = cxRoot.contains(e.target); ring.classList.toggle('on', inside);
+      ring.classList.toggle('big', inside && !!e.target.closest('a, button, label, input, select, .cx-acc-btn'));
+      if (!live) { live = true; requestAnimationFrame(loop); }
+    });
+    var loop = function () { rx += (tx - rx) * 0.2; ry += (ty - ry) * 0.2; ring.style.transform = 'translate(' + rx + 'px,' + ry + 'px)'; if (Math.abs(tx - rx) + Math.abs(ty - ry) > 0.5) requestAnimationFrame(loop); else live = false; };
+  }
   $$('[data-calc="size"]').forEach(function (box) {
     var v = function (k) { var el = $('[data-in="' + k + '"]', box); return el ? parseFloat(el.value) : NaN; };
     var o = function (k, t) { var el = $('[data-out="' + k + '"]', box); if (el) el.textContent = t; };

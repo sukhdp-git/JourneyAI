@@ -1692,3 +1692,42 @@ body.tm { background: radial-gradient(1000px 520px at 92% -12%, var(--glow-1), t
 .plan-cd.is-warn .plan-cd-bar i { background: var(--neg); }
 .plan-cd-actions { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
 .plan-cd-actions form { margin: 0; }
+
+/* ---------- UNIVERSITY v2: levels, 30-second summary, accordion lessons, cursor spotlight ---------- */
+.cx-tldr { margin-top: 16px; padding: 14px 18px; border-radius: 16px; border: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 70%, transparent); max-width: 760px; position: relative; overflow: hidden; }
+.cx-tldr-h { display: inline-flex; align-items: center; gap: 6px; font: 700 11px Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--gold); }
+.cx-tldr ol { margin: 8px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; counter-reset: t; }
+.cx-tldr li { counter-increment: t; display: grid; grid-template-columns: 24px 1fr; gap: 8px; font-size: 14.5px; color: var(--strong); line-height: 1.45; }
+.cx-tldr li::before { content: counter(t); width: 22px; height: 22px; border-radius: 7px; display: grid; place-items: center; font: 700 12px Inter, sans-serif; color: #fff; background: var(--brand); }
+.cx-level { margin-top: 22px; animation: cxUp .6s cubic-bezier(.2,.7,.2,1) both; animation-delay: calc(var(--i) * 80ms); }
+.cx-level-h { display: flex; align-items: center; gap: 14px; }
+.cx-level-n { flex: none; font: 700 11px Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--gold); padding: 6px 10px; border-radius: 99px; border: 1px solid var(--gold-line); background: var(--gold-soft); }
+.cx-level-h h3 { margin: 0; font: 700 19px var(--display); letter-spacing: -.02em; color: var(--strong); } .cx-level-h p { margin: 2px 0 0; font-size: 13.5px; color: var(--muted); }
+.cx-level .cx-mods { margin-top: 12px; gap: 10px; }
+.cx-level .cx-mod { padding: 14px 18px; grid-template-columns: 46px minmax(0, 1fr) auto; }
+.cx-level .cx-mod-n { width: 46px; height: 46px; border-radius: 14px; font-size: 22px; }
+.cx-level .cx-mod h3 { font-size: 15.5px; } .cx-level .cx-mod-meta { margin-top: 4px; }
+@keyframes cxUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+/* accordion */
+.cx-sec > h3 { margin: 0; }
+.cx-acc-btn { all: unset; box-sizing: border-box; cursor: pointer; display: flex; align-items: center; gap: 12px; width: 100%; font: inherit; color: inherit; border-radius: 10px; }
+.cx-acc-btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 4px; }
+.cx-acc-chev { margin-left: auto; flex: none; width: 28px; height: 28px; border-radius: 9px; border: 1px solid var(--line); position: relative; transition: transform .35s, background .3s; }
+.cx-acc-chev::before { content: ""; position: absolute; left: 50%; top: 45%; width: 8px; height: 8px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: translate(-50%, -50%) rotate(45deg); }
+.cx-sec.open .cx-acc-chev { transform: rotate(180deg); background: var(--gold-soft); }
+.cx-sec.seen:not(.open) > h3 .n { background: var(--brand); color: #fff; border-color: transparent; }
+.cx-acc-body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .4s cubic-bezier(.2,.7,.2,1); }
+.cx-sec.open .cx-acc-body { grid-template-rows: 1fr; }
+.cx-acc-in { min-height: 0; overflow: hidden; }
+.cx-sec.open .cx-acc-in { padding-top: 12px; animation: cxUp .45s cubic-bezier(.2,.7,.2,1) both; }
+.cx-body[data-cx-acc] .cx-sec { padding-top: 16px; padding-bottom: 16px; transition: border-color .3s, box-shadow .3s; }
+.cx-body[data-cx-acc] .cx-sec.open { border-color: var(--gold-line); }
+.cx-body[data-cx-acc] { display: grid; gap: 12px; }
+/* spotlight that follows the cursor on course cards */
+.cx-sec, .cx-card, .cx-stat, .cx-mod, .cx-tldr { position: relative; isolation: isolate; }
+.cx-sec::after, .cx-card::after, .cx-stat::after, .cx-mod::after, .cx-tldr::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: -1; opacity: 0; transition: opacity .3s;
+  background: radial-gradient(260px circle at var(--sx, 50%) var(--sy, 50%), rgb(124 92 240 / .12), transparent 70%); }
+.cx-sec:hover::after, .cx-card:hover::after, .cx-stat:hover::after, .cx-mod:hover::after, .cx-tldr:hover::after { opacity: 1; }
+.cx-ring { position: fixed; left: -16px; top: -16px; width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid rgb(177 122 206 / .7); pointer-events: none; z-index: 9999; opacity: 0; transition: opacity .25s, width .25s, height .25s, left .25s, top .25s, background .25s; mix-blend-mode: normal; }
+.cx-ring.on { opacity: 1; } .cx-ring.big { width: 52px; height: 52px; left: -26px; top: -26px; background: rgb(124 92 240 / .08); }
+@media (prefers-reduced-motion: reduce) { .cx-level, .cx-sec.open .cx-acc-in { animation: none; } .cx-acc-body { transition: none; } }

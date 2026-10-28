@@ -50,7 +50,7 @@ final class UniversityController extends TerminalController
         if ($n === null) {
             Response::abort(404);
         }
-        $this->render('course/module', ['n' => $n, 'mod' => Course::MODULES[$n]], 'Module ' . $n . ' · ' . Course::MODULES[$n][2], 'university');
+        $this->render('course/module', ['n' => $n, 'mod' => Course::MODULES[$n]], 'Lesson ' . Course::position($n) . ' · ' . Course::MODULES[$n][2], 'university');
     }
 
     /** Names of the member's own strategies (to show which playbook strategies were already copied). */

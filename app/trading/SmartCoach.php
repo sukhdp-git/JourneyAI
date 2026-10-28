@@ -203,7 +203,7 @@ final class SmartCoach
                 'a' => $a ?: [$title], 'link' => '/terminal/university/' . $s['slug'], 'linkLabel' => 'Full lesson'];
         }
         foreach (Course::MODULES as $n => [$slug, $title, $short, , , $summary]) {
-            $lib[] = ['t' => 'course', 'q' => $title, 'k' => [self::norm($title), self::norm($short)], 'a' => ['**' . $title . '**: ' . $summary, 'It is module ' . $n . ' of ' . Course::TITLE . ' in the University.'],
+            $lib[] = ['t' => 'course', 'q' => $title, 'k' => [self::norm($title), self::norm($short)], 'a' => ['**' . $title . '**: ' . $summary, 'It is lesson ' . Course::position($n) . ' of ' . Course::TITLE . ' in the University.'],
                 'link' => '/terminal/university/course/' . $slug, 'linkLabel' => 'Open module'];
         }
         return $lib;
