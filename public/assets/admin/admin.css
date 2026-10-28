@@ -381,3 +381,4 @@ details > summary.card-title::after { content: "▾"; margin-left: auto; color: 
 .kv { display: grid; grid-template-columns: max-content 1fr; gap: 8px 16px; margin: 0; } .kv dt { color: var(--a-muted); font-size: 13px; } .kv dd { margin: 0; word-break: break-word; }
 .avatar-img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
 .secret-state { font-size: 12px; color: var(--a-muted); }
+.inline-actions { display: flex; gap: 6px; flex-wrap: wrap; } .inline-actions .btn { white-space: nowrap; }

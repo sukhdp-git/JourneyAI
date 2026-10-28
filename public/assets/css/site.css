@@ -973,3 +973,21 @@ body { background: radial-gradient(1100px 650px at 85% -10%, color-mix(in srgb, 
   .pnl-story { height: auto; } .ps-sticky { position: static; height: auto; padding: 80px 0; }
   .ps-step { opacity: 1; } [data-tilt3d] { transform: none !important; }
 }
+
+/* ===================== WALL OF L's ===================== */
+.wall-cta { display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap; padding: 20px 24px; border-radius: 18px; border: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 80%, transparent); margin-bottom: 28px; }
+.wall-cta p { margin: 0; color: var(--muted); max-width: 640px; } .wall-cta b { color: var(--heading); }
+.wall-grid { columns: 3 320px; column-gap: 20px; }
+.wall-card { break-inside: avoid; margin: 0 0 20px; padding: 22px; border-radius: 20px; border: 1px solid var(--line); background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 95%, transparent), color-mix(in srgb, var(--surface) 70%, transparent)); display: block; }
+.wall-card header { display: flex; gap: 8px; flex-wrap: wrap; }
+.wall-mk, .wall-sym { font-size: .78rem; font-weight: 700; padding: 3px 10px; border-radius: 99px; }
+.wall-mk { color: #f87171; background: rgb(248 113 113 / .12); border: 1px solid rgb(248 113 113 / .35); } .wall-sym { color: var(--muted); border: 1px solid var(--line); }
+.wall-loss { margin: 14px 0 6px; font: 700 2rem/1.1 ui-monospace, SFMono-Regular, Menlo, monospace; color: #f87171; letter-spacing: -.02em; }
+.wall-story { color: var(--text); margin: 0 0 10px; } .wall-lesson { margin: 0; padding: 12px 14px; border-radius: 12px; background: color-mix(in srgb, var(--primary) 12%, transparent); color: var(--heading); font-size: .95rem; } .wall-lesson b { color: #c084d8; }
+.wall-card footer { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+.wall-by { font-size: .85rem; color: var(--muted); }
+.wall-react { display: flex; gap: 6px; }
+.wall-react button { border: 1px solid var(--line); background: transparent; color: var(--text); border-radius: 99px; padding: 4px 10px; cursor: pointer; font-size: .9rem; transition: transform .2s, border-color .2s, background .2s; }
+.wall-react button:hover { transform: translateY(-2px) scale(1.05); border-color: var(--primary); } .wall-react button.on { background: color-mix(in srgb, var(--primary) 20%, transparent); border-color: var(--primary); }
+.wall-react b { font-weight: 700; font-variant-numeric: tabular-nums; }
+.wall-ask { font-size: 1.1rem; color: var(--heading); margin: 10px 0 18px; }

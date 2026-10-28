@@ -6,7 +6,7 @@ $cur = $acc['currency'];
 <div class="mind" data-mind data-level-url="<?= e(url('/terminal/mind/level')) ?>">
   <header class="mind-head">
     <h2>Your trading <span class="mind-grad">mind</span>.</h2>
-    <p class="muted">Built only from your journal on <?= e($acc['name']) ?>. Honest, a little savage, never financial advice.</p>
+    <p class="muted">Built only from your journal on <?= e($acc['name']) ?>. Honest, a little savage, never financial advice. <a href="<?= e(url('/terminal/wall')) ?>">Post an L to the Wall →</a></p>
   </header>
 
   <!-- ROAST -->

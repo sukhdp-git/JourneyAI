@@ -10,6 +10,7 @@ $writable = App\Trading\Ledger::writable($m, $tacc);
 ?>
 <div class="toolbar"><a class="tm-btn tm-btn-sm" href="<?= e(url('/terminal/trades')) ?>">← Trade log</a>
   <?php if ($t['pnl'] !== null): ?><button type="button" class="tm-btn tm-btn-sm tm-btn-primary" data-share-trade="<?= e(json_encode($share)) ?>"><?= icon('share', 'icon icon-sm') ?> Share</button><?php endif; ?>
+  <?php if ($t['pnl'] !== null && (float) $t['pnl'] < 0): ?><a class="tm-btn tm-btn-sm" href="<?= e(url('/terminal/wall?trade=' . (int) $t['id'])) ?>">🫠 Post to Wall of L's</a><?php endif; ?>
   <?php if ($writable): ?><a class="tm-btn tm-btn-sm" href="<?= e(url('/terminal/trades/' . $t['id'] . '/edit')) ?>"><?= icon('edit', 'icon icon-sm') ?> Edit</a>
   <form method="post" action="<?= e(url('/terminal/trades/' . $t['id'] . '/delete')) ?>" data-confirm="Delete this trade permanently?"><?= csrf_field() ?><button class="tm-btn tm-btn-sm" type="submit"><?= icon('trash', 'icon icon-sm') ?> Delete</button></form><?php endif; ?>
 </div>

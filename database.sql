@@ -1582,3 +1582,7 @@ CREATE TABLE IF NOT EXISTS `wall_posts` (
 
 -- Record the schema version
 INSERT INTO `settings` (`key`, `value`, `group_name`) VALUES ('schema_version', '12', 'system') ON DUPLICATE KEY UPDATE `value` = IF(CAST(`value` AS UNSIGNED) < 12, '12', `value`);
+
+-- Wall of L's links in the header and footer menus (only if not already there)
+INSERT INTO `navigation` (`location`, `label`, `url`, `sort_order`) SELECT 'header', 'Wall of L''s', '/wall', 28 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM `navigation` WHERE `url` = '/wall' AND `location` = 'header');
+INSERT INTO `navigation` (`location`, `label`, `url`, `sort_order`) SELECT 'footer_2', 'Wall of L''s', '/wall', 16 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM `navigation` WHERE `url` = '/wall' AND `location` = 'footer_2');

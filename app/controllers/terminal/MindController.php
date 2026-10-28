@@ -8,6 +8,7 @@ use App\Core\Request;
 use App\Core\Response;
 use App\Trading\Ledger;
 use App\Trading\Mind;
+use App\Trading\Wall;
 
 /** Mind tab: Roast Mode, Death Clock, the Ghost, Boss Fight and the weekly Psych Art wallpaper (active account). */
 final class MindController extends TerminalController
@@ -38,5 +39,30 @@ final class MindController extends TerminalController
         }
         Database::update('user_settings', ['roast_level' => $lvl], 'user_id = :u', ['u' => $this->uid]);
         Response::json(['ok' => true, 'level' => $lvl]);
+    }
+
+    /** Wall of L's: submit an anonymised loss (optionally prefilled from one of the member's losing trades). */
+    public function wall(Request $req): never
+    {
+        $pre = [];
+        if ($id = (int) $req->query('trade', 0)) {
+            $t = Ledger::trade($this->uid, $id);
+            if ($t && (float) $t['pnl'] < 0) {
+                $r = $t['risk_amount'] ? abs((float) $t['pnl']) / abs((float) $t['risk_amount']) : null;
+                $pre = ['instrument' => $t['symbol'], 'mistake' => $t['mistake_tag'] !== 'NONE' ? $t['mistake_tag'] : 'IGNORED_PLAN',
+                    'loss_text' => $r ? '−' . number_format($r, 1) . 'R' : money((float) $t['pnl'], $this->acc['currency'], true)];
+            }
+        }
+        $mine = Database::all('SELECT id, loss_text, mistake, status, created_at FROM wall_posts WHERE user_id = :u ORDER BY id DESC LIMIT 10', ['u' => $this->uid]);
+        $this->render('wall', ['pre' => $pre, 'mine' => $mine], "Wall of L's", 'mind');
+    }
+
+    public function wallSubmit(Request $req): never
+    {
+        $err = Wall::submit($this->uid, $_POST);
+        if ($err) {
+            $this->back('/terminal/wall', 'error', $err);
+        }
+        $this->back('/terminal/wall', 'success', 'Submitted. The team reviews every L before it goes on the wall; you\'ll see the status below.');
     }
 }

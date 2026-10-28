@@ -120,6 +120,8 @@ $router->post('/terminal/settings/delete', [SettingsController::class, 'deleteAc
 $router->post('/terminal/theme', [SettingsController::class, 'theme']);
 $router->get('/terminal/mind', [\App\Controllers\Terminal\MindController::class, 'index']);
 $router->post('/terminal/mind/level', [\App\Controllers\Terminal\MindController::class, 'level']);
+$router->get('/terminal/wall', [\App\Controllers\Terminal\MindController::class, 'wall']);
+$router->post('/terminal/wall', [\App\Controllers\Terminal\MindController::class, 'wallSubmit']);
 $router->get('/terminal/billing', [BillingController::class, 'billing']);
 
 // Pricing & payments
