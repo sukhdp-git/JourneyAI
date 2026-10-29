@@ -5,7 +5,6 @@ use App\Controllers\BillingController;
 use App\Controllers\MemberAuthController as A;
 use App\Controllers\Terminal\AccountsController;
 use App\Controllers\Terminal\CalculatorController;
-use App\Controllers\Terminal\CoachController;
 use App\Controllers\Terminal\EdgeController;
 use App\Controllers\Terminal\FlexController;
 use App\Controllers\Terminal\HomeController as Hub;
@@ -94,12 +93,21 @@ $router->get('/terminal/university/course', [UniversityController::class, 'cours
 $router->get('/terminal/university/course/{slug}', [UniversityController::class, 'module']);
 $router->get('/terminal/university/{slug}', [UniversityController::class, 'show']);
 
-$router->get('/terminal/coach', [CoachController::class, 'index']);
-$router->get('/terminal/coach/{id}', [CoachController::class, 'index']);
-$router->post('/terminal/coach/smart', [CoachController::class, 'smart']);
-$router->post('/terminal/coach/send', [CoachController::class, 'send']);
-$router->post('/terminal/coach/review', [CoachController::class, 'review']);
-$router->post('/terminal/coach/{id}/delete', [CoachController::class, 'delete']);
+// Confessions replaced the Coach tab; old Coach links land on the feed
+$router->get('/terminal/coach', [\App\Controllers\Terminal\ConfessionsController::class, 'legacy']);
+$router->get('/terminal/coach/{id}', [\App\Controllers\Terminal\ConfessionsController::class, 'legacy']);
+$router->get('/terminal/confessions', [\App\Controllers\Terminal\ConfessionsController::class, 'index']);
+$router->get('/terminal/confessions/more', [\App\Controllers\Terminal\ConfessionsController::class, 'more']);
+$router->post('/terminal/confessions', [\App\Controllers\Terminal\ConfessionsController::class, 'store']);
+$router->post('/terminal/confessions/handle', [\App\Controllers\Terminal\ConfessionsController::class, 'handle']);
+$router->post('/terminal/confessions/comments/{cid}/like', [\App\Controllers\Terminal\ConfessionsController::class, 'likeComment']);
+$router->get('/terminal/confessions/{id}', [\App\Controllers\Terminal\ConfessionsController::class, 'show']);
+$router->get('/terminal/confessions/{id}/comments', [\App\Controllers\Terminal\ConfessionsController::class, 'comments']);
+$router->post('/terminal/confessions/{id}/comments', [\App\Controllers\Terminal\ConfessionsController::class, 'comment']);
+$router->post('/terminal/confessions/{id}/like', [\App\Controllers\Terminal\ConfessionsController::class, 'like']);
+$router->post('/terminal/confessions/{id}/report', [\App\Controllers\Terminal\ConfessionsController::class, 'report']);
+$router->post('/terminal/confessions/{id}/delete', [\App\Controllers\Terminal\ConfessionsController::class, 'delete']);
+$router->post('/terminal/confessions/{id}/share', [\App\Controllers\Terminal\ConfessionsController::class, 'share']);
 
 $router->get('/terminal/accounts', [AccountsController::class, 'index']);
 $router->post('/terminal/accounts', [AccountsController::class, 'store']);

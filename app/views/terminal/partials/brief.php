@@ -13,5 +13,5 @@
     <?php endif; ?>
     <div class="jzb-msg jzb-good"><h3>✅ Do</h3><ul><?php foreach ($b['do'] as $x): ?><li><span><?= e($x['text']) ?></span><?php if ($x['stat'] !== ''): ?><mark><?= e($x['stat']) ?></mark><?php endif; ?></li><?php endforeach; ?></ul></div>
   </div>
-  <div class="jzb-foot"><a class="tm-btn tm-btn-sm" href="<?= e(url('/terminal/coach')) ?>"><?= icon('sparkles', 'icon icon-xs') ?> Ask AI Coach</a><button type="button" class="tm-btn tm-btn-sm tm-btn-primary" data-brief-close>Got it 👍</button></div>
+  <div class="jzb-foot"><a class="tm-btn tm-btn-sm" href="<?= e(url('/terminal/edge')) ?>"><?= icon('radar', 'icon icon-xs') ?> Open Edge Matrix</a><button type="button" class="tm-btn tm-btn-sm tm-btn-primary" data-brief-close>Got it 👍</button></div>
 </div>

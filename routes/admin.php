@@ -63,6 +63,8 @@ $router->get("$P/member-logins", [MemberController::class, 'logins'], $mw);
 $router->get("$P/payments", [MemberController::class, 'payments'], $mw);
 $router->get("$P/wall", [\App\Controllers\Admin\WallController::class, 'index'], $mw);
 $router->post("$P/wall/{id}", [\App\Controllers\Admin\WallController::class, 'update'], $mw);
+$router->get("$P/confessions", [\App\Controllers\Admin\ConfessionsController::class, 'index'], $mw);
+$router->post("$P/confessions/{id}", [\App\Controllers\Admin\ConfessionsController::class, 'update'], $mw);
 $router->get("$P/affiliates", [AffiliateController::class, 'index'], $mw);
 $router->post("$P/affiliates/settings", [AffiliateController::class, 'settings'], $mw);
 $router->get("$P/affiliates/{id}", [AffiliateController::class, 'show'], $mw);

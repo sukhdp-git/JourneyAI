@@ -7,6 +7,8 @@ $rel = trim(substr($path, strlen('/' . ADMIN_PREFIX)), '/');
 $newMembers = can('members') || can('members.view') ? (int) Database::value('SELECT COUNT(*) FROM users WHERE created_at >= UTC_DATE()') : 0;
 $newAff = can('billing') ? (int) Database::value("SELECT COUNT(*) FROM affiliates WHERE status = 'pending'") : 0;
 $newWall = can('members') ? (int) Database::value("SELECT COUNT(*) FROM wall_posts WHERE status = 'pending'") : 0;
+$newConf = 0;
+if (can('members')) { try { $newConf = (int) Database::value("SELECT COUNT(*) FROM confessions WHERE status = 'hidden'") + (int) Database::value("SELECT COUNT(*) FROM confession_comments WHERE status = 'hidden'"); } catch (\Throwable $e) { $newConf = 0; } }
 $newMsgs = can('messages') ? (int) Database::value("SELECT COUNT(*) FROM contact_messages WHERE status = 'new'") : 0;
 $nav = [
     '' => [['dashboard', 'Dashboard', 'dashboard', null]],
@@ -23,7 +25,7 @@ $nav = [
     ],
     'Members' => [
         ['members', 'All members', 'users', can('members') ? 'members' : 'members.view', $newMembers], ['member-logins', 'Sign-in log', 'activity', can('members') ? 'members' : 'members.view'],
-        ['payments', 'Payments', 'zap', 'billing'], ['affiliates', 'Affiliates', 'link', 'billing', $newAff], ['wall', "Wall of L's", 'flag', 'members', $newWall], ['plans', 'Plans & pricing', 'star', 'billing'], ['instruments', 'Instruments', 'bars', 'instruments'], ['integrations', 'Integrations', 'key', 'integrations'],
+        ['payments', 'Payments', 'zap', 'billing'], ['affiliates', 'Affiliates', 'link', 'billing', $newAff], ['wall', "Wall of L's", 'flag', 'members', $newWall], ['confessions', 'Confessions', 'message', 'members', $newConf], ['plans', 'Plans & pricing', 'star', 'billing'], ['instruments', 'Instruments', 'bars', 'instruments'], ['integrations', 'Integrations', 'key', 'integrations'],
         ['messages', 'Contact messages', 'message', 'messages', $newMsgs],
     ],
     'Media' => [['media', 'Media library', 'image', 'media']],

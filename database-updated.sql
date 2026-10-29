@@ -601,3 +601,132 @@ INSERT INTO `settings` (`key`, `value`, `group_name`) VALUES ('schema_version', 
 -- Wall of L's links in the header and footer menus (only if not already there)
 INSERT INTO `navigation` (`location`, `label`, `url`, `sort_order`) SELECT 'header', 'Wall of L''s', '/wall', 28 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM `navigation` WHERE `url` = '/wall' AND `location` = 'header');
 INSERT INTO `navigation` (`location`, `label`, `url`, `sort_order`) SELECT 'footer_2', 'Wall of L''s', '/wall', 16 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM `navigation` WHERE `url` = '/wall' AND `location` = 'footer_2');
+
+-- ---------------------------------------------------------------------------------------------
+-- Schema version 13: Confessions (anonymous community feed for paid members) and University
+-- certificates of completion. Non-destructive: new tables only.
+-- Rollback: DROP TABLE `confession_reports`, `confession_blocked`, `confession_comment_likes`,
+--           `confession_comments`, `confession_likes`, `confessions`, `confession_profiles`,
+--           `course_certificates`, `course_completions`;
+-- ---------------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `confession_profiles` (
+  `user_id` INT UNSIGNED NOT NULL,
+  `handle` VARCHAR(20) NOT NULL,
+  `avatar_seed` INT UNSIGNED NOT NULL DEFAULT 0,
+  `handle_changed_at` DATETIME NULL,
+  `muted_until` DATETIME NULL,
+  `banned` TINYINT(1) NOT NULL DEFAULT 0,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`user_id`),
+  UNIQUE KEY `uq_confession_handle` (`handle`),
+  CONSTRAINT `fk_cprof_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `confessions` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id` INT UNSIGNED NOT NULL,
+  `body` VARCHAR(1000) NOT NULL,
+  `tag` VARCHAR(16) NOT NULL DEFAULT 'CONFESSION',
+  `mood` VARCHAR(8) NULL,
+  `trade_id` INT UNSIGNED NULL,
+  `trade_symbol` VARCHAR(20) NULL,
+  `trade_side` VARCHAR(5) NULL,
+  `trade_pnl` DECIMAL(14,2) NULL,
+  `trade_currency` CHAR(3) NULL,
+  `trade_r` DECIMAL(8,2) NULL,
+  `trade_demo` TINYINT(1) NOT NULL DEFAULT 0,
+  `likes` INT UNSIGNED NOT NULL DEFAULT 0,
+  `comments` INT UNSIGNED NOT NULL DEFAULT 0,
+  `shares` INT UNSIGNED NOT NULL DEFAULT 0,
+  `reports` INT UNSIGNED NOT NULL DEFAULT 0,
+  `status` ENUM('visible','hidden','removed') NOT NULL DEFAULT 'visible',
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_conf_feed` (`status`, `id`),
+  KEY `idx_conf_user` (`user_id`, `created_at`),
+  CONSTRAINT `fk_conf_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `confession_likes` (
+  `confession_id` INT UNSIGNED NOT NULL,
+  `user_id` INT UNSIGNED NOT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`confession_id`, `user_id`),
+  KEY `idx_clike_user` (`user_id`),
+  CONSTRAINT `fk_clike_post` FOREIGN KEY (`confession_id`) REFERENCES `confessions` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_clike_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `confession_comments` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `confession_id` INT UNSIGNED NOT NULL,
+  `user_id` INT UNSIGNED NOT NULL,
+  `body` VARCHAR(600) NOT NULL,
+  `likes` INT UNSIGNED NOT NULL DEFAULT 0,
+  `reports` INT UNSIGNED NOT NULL DEFAULT 0,
+  `status` ENUM('visible','hidden','removed') NOT NULL DEFAULT 'visible',
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_ccom_post` (`confession_id`, `status`, `id`),
+  KEY `idx_ccom_user` (`user_id`, `created_at`),
+  CONSTRAINT `fk_ccom_post` FOREIGN KEY (`confession_id`) REFERENCES `confessions` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_ccom_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `confession_comment_likes` (
+  `comment_id` INT UNSIGNED NOT NULL,
+  `user_id` INT UNSIGNED NOT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`comment_id`, `user_id`),
+  CONSTRAINT `fk_cclike_com` FOREIGN KEY (`comment_id`) REFERENCES `confession_comments` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_cclike_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `confession_reports` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `target_type` ENUM('post','comment') NOT NULL,
+  `target_id` INT UNSIGNED NOT NULL,
+  `user_id` INT UNSIGNED NOT NULL,
+  `reason` VARCHAR(30) NOT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_creport` (`target_type`, `target_id`, `user_id`),
+  CONSTRAINT `fk_crep_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `confession_blocked` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id` INT UNSIGNED NOT NULL,
+  `kind` ENUM('post','comment','handle') NOT NULL DEFAULT 'post',
+  `body` VARCHAR(1000) NOT NULL,
+  `reason` VARCHAR(80) NOT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_cblock_user` (`user_id`, `created_at`),
+  CONSTRAINT `fk_cblock_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `course_completions` (
+  `user_id` INT UNSIGNED NOT NULL,
+  `lesson` TINYINT UNSIGNED NOT NULL,
+  `quiz_score` TINYINT UNSIGNED NULL,
+  `completed_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`user_id`, `lesson`),
+  CONSTRAINT `fk_cc_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `course_certificates` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `code` CHAR(12) NOT NULL,
+  `user_id` INT UNSIGNED NOT NULL,
+  `course` VARCHAR(30) NOT NULL DEFAULT 'foundations',
+  `name_on_cert` VARCHAR(80) NOT NULL,
+  `issued_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_cert_code` (`code`),
+  UNIQUE KEY `uq_cert_user_course` (`user_id`, `course`),
+  CONSTRAINT `fk_cert_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Record the schema version
+INSERT INTO `settings` (`key`, `value`, `group_name`) VALUES ('schema_version', '13', 'system') ON DUPLICATE KEY UPDATE `value` = IF(CAST(`value` AS UNSIGNED) < 13, '13', `value`);
