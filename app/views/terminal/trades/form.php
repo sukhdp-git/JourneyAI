@@ -38,7 +38,21 @@ if ($curEmo !== '' && !isset($emotions[$curEmo])) $emotions[$curEmo] = ucfirst(s
 if (!isset($mistakes[$curMis])) $mistakes[$curMis] = Domain::MISTAKES[$curMis] ?? $curMis;
 $sessions = ['ASIA' => 'Asian', 'LONDON' => 'London', 'NEW_YORK' => 'New York', 'NY_PM' => 'NY PM'];
 $curSession = $v('session');
-$mini = fn (string $field, string $label) => ''; // voice entry was removed from this form
+// Extra words the microphone accepts for each option (English, Hindi, Russian, Chinese, Portuguese, Arabic)
+$vfAlias = [
+    'DISCIPLINED' => 'disciplined textbook अनुशासित дисциплинирован 纪律 disciplinado منضبط', 'CALM' => 'calm relaxed शांत спокоен 冷静 calmo هادئ',
+    'PATIENT' => 'patient waited धैर्य терпелив 耐心 paciente صبور', 'FOMO' => 'fomo fear missing out jumped early फोमो фомо 错失恐惧 medo',
+    'HESITANT' => 'hesitant unsure झिझक неуверен 犹豫 hesitante متردد', 'REVENGE' => 'revenge बदला रिवेंज месть реванш 报复 vingança انتقام',
+    'GREEDY' => 'greedy greed लालच жадн 贪婪 ganancioso طمع', 'NONE' => 'none no mistake nothing कोई नहीं нет никакой 没有 nenhum لا يوجد',
+    'FOMO_ENTRY' => 'fomo entry jumped early फोमो фомо 错失恐惧 medo', 'REVENGE_TRADE' => 'revenge trade बदला रिवेंज месть 报复 vingança انتقام',
+    'MOVED_STOP' => 'moved stop moved my stop स्टॉप हटाया स्टॉप बदला передвинул стоп 移动止损 movi o stop حركت الوقف',
+    'OVERSIZED' => 'oversized overleveraged too big lot बड़ा लॉट большой лот 重仓 lote grande حجم كبير',
+    'IGNORED_PLAN' => 'broke rules ignored plan नियम तोड़े нарушил план правила 违反计划 quebrei regras خالفت الخطة',
+];
+$alias = fn (string $k) => isset($vfAlias[$k]) ? ' data-vf-alias="' . e($vfAlias[$k]) . '"' : '';
+// One microphone per field: tap it, say only that value ("two eight six two point five", "London", "FOMO").
+$vfTarget = ['symbol' => '#t-symbol', 'entry' => '#t-entry', 'exit' => '#t-exit', 'stop' => '#t-stop', 'lots' => '#t-lots', 'tp' => '#t-tp', 'date' => '#t-date', 'time' => '#t-time', 'setup' => '#t-setup', 'emotion' => '#t-emo', 'mistake' => '#t-mis', 'notes' => '#t-notes'];
+$mini = fn (string $field, string $label) => '<button type="button" class="lt-mic-mini" data-vf="lt-' . $field . '"' . (isset($vfTarget[$field]) ? ' data-vf-target="' . $vfTarget[$field] . '"' : '') . ' data-vf-label="' . e($label) . '" aria-pressed="false" aria-label="Speak the ' . e($label) . '" title="Speak the ' . e($label) . '">' . icon('mic', 'icon icon-xs') . '</button>';
 if ($editing && $t['pnl'] !== null) {
     $fmt = fn ($x) => Instruments::format($t['symbol'], $x);
     $share = ['id' => (int) $t['id'], 'symbol' => $t['symbol'], 'side' => $t['side'], 'pnl' => money($t['pnl'], $acc['currency'], true), 'positive' => (float) $t['pnl'] >= 0, 'r' => $t['rr'] === null ? '' : ((float) $t['rr'] > 0 ? '+' : '') . number_format((float) $t['rr'], 2) . 'R',
@@ -58,6 +72,7 @@ if ($editing && $t['pnl'] !== null) {
       <h2><?= $editing ? 'Edit Logged Trade' : 'Log New Trade' ?></h2>
       <p>Automatic R:R calculation, Gold lot sizing &amp; strategy metrics · <?= e($acc['name']) ?> (<?= e($acc['currency']) ?>)</p>
     </div>
+    <label class="lt-vlang" title="Language for the microphone buttons"><?= icon('mic', 'icon icon-xs') ?><span class="sr-only">Voice language</span><select data-vf-lang aria-label="Voice language"></select></label>
     <a class="lt-x" href="<?= e($back) ?>" aria-label="Close"><?= icon('x', 'icon') ?></a>
   </header>
 
@@ -83,8 +98,8 @@ if ($editing && $t['pnl'] !== null) {
         </div>
         <?= $err('side') ?>
       </div>
-      <div class="<?= $fc('executed_at') ?>"><label for="t-date">Date</label><input id="t-date" type="date" name="trade_date" value="<?= e((string) old('trade_date', $when->format('Y-m-d'))) ?>"><?= $err('executed_at') ?></div>
-      <div class="f"><label for="t-time">Execution time</label><input id="t-time" type="time" name="trade_time" value="<?= e((string) old('trade_time', $when->format('H:i'))) ?>"></div>
+      <div class="<?= $fc('executed_at') ?>"><label for="t-date">Date <?= $mini('date', 'date (today, yesterday, 3 days ago)') ?></label><input id="t-date" type="date" name="trade_date" value="<?= e((string) old('trade_date', $when->format('Y-m-d'))) ?>"><?= $err('executed_at') ?></div>
+      <div class="f"><label for="t-time">Execution time <?= $mini('time', 'time') ?></label><input id="t-time" type="time" name="trade_time" value="<?= e((string) old('trade_time', $when->format('H:i'))) ?>"></div>
     </div>
   </section>
 
@@ -97,7 +112,7 @@ if ($editing && $t['pnl'] !== null) {
       <div class="<?= $fc('exit_price') ?>"><label for="t-exit">Exit price <?= $mini('exit', 'exit price') ?></label><input id="t-exit" type="number" step="any" name="exit_price" inputmode="decimal" value="<?= e($v('exit_price')) ?>" placeholder="empty = open"><?= $err('exit_price') ?></div>
       <div class="<?= $fc('stop_loss') ?>"><label for="t-stop">Stop loss (SL) <?= $mini('stop', 'stop loss') ?></label><input id="t-stop" type="number" step="any" name="stop_loss" inputmode="decimal" value="<?= e($v('stop_loss')) ?>"><?= $err('stop_loss') ?></div>
       <div class="<?= $fc('lot_size') ?>"><label for="t-lots">Lot size <?= $mini('lots', 'lot size') ?></label><input id="t-lots" type="number" step="0.01" min="0.01" name="lot_size" inputmode="decimal" value="<?= e($v('lot_size', '0.10')) ?>" required><?= $err('lot_size') ?></div>
-      <div class="<?= $fc('take_profit') ?>"><label for="t-tp">Take profit <span class="muted">(optional)</span></label><input id="t-tp" type="number" step="any" name="take_profit" inputmode="decimal" value="<?= e($v('take_profit')) ?>"><?= $err('take_profit') ?></div>
+      <div class="<?= $fc('take_profit') ?>"><label for="t-tp">Take profit <span class="muted">(optional)</span> <?= $mini('tp', 'take profit') ?></label><input id="t-tp" type="number" step="any" name="take_profit" inputmode="decimal" value="<?= e($v('take_profit')) ?>"><?= $err('take_profit') ?></div>
     </div>
     <div class="<?= $fc('rate') ?>" data-rate-wrap<?= has_error('rate') ? '' : ' hidden' ?>><label for="t-rate">Conversion rate <span data-rate-pair></span></label><input id="t-rate" type="number" step="any" min="0" name="rate" inputmode="decimal" value="<?= e((string) old('rate', '')) ?>"><?= $err('rate') ?></div>
     <div class="lt-metrics" aria-live="polite">
@@ -141,15 +156,15 @@ if ($editing && $t['pnl'] !== null) {
       <div class="lt-catalysts" data-lt-catalysts></div>
       <div class="lt-rules" data-lt-rules></div>
     </div>
-    <div class="f"><label for="t-setup">Setup trigger / tags</label><input id="t-setup" type="text" name="setup_tag" maxlength="120" value="<?= e($v('setup_tag')) ?>" placeholder="e.g. VAL Bounce · Previous Day" data-lt-setup></div>
+    <div class="f"><label for="t-setup">Setup trigger / tags <?= $mini('setup', 'setup') ?></label><input id="t-setup" type="text" name="setup_tag" maxlength="120" value="<?= e($v('setup_tag')) ?>" placeholder="e.g. VAL Bounce · Previous Day" data-lt-setup></div>
   </section>
 
   <!-- G. Psychology & discipline -->
   <section class="lt-sec" aria-labelledby="lt-g4">
     <h3 class="lt-sec-title" id="lt-g4"><span>4</span> Emotion &amp; discipline</h3>
     <div class="lt-grid lt-grid-g">
-      <div class="f"><label for="t-emo">Trader mindset / emotion</label><select id="t-emo" name="emotion" data-lt-emotion><option value="">—</option><?php foreach ($emotions as $k => $l): ?><option value="<?= e($k) ?>"<?= $curEmo === $k ? ' selected' : '' ?>><?= e($l) ?></option><?php endforeach; ?></select></div>
-      <div class="f"><label for="t-mis">Discipline leak / mistake</label><select id="t-mis" name="mistake_tag" data-lt-mistake><?php foreach ($mistakes as $k => $l): ?><option value="<?= e($k) ?>"<?= $curMis === $k ? ' selected' : '' ?>><?= e($l) ?></option><?php endforeach; ?></select></div>
+      <div class="f"><label for="t-emo">Trader mindset / emotion <?= $mini('emotion', 'emotion') ?></label><select id="t-emo" name="emotion" data-lt-emotion><option value="">—</option><?php foreach ($emotions as $k => $l): ?><option value="<?= e($k) ?>"<?= $alias($k) ?><?= $curEmo === $k ? ' selected' : '' ?>><?= e($l) ?></option><?php endforeach; ?></select></div>
+      <div class="f"><label for="t-mis">Discipline leak / mistake <?= $mini('mistake', 'mistake') ?></label><select id="t-mis" name="mistake_tag" data-lt-mistake><?php foreach ($mistakes as $k => $l): ?><option value="<?= e($k) ?>"<?= $alias($k) ?><?= $curMis === $k ? ' selected' : '' ?>><?= e($l) ?></option><?php endforeach; ?></select></div>
     </div>
     <input type="hidden" name="rules_followed" value="0">
     <label class="lt-check"><input type="checkbox" name="rules_followed" value="1" data-lt-rules-box<?= $v('rules_followed', '1') === '1' ? ' checked' : '' ?>> Followed all trading rules &amp; risk limits</label>
@@ -158,7 +173,7 @@ if ($editing && $t['pnl'] !== null) {
   <!-- F. Chart screenshot -->
   <section class="lt-sec" aria-labelledby="lt-g5">
     <h3 class="lt-sec-title" id="lt-g5"><span>5</span> Notes &amp; screenshot</h3>
-    <div class="f"><label for="t-notes">Notes</label><textarea id="t-notes" name="notes" rows="3" maxlength="5000" placeholder="Reflection, what went well, what to improve"><?= e($v('notes')) ?></textarea></div>
+    <div class="f"><label for="t-notes">Notes <?= $mini('notes', 'notes (dictation keeps adding)') ?></label><textarea id="t-notes" name="notes" rows="3" maxlength="5000" placeholder="Reflection, what went well, what to improve"><?= e($v('notes')) ?></textarea></div>
     <span class="lbl"><?= icon('camera', 'icon icon-xs') ?> Chart screenshot</span>
     <div class="lt-tabs" role="tablist" aria-label="Screenshot source">
       <button type="button" role="tab" class="on" data-lt-shot-tab="paste" aria-selected="true">Paste (Ctrl/⌘+V)</button>

@@ -90,6 +90,16 @@
       // Speech engines write "point one five" as ".15" and sometimes "0. 15" or "015" — all mean 0.15
       t = t.replace(/(^|[^\d.,])[.,](\d)/g, '$1 0.$2').replace(/\b0[.,]\s+(\d)/g, '0.$1').replace(/(^|[^\d.,:])0(\d{1,3})(?![\d.,:])/g, '$1 0.$2');
       if (lang === 'en') {
+        // Price talk: "twenty eight thirty" = 2830, "forty one twenty five" = 4125, "twenty eight oh five" = 2805
+        var TN = 'twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety', UN = 'one|two|three|four|five|six|seven|eight|nine', TE = 'ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen';
+        var TV = { twenty: 2, thirty: 3, forty: 4, fifty: 5, sixty: 6, seventy: 7, eighty: 8, ninety: 9 }, UV = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9 },
+          EV = { ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19 };
+        var grp = function (x) { x = x.toLowerCase().trim().split(/[\s-]+/); if (x[0] === 'oh' || x[0] === 'o') return '0' + UV[x[1]]; if (EV[x[0]]) return String(EV[x[0]]); return String(TV[x[0]] * 10 + (x[1] ? UV[x[1]] : 0)); };
+        var G = '(?:(?:' + TN + ')(?:[\\s-](?:' + UN + '))?|(?:' + TE + '))', G2 = '(?:(?:' + TN + ')(?:[\\s-](?:' + UN + '))?|(?:' + TE + ')|(?:oh|o)\\s(?:' + UN + '))';
+        t = t.replace(new RegExp('\\b(' + G + ')\\s+(' + G2 + ')\\b(?!\\s+(?:hundred|thousand))', 'gi'), function (m, a1, a2) {
+          if (/^(one|two|three|four|five|six|seven|eight|nine)$/i.test(a2)) return m;
+          return grp(a1) + grp(a2);
+        });
         t = t.replace(/\b(a )?half (a )?lots?\b/gi, '0.5 lot').replace(/\ba quarter (of )?(a )?lots?\b/gi, '0.25 lot')
           .replace(/\b(position size|trade size|volume|quantity|qty|contracts?|units)\b/gi, 'lot size').replace(/\bstandard lots?\b/gi, 'lots');
       }

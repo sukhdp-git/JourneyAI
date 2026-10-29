@@ -48,6 +48,46 @@
     return set;
   }
 
+  /* ------------------------------------------------------------------ one microphone per field (voice-field.js) */
+  if (window.jzVoiceField) {
+    var H = window.jzVoiceField.handlers;
+    ['entry', 'exit', 'stop', 'tp', 'lots'].forEach(function (k) {
+      H['lt-' + k] = function (text, loc) {
+        var x = extract(text, loc), n = x.fields[k];
+        if (n === null || n === undefined) { var m = x.norm.match(/-?\d+(?:\.\d+)?/); n = m ? parseFloat(m[0]) : null; }
+        if (n === null || isNaN(n) || (k === 'lots' && n <= 0)) return false;
+        var f = {}; f[k] = n; apply(f, k); return String(n);
+      };
+    });
+    H['lt-symbol'] = function (text, loc) {
+      var x = extract(text, loc), sym = x.fields.symbol || resolveSym(String(text).replace(/\s+/g, ''));
+      if (!sym) return false; apply({ symbol: sym }, 'symbol'); return sym;
+    };
+    H['lt-side'] = function (text, loc) { var x = extract(text, loc); if (!x.fields.side) return false; apply({ side: x.fields.side }, 'side'); return x.fields.side; };
+    H['lt-session'] = function (text, loc) {
+      var x = extract(text, loc); if (!x.fields.session) return false; apply({ session: x.fields.session }, 'session');
+      return (($('[data-lt-session-btn="' + x.fields.session + '"]') || {}).textContent || x.fields.session).trim();
+    };
+    H['lt-strategy'] = function (text, loc) {
+      var x = extract(text, loc), id = x.fields.strategy, low = x.norm;
+      if (!id) {                                   // no exact name heard: best word overlap with a strategy name
+        var best = 0; strategies.forEach(function (st) {
+          var sc = 0; st.name.toLowerCase().split(/\s+/).forEach(function (w) { if (w.length > 2 && low.indexOf(w) >= 0) sc += w.length; });
+          if (sc > best) { best = sc; id = st.id; }
+        });
+      }
+      if (!id) return false; apply({ strategy: id }, 'strategy');
+      return (strategies.filter(function (st) { return st.id === id; })[0] || {}).name || 'strategy';
+    };
+    H['lt-time'] = function (text, loc) {
+      var n = P.normalize(text, loc).replace(/\b(a\.?m\.?)\b/g, 'am').replace(/\b(p\.?m\.?)\b/g, 'pm');
+      var m = n.match(/(\d{1,2})(?:\s*[:.h]\s*|\s+)?(\d{2})?\s*(am|pm)?/); if (!m) return false;
+      var hh = +m[1], mm = m[2] ? +m[2] : 0; if (m[3] === 'pm' && hh < 12) hh += 12; if (m[3] === 'am' && hh === 12) hh = 0;
+      if (hh > 23 || mm > 59) return false;
+      var v = (hh < 10 ? '0' : '') + hh + ':' + (mm < 10 ? '0' : '') + mm; apply({ time: v }, 'time'); return v;
+    };
+  }
+
   /* ------------------------------------------------------------------ asset / direction */
   function resolveSym(v) {
     var u = String(v || '').trim().toUpperCase().replace(/[\s\/_-]/g, '');
