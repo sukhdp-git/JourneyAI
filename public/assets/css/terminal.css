@@ -1851,7 +1851,9 @@ input.filled, select.filled, textarea.filled { box-shadow: 0 0 0 3px rgb(16 185 
 
 .cf-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 22px; align-items: start; }
 .cf-side { position: sticky; top: 84px; display: grid; gap: 14px; }
-@media (max-width: 1080px) { .cf-grid { grid-template-columns: 1fr; } .cf-side { position: static; } .cf-side .cf-prompts-box { display: none; } }
+@media (max-width: 1080px) { .cf-grid { grid-template-columns: minmax(0, 1fr); } .cf-side { position: static; } .cf-side .cf-prompts-box { display: none; } }
+.cf-main, .cf-side, .cf-compose, .cf-card { min-width: 0; }
+.cf-attach { min-width: 0; } .cf-attach select { width: 100%; min-width: 0; text-overflow: ellipsis; }
 .cf-box { padding: 16px 18px; border-radius: 18px; border: 1px solid var(--line); background: rgb(14 14 34 / .72); backdrop-filter: blur(10px); }
 .cf-box h3 { display: flex; align-items: center; gap: 8px; font-size: 14px; margin: 0 0 8px; color: var(--strong); }
 .cf-box h3 .cf-heart { width: 16px; height: 16px; fill: #ff6b8b; }
