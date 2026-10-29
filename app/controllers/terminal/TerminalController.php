@@ -46,6 +46,10 @@ abstract class TerminalController
         $GLOBALS['__lang'] = $m['language'] ?: 'en';
         $GLOBALS['__tz'] = $this->tz;
         $this->acc = Ledger::active($m);
+        // A demo journal is anchored to the day it was loaded; keep it current so every feature has recent examples.
+        if (!empty($this->acc['has_demo_data']) && Ledger::refreshDemoIfStale($m, $this->acc)) {
+            $this->acc = Ledger::active($m);
+        }
     }
 
     protected function render(string $view, array $data, string $title, string $nav): never

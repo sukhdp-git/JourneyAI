@@ -252,7 +252,26 @@ final class Ledger
     }
 
     // ------------------------------------------------------------------ demo data
-    /** Loads the 42-trade DEMO DATA set into a fresh demo account (transaction). Returns the account id. */
+    /**
+     * Reloads the demo journal when its newest trade is more than 7 days old, but only while every trade in that
+     * account is demo data (a member's own practice trades are never deleted). Checked at most once a day per session.
+     */
+    public static function refreshDemoIfStale(array $m, array $acc): bool
+    {
+        $key = 'demo_fresh_' . (int) $acc['id'];
+        if (($_SESSION[$key] ?? '') === gmdate('Y-m-d')) {
+            return false;
+        }
+        $_SESSION[$key] = gmdate('Y-m-d');
+        $r = Database::one("SELECT MAX(executed_at) AS last, SUM(source <> 'DEMO') AS own FROM trades WHERE user_id = :u AND account_id = :a", ['u' => $m['id'], 'a' => $acc['id']]);
+        if (!$r || !$r['last'] || (int) $r['own'] > 0 || strtotime($r['last'] . ' UTC') > time() - 7 * 86400) {
+            return false;
+        }
+        self::loadDemo($m);
+        return true;
+    }
+
+    /** Loads the DEMO DATA journal (anchored to today) into a fresh demo account (transaction). Returns the account id. */
     public static function loadDemo(array $m): int
     {
         return Database::transaction(function () use ($m) {
@@ -263,10 +282,11 @@ final class Ledger
                 Database::delete('trades', 'account_id = :a AND user_id = :u', ['a' => $acc['id'], 'u' => $uid]);
                 $accId = (int) $acc['id'];
             } else {
-                $accId = Database::insert('trading_accounts', ['user_id' => $uid, 'name' => 'Demo Journal (sample data)', 'broker_name' => 'DEMO DATA', 'currency' => 'USD', 'starting_capital' => '25000.00', 'is_demo' => 1, 'has_demo_data' => 1]);
+                $accId = Database::insert('trading_accounts', ['user_id' => $uid, 'name' => 'Demo Journal (sample data)', 'broker_name' => 'DEMO DATA', 'currency' => 'USD', 'starting_capital' => number_format(DemoData::START_CAPITAL, 2, '.', ''), 'is_demo' => 1, 'has_demo_data' => 1]);
             }
             $strategies = array_column(self::strategies($uid), 'id', 'name');
-            foreach (DemoData::trades() as $t) {
+            $tz = (string) ($m['timezone'] ?? 'UTC');
+            foreach (DemoData::trades($tz) as $t) {
                 $calc = TradeMath::compute($t['symbol'], $t['side'], $t['entry'], $t['exit'], $t['stop'], $t['lots'], 0, 'USD');
                 Database::insert('trades', [
                     'user_id' => $uid, 'account_id' => $accId, 'strategy_id' => $strategies[$t['strategy']] ?? null, 'executed_at' => $t['executed_at'], 'closed_at' => $t['closed_at'],
@@ -281,7 +301,7 @@ final class Ledger
                 Database::insert('capital_transactions', ['user_id' => $uid, 'account_id' => $accId, 'type' => $type, 'amount' => $amt, 'note' => $note, 'occurred_at' => gmdate('Y-m-d 06:00:00', time() - $daysAgo * 86400)]);
             }
             Database::delete('journal_entries', 'user_id = :u AND is_demo = 1', ['u' => $uid]);
-            foreach (DemoData::JOURNALS as [$date, $comp, $emo, $disc, $refl, $lesson]) {
+            foreach (DemoData::journals($tz) as [$date, $comp, $emo, $disc, $refl, $lesson]) {
                 Database::insert('journal_entries', ['user_id' => $uid, 'account_id' => $accId, 'journal_date' => $date, 'is_demo' => 1, 'compliance' => $comp, 'emotional_state' => $emo, 'discipline_rating' => $disc, 'reflection' => '[DEMO DATA] ' . $refl, 'key_lesson' => $lesson]);
             }
             Database::update('user_settings', ['active_account_id' => $accId], 'user_id = :u', ['u' => $uid]);

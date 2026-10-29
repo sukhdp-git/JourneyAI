@@ -45,7 +45,8 @@ final class EdgeController extends TerminalController
             $month = $period($last->format('Y-m-01'), $last->format('Y-m-t'));
             $leakLabel = 'in ' . $last->format('F Y');
         }
-        $defaultTh = str_starts_with((string) $this->acc['account_type'], 'PROP') ? '10' : '20';
+        // prop accounts (and the demo journal, so the example shows the radar at work) default to the −10% max-loss line
+        $defaultTh = str_starts_with((string) $this->acc['account_type'], 'PROP') || !empty($this->acc['has_demo_data']) ? '10' : '20';
         $th = array_key_exists((string) $req->query('dd'), self::THRESHOLDS) ? (string) $req->query('dd') : $defaultTh;
         $last30 = array_values(array_filter($all, fn ($t) => strtotime($t['executed_at'] . ' UTC') >= time() - 30 * 86400));
         $best = Edge::bestWindow($all);
