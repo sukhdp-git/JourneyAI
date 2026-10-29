@@ -6,7 +6,6 @@ $prompts = ['The trade I’m least proud of this week was…', 'I broke my rule 
 $q = fn (array $x) => url('/terminal/confessions') . '?' . http_build_query(array_filter(['tab' => $x['tab'] ?? $tab, 'tag' => array_key_exists('tag', $x) ? $x['tag'] : $tag], fn ($v) => $v !== null && $v !== '' && $v !== 'latest'));
 ?>
 <div class="cf" data-cf-app data-base="<?= e(url('/terminal/confessions')) ?>" data-tab="<?= e($tab) ?>" data-tagf="<?= e((string) $tag) ?>">
-  <?= App\Core\View::partial('terminal/confessions/bg') ?>
   <header class="cf-hero">
     <div>
       <span class="cf-kicker"><?= icon('lock', 'icon icon-xs') ?> Members only · anonymous</span>

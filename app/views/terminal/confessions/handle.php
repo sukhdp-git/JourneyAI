@@ -4,7 +4,6 @@ use App\Trading\Confessions as C;
 [$em, $hue] = C::avatar(abs(crc32($suggest)));
 ?>
 <div class="cf cf-onboard">
-  <?= App\Core\View::partial('terminal/confessions/bg') ?>
   <section class="cf-handle-card">
     <span class="cf-av xl" style="--h:<?= $hue ?>" aria-hidden="true"><?= $em ?></span>
     <span class="cf-kicker"><?= icon('lock', 'icon icon-xs') ?> Step 1 of 1</span>

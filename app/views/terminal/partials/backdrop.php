@@ -1,5 +1,5 @@
-<?php /** Decorative animated backdrop for Confessions (candles drifting up through a slow aurora). Hidden from assistive tech. */ ?>
-<div class="cf-bg" aria-hidden="true">
+<?php /** Decorative backdrop for every terminal page: candles drifting up through a slow aurora, behind all panels (never over data). Hidden from assistive tech. */ ?>
+<div class="tm-bg" aria-hidden="true">
   <span class="cf-aur a1"></span><span class="cf-aur a2"></span><span class="cf-aur a3"></span>
   <svg class="cf-candles" viewBox="0 0 1200 800" preserveAspectRatio="none">
     <?php mt_srand(7); for ($k = 0; $k < 26; $k++): $x = mt_rand(10, 1190); $h = mt_rand(30, 110); $w = mt_rand(6, 12); $up = mt_rand(0, 1); $d = mt_rand(14, 30); $dl = -mt_rand(0, 30); ?>

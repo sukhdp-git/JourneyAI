@@ -29,6 +29,7 @@ $initials = mb_strtoupper(mb_substr($m['name'], 0, 1));
 </head>
 <body class="tm" data-page="<?= e($nav) ?>" data-session-left="<?= max(0, (int) (\App\Trading\Members::expiresAt() ?? 0) - time()) ?>" data-session-exit="<?= e(url('/terminal')) ?>">
 <a class="skip-link" href="#tm-main">Skip to content</a>
+<?= App\Core\View::partial('terminal/partials/backdrop') ?>
 <div class="tm-shell">
   <aside class="tm-side" id="tm-side" aria-label="Terminal navigation">
     <div class="tm-brand">

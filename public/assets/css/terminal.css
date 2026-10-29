@@ -1825,17 +1825,21 @@ input.filled, select.filled, textarea.filled { box-shadow: 0 0 0 3px rgb(16 185 
 
 /* ===================== CONFESSIONS ===================== */
 .cf { position: relative; isolation: isolate; }
-.cf-bg { position: fixed; inset: 0 0 0 var(--side-w, 0px); z-index: -1; overflow: hidden; pointer-events: none; }
-.cf-aur { position: absolute; width: 60vmax; height: 60vmax; border-radius: 50%; filter: blur(90px); opacity: .22; animation: cf-drift 26s ease-in-out infinite alternate; }
+.tm-bg { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+.tm-shell { position: relative; z-index: 1; }
+.cf-aur { position: absolute; width: 60vmax; height: 60vmax; border-radius: 50%; filter: blur(90px); opacity: .1; animation: cf-drift 26s ease-in-out infinite alternate; will-change: transform; }
 .cf-aur.a1 { background: #6541e9; left: -18vmax; top: -24vmax; }
-.cf-aur.a2 { background: #d04fae; right: -22vmax; top: 10vmax; animation-delay: -9s; opacity: .14; }
-.cf-aur.a3 { background: #1fb985; left: 20vmax; bottom: -34vmax; animation-delay: -17s; opacity: .1; }
+.cf-aur.a2 { background: #d04fae; right: -22vmax; top: 10vmax; animation-delay: -9s; opacity: .07; }
+.cf-aur.a3 { background: #1fb985; left: 20vmax; bottom: -34vmax; animation-delay: -17s; opacity: .05; }
 @keyframes cf-drift { to { transform: translate(6vmax, 4vmax) scale(1.12); } }
-.cf-candles { position: absolute; inset: 0; width: 100%; height: 100%; opacity: .16; }
-.cf-cd { animation: cf-rise linear infinite; }
+.cf-candles { position: absolute; inset: 0; width: 100%; height: 100%; opacity: .07; }
+.cf-cd { animation: cf-rise linear infinite; will-change: transform; }
 .cf-cd.up line, .cf-cd.up rect { stroke: #34d399; fill: #34d399; } .cf-cd.dn line, .cf-cd.dn rect { stroke: #f87171; fill: #f87171; }
 .cf-cd line { stroke-width: 1.5; }
 @keyframes cf-rise { from { transform: translateY(0); opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } to { transform: translateY(-900px); opacity: 0; } }
+/* Confessions keeps a slightly stronger version of the backdrop */
+body[data-page="confess"] .cf-candles { opacity: .15; } body[data-page="confess"] .cf-aur { opacity: .2; } body[data-page="confess"] .cf-aur.a2 { opacity: .13; } body[data-page="confess"] .cf-aur.a3 { opacity: .09; }
+@media print { .tm-bg { display: none; } }
 
 .cf-hero { display: flex; align-items: flex-end; justify-content: space-between; gap: 22px; flex-wrap: wrap; margin-bottom: 18px; }
 .cf-hero h2, .cf-handle-card h2, .cf-lock-card h2 { font-size: clamp(26px, 3.4vw, 38px); letter-spacing: -.035em; line-height: 1.05; margin: 8px 0 6px; color: var(--strong); }
@@ -1964,9 +1968,9 @@ input.filled, select.filled, textarea.filled { box-shadow: 0 0 0 3px rgb(16 185 
 [data-theme="clean-light"] .cf-card, [data-theme="clean-light"] .cf-box, [data-theme="clean-light"] .cf-handle-card, [data-theme="clean-light"] .cf-lock-card { background: rgb(255 255 255 / .86); }
 [data-theme="clean-light"] .cf-compose { background: linear-gradient(180deg, #f3effe, #fff); }
 [data-theme="clean-light"] .cf-pop { background: #fff; }
-[data-theme="clean-light"] .cf-candles { opacity: .1; } [data-theme="clean-light"] .cf-aur { opacity: .12; }
+[data-theme="clean-light"] .cf-candles { opacity: .045; } [data-theme="clean-light"] .cf-aur { opacity: .06; } [data-theme="clean-light"] body[data-page="confess"] .cf-candles, body[data-page="confess"][data-theme="clean-light"] .cf-candles { opacity: .09; }
 @media (max-width: 640px) { .cf-tags, .cf-compose-row, .cf-shield { margin-left: 0; } .cf-hero { align-items: stretch; } .cf-me { width: 100%; } .cf-card { padding: 14px 14px 8px; } }
-@media (prefers-reduced-motion: reduce) { .cf-aur, .cf-cd, .cf-card, .cf-c, .cf-empty-ico, .cf-handle-card { animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { .cf-aur, .cf-cd, .cf-candles *, .cf-card, .cf-c, .cf-empty-ico, .cf-handle-card { animation: none !important; } }
 
 /* ===================== UNIVERSITY: lesson art, XP, badges, certificate ===================== */
 .cx-hero-art { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 340px); gap: 22px; align-items: center; }

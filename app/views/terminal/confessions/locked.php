@@ -1,6 +1,5 @@
 <?php /** Confessions preview for members without an active plan. */ ?>
 <div class="cf cf-locked">
-  <?= App\Core\View::partial('terminal/confessions/bg') ?>
   <section class="cf-lock-card">
     <span class="cf-kicker"><?= icon('lock', 'icon icon-xs') ?> Members with a plan</span>
     <h2>Confessions: the trading floor, <em>unfiltered.</em></h2>
