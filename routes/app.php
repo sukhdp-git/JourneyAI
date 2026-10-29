@@ -90,6 +90,9 @@ $router->post('/terminal/public-pnl', [PublicPnlController::class, 'store']);
 $router->post('/terminal/public-pnl/{id}', [PublicPnlController::class, 'update']);
 $router->get('/terminal/university', [UniversityController::class, 'index']);
 $router->get('/terminal/university/course', [UniversityController::class, 'course']);
+$router->post('/terminal/university/progress', [UniversityController::class, 'progress']);
+$router->get('/terminal/university/certificate', [UniversityController::class, 'certificate']);
+$router->post('/terminal/university/certificate', [UniversityController::class, 'claim']);
 $router->get('/terminal/university/course/{slug}', [UniversityController::class, 'module']);
 $router->get('/terminal/university/{slug}', [UniversityController::class, 'show']);
 

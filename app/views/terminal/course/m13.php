@@ -15,7 +15,17 @@
     <li><strong>Weekly (20 min):</strong> best trade, worst trade, rules followed %, costliest mistake, best and worst hour. Pick <strong>one</strong> thing to fix next week.</li>
     <li><strong>Monthly (45 min):</strong> expectancy, profit factor, drawdown and each strategy's results. Keep what works, cut what doesn't.</li>
   </ol>
-  <div class="cx-tip"><?= icon('check-circle', 'icon') ?><p>journzey's Performance review and Edge Matrix produce these numbers for you; your job is to read them and choose the one change.</p></div>
+  <div class="cx-tip"><?= icon('check-circle', 'icon') ?><p>journzey's Performance review and Edge Matrix produce these numbers for you; your job is to read them and choose the one change.</p>
+  <figure class="cx-fig">
+    <svg viewBox="0 0 640 220" role="img" aria-label="The improvement loop: plan, trade, journal, review, adjust, then plan again">
+      <?php $steps = ['Plan', 'Trade', 'Journal', 'Review', 'Adjust']; foreach ($steps as $i => $t): $a = -M_PI / 2 + $i * 2 * M_PI / 5; $x = 320 + cos($a) * 150; $y = 112 + sin($a) * 78; ?>
+      <circle cx="<?= round($x) ?>" cy="<?= round($y) ?>" r="30" class="brand" opacity=".9"/><text x="<?= round($x) ?>" y="<?= round($y) + 4 ?>" text-anchor="middle" fill="#fff" font-size="12" font-weight="700"><?= $t ?></text>
+      <?php endforeach; ?>
+      <ellipse cx="320" cy="112" rx="150" ry="78" fill="none" class="ln-m"/>
+      <text class="tb" x="320" y="110" text-anchor="middle">every week</text><text class="ts" x="320" y="126" text-anchor="middle">one change at a time</text>
+    </svg>
+    <figcaption>The loop that turns a hobby into a business: change one thing per week, and let the journal show whether it helped.</figcaption>
+  </figure></div>
 </section>
 
 <section class="cx-sec">

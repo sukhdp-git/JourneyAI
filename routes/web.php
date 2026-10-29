@@ -34,6 +34,7 @@ $router->get('/contact', [FormController::class, 'contact']);
 $router->post('/contact', [FormController::class, 'contactSubmit']);
 
 $router->get('/verify/{code}', [VerifyController::class, 'show']);
+$router->get('/certificate/{code}', [VerifyController::class, 'certificate']);
 $router->get('/p/{code}', [VerifyController::class, 'pnl']);
 $router->get('/affiliates', [AffiliateController::class, 'page']);
 $router->get('/wall', [\App\Controllers\WallController::class, 'index']);

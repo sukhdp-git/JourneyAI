@@ -36,6 +36,17 @@
       <tr><td>Pressure to deposit more to “unlock” a withdrawal</td><td>A classic sign of fraud.</td></tr>
       <tr><td>“Recovery” services promising to get lost money back</td><td>Often a second scam targeting the same victims.</td></tr>
     </tbody></table></div>
+  <figure class="cx-fig">
+    <svg viewBox="0 0 640 210" role="img" aria-label="Red flags on the left, signs of a legitimate firm on the right">
+      <text class="lbl-dn" x="20" y="24">RED FLAGS</text><text class="lbl-up" x="340" y="24">GREEN FLAGS</text>
+      <?php foreach (['“Guaranteed 10% a week”', '“DM me / join my VIP group”', '“Send USDT to unlock withdrawals”', '“Only 3 slots left, decide now”'] as $i => $t): ?>
+      <g transform="translate(20 <?= 40 + $i * 40 ?>)"><rect width="290" height="30" rx="9" class="zone-r"/><text class="tb" x="12" y="20"><?= $t ?></text></g>
+      <?php endforeach; foreach (['Regulator licence you can look up', 'Clear fees and withdrawal rules', 'Talks about risk, never promises', 'Real support, real company address'] as $i => $t): ?>
+      <g transform="translate(340 <?= 40 + $i * 40 ?>)"><rect width="280" height="30" rx="9" class="zone-s"/><text class="tb" x="12" y="20">✓ <?= $t ?></text></g>
+      <?php endforeach; ?>
+    </svg>
+    <figcaption>If someone promises profit or asks you to send money to “unlock” money, walk away.</figcaption>
+  </figure>
   <ul class="cx-take">
     <li><?= icon('check', 'icon icon-sm') ?>Regulated, legal where you live, and withdrawals tested early.</li>
     <li><?= icon('check', 'icon icon-sm') ?>Prop challenges: respect the daily and max loss above everything.</li>
@@ -46,6 +57,7 @@
 <section class="cx-quiz" data-quiz>
   <h3><?= icon('sparkles', 'icon') ?> Quick check</h3>
   <p class="muted small">Pick an answer — you'll see why right away.</p>
+
   <div class="cx-q" data-a="b"><p>1. What should you check first when choosing a broker?</p>
     <label><input type="radio" name="q1" value="a"> The size of the deposit bonus</label><label><input type="radio" name="q1" value="b"> Its regulation, verified on the regulator's website</label><label><input type="radio" name="q1" value="c"> The highest leverage offered</label>
     <p class="why">Regulation protects your money; bonuses and leverage don't.</p></div>

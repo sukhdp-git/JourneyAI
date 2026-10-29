@@ -753,20 +753,70 @@
       });
     });
   });
+  // Quick-check retry: shown when the score is below the pass mark, so a lesson can still be completed
+  $$('[data-quiz]').forEach(function (qz) {
+    var out = $('[data-quiz-score]', qz); if (!out) return;
+    var retry = d.createElement('button'); retry.type = 'button'; retry.className = 'tm-btn tm-btn-sm cx-retry'; retry.textContent = 'Try the quick check again'; retry.hidden = true;
+    out.parentNode.insertBefore(retry, out.nextSibling);
+    var root = qz.closest('[data-course]'), pass = root ? +root.dataset.coursePass || 60 : 60;
+    qz.addEventListener('change', function () {
+      var qs = $$('.cx-q', qz), done = qs.filter(function (q) { return q.classList.contains('answered'); }).length, ok = qs.filter(function (q) { return q.dataset.ok === '1'; }).length;
+      retry.hidden = !(done === qs.length && ok / qs.length * 100 < pass);
+    });
+    retry.addEventListener('click', function () {
+      $$('.cx-q', qz).forEach(function (q) { q.classList.remove('answered'); delete q.dataset.ok; $$('label', q).forEach(function (l) { l.classList.remove('right', 'wrong'); }); $$('input', q).forEach(function (i) { i.checked = false; }); });
+      out.textContent = ''; retry.hidden = true; qz.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+  function confetti() {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var cols = ['#8b6bff', '#feb2b4', '#34d399', '#fbbf24', '#60a5fa'];
+    for (var i = 0; i < 70; i++) {
+      var c = d.createElement('i'); c.className = 'cx-confetti';
+      c.style.left = (Math.random() * 100) + 'vw'; c.style.background = cols[i % cols.length];
+      c.style.setProperty('--dx', (Math.random() * 160 - 80) + 'px'); c.style.setProperty('--r', (Math.random() * 720 - 360) + 'deg');
+      c.style.animationDelay = (Math.random() * 0.4) + 's'; c.style.animationDuration = (1.6 + Math.random() * 1.2) + 's';
+      d.body.appendChild(c); setTimeout(function (x) { x.remove(); }.bind(null, c), 3400);
+    }
+  }
   $$('[data-course]').forEach(function (root) {
-    var key = root.dataset.courseKey, total = +root.dataset.courseTotal || 5, done = [];
-    try { done = JSON.parse(localStorage.getItem(key) || '[]') || []; } catch (e) { done = []; }
-    if (!Array.isArray(done)) done = [];
-    var save = function () { try { localStorage.setItem(key, JSON.stringify(done)); } catch (e) {} };
+    var total = +root.dataset.courseTotal || 13, done = [], url = root.dataset.courseUrl, pass = +root.dataset.coursePass || 60;
+    try { done = JSON.parse(root.dataset.courseDone || '[]') || []; } catch (e) { done = []; }
     var paint = function () {
       $$('[data-course-mod]', root).forEach(function (a) { a.classList.toggle('is-done', done.indexOf(+a.dataset.courseMod) > -1); });
       var bar = $('[data-course-bar]', root); if (bar) bar.style.width = Math.round(done.length / total * 100) + '%';
-      var lab = $('[data-course-label]', root); if (lab) lab.textContent = done.length + ' of ' + total + ' lessons complete' + (done.length === total ? ' — course finished!' : '');
+      var lab = $('[data-course-label]', root); if (lab) lab.textContent = done.length + ' of ' + total + ' lessons complete' + (done.length === total ? ' — course finished! 🎓' : '');
       var n = +root.dataset.courseN, btn = $('[data-course-complete]', root);
-      if (btn && n) { var on = done.indexOf(n) > -1; btn.classList.toggle('tm-btn-primary', on); btn.setAttribute('aria-pressed', on ? 'true' : 'false'); $('span', btn).textContent = on ? 'Completed ✓' : 'Mark module complete'; }
+      if (btn && n) { var on = done.indexOf(n) > -1; btn.classList.toggle('tm-btn-primary', on); btn.setAttribute('aria-pressed', on ? 'true' : 'false'); $('span', btn).textContent = on ? 'Completed ✓' : 'Complete lesson'; }
     };
     var btn = $('[data-course-complete]', root);
-    if (btn) btn.addEventListener('click', function () { var n = +root.dataset.courseN, i = done.indexOf(n); if (i > -1) done.splice(i, 1); else done.push(n); save(); paint(); });
+    if (btn && url) btn.addEventListener('click', function () {
+      var n = +root.dataset.courseN, was = done.indexOf(n) > -1;
+      if (was) {
+        if (!confirm('Mark this lesson as not complete?')) return;
+        window.tmPost(url, { lesson: n, action: 'undo' }).then(function (r) { if (r.ok) { done = r.done; paint(); } });
+        return;
+      }
+      var qz = $('[data-quiz]', root), qs = qz ? $$('.cx-q', qz) : [], answered = qs.filter(function (q) { return q.classList.contains('answered'); }).length,
+        ok = qs.filter(function (q) { return q.dataset.ok === '1'; }).length, score = qs.length ? Math.round(ok / qs.length * 100) : 100;
+      if (qs.length && answered < qs.length) { if (window.tmToast) window.tmToast('Answer the quick check at the end of the lesson first.', 'error'); qz.scrollIntoView({ behavior: 'smooth', block: 'start' }); qz.classList.add('cx-nudge'); setTimeout(function () { qz.classList.remove('cx-nudge'); }, 1200); return; }
+      if (score < pass) { if (window.tmToast) window.tmToast('You scored ' + score + '%. Score ' + pass + '% or more to complete it: read the explanations and try again.', 'error'); return; }
+      btn.disabled = true;
+      var before = null; try { before = JSON.parse(root.dataset.badges || 'null'); } catch (e) {}
+      window.tmPost(url, { lesson: n, score: score }).then(function (r) {
+        btn.disabled = false;
+        if (!r.ok) { if (window.tmToast) window.tmToast(r.error || 'Could not save. Try again.', 'error'); return; }
+        done = r.done; paint(); confetti();
+        var xp = $('[data-course-xp]', root); if (xp) xp.textContent = r.standing.xp;
+        if (window.tmToast) window.tmToast('Lesson complete! +' + (100 + Math.round(score / 2)) + ' XP 🎉', 'success');
+        (r.standing.badges || []).forEach(function (b, i) { if (b.done && before && !before[i] && window.tmToast) setTimeout(function () { window.tmToast('🏅 Badge unlocked: ' + b.title, 'success'); }, 700); });
+        root.dataset.badges = JSON.stringify((r.standing.badges || []).map(function (b) { return b.done; }));
+        if (r.standing.eligible) {
+          var foot = $('.cx-foot', root);
+          if (foot && !$('.cx-cert-banner', root)) { var a = d.createElement('a'); a.className = 'cx-cert-banner'; a.href = root.dataset.courseCert; a.textContent = '🎓 You finished the course. Claim your certificate →'; foot.parentNode.insertBefore(a, foot); }
+        }
+      });
+    });
     paint();
   });
   /* Lessons as an accordion: one open at a time, so a module never looks like a wall of text */

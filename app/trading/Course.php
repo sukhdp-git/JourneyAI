@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace App\Trading;
 
+use App\Core\Database;
+
 /**
  * journzey.ai University course: "Trading Foundations" — beginner to confident trader in 13 modules and 4 levels.
  * Module numbers are permanent keys (progress is stored by number); ORDER is the learning order shown to members.
@@ -87,5 +89,95 @@ final class Course
     public static function minutes(): int
     {
         return array_sum(array_column(self::MODULES, 3));
+    }
+
+    // ------------------------------------------------------------------ progress & certificate
+
+    /** A lesson counts as complete once its quiz is answered with at least this score (percent). */
+    public const PASS = 60;
+    public const XP_LESSON = 100;
+
+    /** @return array<int,int> lesson number => best quiz score (percent) */
+    public static function progress(int $uid): array
+    {
+        $out = [];
+        foreach (Database::all('SELECT lesson, quiz_score FROM course_completions WHERE user_id = :u', ['u' => $uid]) as $r) {
+            if (isset(self::MODULES[(int) $r['lesson']])) {
+                $out[(int) $r['lesson']] = (int) $r['quiz_score'];
+            }
+        }
+        return $out;
+    }
+
+    /** Records a passed lesson (keeps the best score). @return string|null error */
+    public static function complete(int $uid, int $n, int $score): ?string
+    {
+        if (!isset(self::MODULES[$n])) {
+            return 'Unknown lesson.';
+        }
+        $score = max(0, min(100, $score));
+        if ($score < self::PASS) {
+            return 'Score at least ' . self::PASS . '% in the quick check to complete this lesson.';
+        }
+        Database::query('INSERT INTO course_completions (user_id, lesson, quiz_score) VALUES (:u, :n, :s) ON DUPLICATE KEY UPDATE quiz_score = GREATEST(quiz_score, VALUES(quiz_score))',
+            ['u' => $uid, 'n' => $n, 's' => $score]);
+        return null;
+    }
+
+    public static function uncomplete(int $uid, int $n): void
+    {
+        Database::query('DELETE FROM course_completions WHERE user_id = :u AND lesson = :n', ['u' => $uid, 'n' => $n]);
+    }
+
+    /** XP, level badges and certificate eligibility for the progress map. */
+    public static function standing(array $progress): array
+    {
+        $xp = 0;
+        foreach ($progress as $score) {
+            $xp += self::XP_LESSON + (int) round($score / 2);       // up to 150 XP a lesson
+        }
+        $badges = [];
+        foreach (self::LEVELS as $i => [$title, , $nums]) {
+            $badges[] = ['title' => $title, 'done' => !array_diff($nums, array_keys($progress)), 'n' => count(array_intersect($nums, array_keys($progress))), 'of' => count($nums)];
+        }
+        return ['xp' => $xp, 'max_xp' => count(self::MODULES) * (self::XP_LESSON + 50), 'done' => count($progress), 'total' => count(self::MODULES),
+            'badges' => $badges, 'eligible' => count($progress) === count(self::MODULES)];
+    }
+
+    public static function certificate(int $uid): ?array
+    {
+        return Database::one("SELECT * FROM course_certificates WHERE user_id = :u AND course = 'foundations'", ['u' => $uid]);
+    }
+
+    public static function byCode(string $code): ?array
+    {
+        if (!preg_match('/^[A-Z0-9]{12}$/', $code)) {
+            return null;
+        }
+        return Database::one("SELECT * FROM course_certificates WHERE code = :c AND course = 'foundations'", ['c' => $code]);
+    }
+
+    /** Issues the certificate once all lessons are passed. @return array{0:?string,1:?array} [error, certificate] */
+    public static function issue(int $uid, string $name): array
+    {
+        if ($c = self::certificate($uid)) {
+            return [null, $c];
+        }
+        if (!self::standing(self::progress($uid))['eligible']) {
+            return ['Complete all ' . count(self::MODULES) . ' lessons first.', null];
+        }
+        $name = trim(preg_replace('/\s+/u', ' ', $name) ?? '');
+        if (mb_strlen($name) < 2 || mb_strlen($name) > 60 || !preg_match('/^[\p{L}\p{M} .\'\-]+$/u', $name)) {
+            return ['Enter the name to print: 2–60 letters (spaces, dots, apostrophes and hyphens are fine).', null];
+        }
+        $alpha = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        do {
+            $code = '';
+            for ($i = 0; $i < 12; $i++) {
+                $code .= $alpha[random_int(0, strlen($alpha) - 1)];
+            }
+        } while (Database::value('SELECT 1 FROM course_certificates WHERE code = :c', ['c' => $code]));
+        Database::insert('course_certificates', ['code' => $code, 'user_id' => $uid, 'course' => 'foundations', 'name_on_cert' => $name]);
+        return [null, self::certificate($uid)];
     }
 }

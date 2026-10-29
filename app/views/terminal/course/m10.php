@@ -37,7 +37,17 @@
     <div class="cx-stat"><b>Losing streak</b><span>The longest run of losses. Plan your risk so twice that streak is survivable.</span></div>
     <div class="cx-stat"><b>Trades per week</b><span>Enough opportunities to matter, few enough to execute well.</span></div>
   </div>
-  <div class="cx-tip"><?= icon('check-circle', 'icon') ?><p>Example: 100 trades, 45 wins averaging 2R, 55 losses at −1R → (0.45 × 2) − (0.55 × 1) = <strong>+0.35R per trade</strong> before costs. That's an edge worth forward-testing. A backtest is evidence, not a promise.</p></div>
+  <div class="cx-tip"><?= icon('check-circle', 'icon') ?><p>Example: 100 trades, 45 wins averaging 2R, 55 losses at −1R → (0.45 × 2) − (0.55 × 1) = <strong>+0.35R per trade</strong> before costs. That's an edge worth forward-testing. A backtest is evidence, not a promise.</p>
+  <figure class="cx-fig">
+    <svg viewBox="0 0 640 220" role="img" aria-label="Example backtest: equity curve over 100 trades with the maximum drawdown highlighted">
+      <line class="ax" x1="40" x2="620" y1="180" y2="180"/><line class="ax" x1="40" x2="40" y1="20" y2="180"/>
+      <rect class="zone-r" x="250" y="62" width="120" height="66" rx="6"/><text class="lbl-dn" x="310" y="146" text-anchor="middle">max drawdown −9%</text>
+      <path class="ln" d="M40 170 L80 160 L110 164 L150 140 L180 146 L220 118 L250 70 L280 96 L310 122 L340 110 L370 76 L410 64 L450 72 L500 44 L540 52 L580 34 L620 28"/>
+      <text class="ts" x="40" y="198">trade 1</text><text class="ts" x="620" y="198" text-anchor="end">trade 100</text>
+      <g transform="translate(60 22)"><rect width="250" height="26" rx="8" fill="color-mix(in srgb, var(--panel) 80%, transparent)" stroke="var(--line)"/><text class="t" x="12" y="17">win rate 45% · avg win 1.8R · PF 1.5 · example</text></g>
+    </svg>
+    <figcaption>Example numbers. Judge a strategy on 100+ trades: the shape of the curve and the depth of the drawdown matter as much as the profit.</figcaption>
+  </figure></div>
 </section>
 
 <section class="cx-sec">

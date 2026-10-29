@@ -5,6 +5,7 @@ namespace App\Controllers;
 
 use App\Core\Request;
 use App\Core\Database;
+use App\Trading\Course;
 use App\Trading\FlexCard;
 use App\Trading\PublicPnl;
 
@@ -36,5 +37,17 @@ final class VerifyController extends Controller
         $this->render('pnl', ['l' => $l, 'r' => PublicPnl::report($l), 'first' => $first], [
             'title' => ($first !== '' ? $first . '’s ' : '') . 'verified P&L', 'description' => 'Trading results computed by journzey.ai from the trader’s journal.', 'path' => '/p/' . $l['code'], 'noindex' => true,
         ]);
+    }
+
+    /** Public check behind the QR code on a University certificate (/certificate/{code}). */
+    public function certificate(Request $req): never
+    {
+        $code = strtoupper((string) ($req->params['code'] ?? ''));
+        $c = Course::byCode($code);
+        if (!$c) {
+            $this->notFound();
+        }
+        header('X-Robots-Tag: noindex, nofollow');
+        $this->render('certificate', ['c' => $c], ['title' => 'Verified certificate · ' . Course::TITLE, 'description' => 'Certificate of completion issued by journzey.ai University.', 'path' => '/certificate/' . $code, 'noindex' => true]);
     }
 }

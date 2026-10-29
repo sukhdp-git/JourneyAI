@@ -40,7 +40,37 @@ final class UniversityController extends TerminalController
     /** Trading Foundations course overview. */
     public function course(Request $req): never
     {
-        $this->render('course/index', [], Course::TITLE, 'university');
+        $p = Course::progress($this->uid);
+        $this->render('course/index', ['progress' => $p, 'standing' => Course::standing($p), 'cert' => Course::certificate($this->uid)], Course::TITLE, 'university');
+    }
+
+    /** Saves a passed (or un-marked) lesson. JSON: {ok, done[], standing}. */
+    public function progress(Request $req): never
+    {
+        $n = $req->int('lesson');
+        if ($req->str('action', 10) === 'undo') {
+            Course::uncomplete($this->uid, $n);
+        } elseif ($e = Course::complete($this->uid, $n, $req->int('score'))) {
+            Response::json(['ok' => false, 'error' => $e], 422);
+        }
+        $p = Course::progress($this->uid);
+        Response::json(['ok' => true, 'done' => array_keys($p), 'standing' => Course::standing($p)]);
+    }
+
+    /** Certificate of completion: claim form until issued, then the certificate itself. */
+    public function certificate(Request $req): never
+    {
+        $p = Course::progress($this->uid);
+        $this->render('course/certificate', ['standing' => Course::standing($p), 'cert' => Course::certificate($this->uid), 'progress' => $p], 'Certificate · ' . Course::TITLE, 'university');
+    }
+
+    public function claim(Request $req): never
+    {
+        [$e, $c] = Course::issue($this->uid, $req->str('name', 120));
+        if ($e) {
+            $this->back(url('/terminal/university/certificate'), 'error', $e);
+        }
+        $this->back(url('/terminal/university/certificate'), 'success', 'Congratulations! Your certificate is ready. 🎓');
     }
 
     /** One course module (views/terminal/course/m{n}.php). */
@@ -50,7 +80,8 @@ final class UniversityController extends TerminalController
         if ($n === null) {
             Response::abort(404);
         }
-        $this->render('course/module', ['n' => $n, 'mod' => Course::MODULES[$n]], 'Lesson ' . Course::position($n) . ' · ' . Course::MODULES[$n][2], 'university');
+        $p = Course::progress($this->uid);
+        $this->render('course/module', ['n' => $n, 'mod' => Course::MODULES[$n], 'progress' => $p, 'standing' => Course::standing($p)], 'Lesson ' . Course::position($n) . ' · ' . Course::MODULES[$n][2], 'university');
     }
 
     /** Names of the member's own strategies (to show which playbook strategies were already copied). */

@@ -30,7 +30,16 @@
       <tr><td><strong>Partial profit</strong> (e.g. half at 1R)</td><td>Locks in some profit, calmer to hold the rest</td><td>Reduces the size of your best winners</td></tr>
       <tr><td><strong>Trailing stop</strong> (structure, ATR or MA)</td><td>Lets big trends pay you</td><td>Gives back part of the move before exiting</td></tr>
     </tbody></table></div>
-  <div class="cx-tip"><?= icon('check-circle', 'icon') ?><p>None of these is right or wrong — but changing your mind <strong>during</strong> a trade usually is. Decide your management rule in advance and test it like the entry.</p></div>
+  <div class="cx-tip"><?= icon('check-circle', 'icon') ?><p>None of these is right or wrong — but changing your mind <strong>during</strong> a trade usually is. Decide your management rule in advance and test it like the entry.</p>
+  <figure class="cx-fig">
+    <svg viewBox="0 0 640 220" role="img" aria-label="A long trade: the stop starts below entry, moves to break-even at 1R, then trails below each higher low">
+      <path d="M30 170 L90 150 L120 160 L180 120 L210 132 L280 92 L310 104 L380 64 L410 76 L480 40 L610 30" fill="none" stroke="var(--strong)" stroke-width="2.5" stroke-linejoin="round"/>
+      <line x1="30" x2="610" y1="150" y2="150" stroke="#8b6bff" stroke-width="2"/><text class="tb" x="34" y="144">entry</text>
+      <path d="M30 186 H180 V150 H280 V132 H380 V104 H480 V76 H610" fill="none" stroke="var(--neg)" stroke-width="2.5" stroke-dasharray="7 5"/>
+      <text class="lbl-dn" x="60" y="204">initial stop (−1R)</text><text class="lbl-b" x="190" y="172">break-even at +1R</text><text class="lbl-up" x="470" y="96">trailing under each higher low</text>
+    </svg>
+    <figcaption>Illustration. Move the stop only toward profit, by rule: to break-even at +1R, then below each new higher low.</figcaption>
+  </figure></div>
 </section>
 
 <section class="cx-sec">
