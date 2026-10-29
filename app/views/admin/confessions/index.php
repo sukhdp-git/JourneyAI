@@ -1,5 +1,12 @@
-<?php /** @var string $tab @var array $tabs @var array $posts @var array $comments @var array $blocked @var array $members @var array $counts */ $base = admin_url('confessions'); ?>
+<?php /** @var bool $paidOnly @var string $tab @var array $tabs @var array $posts @var array $comments @var array $blocked @var array $members @var array $counts */ $base = admin_url('confessions'); ?>
 <div class="page-head"><div><h1>Confessions</h1><p class="muted">The anonymous feed for members with a plan. Posts with links, contact details or selling are blocked automatically; three reports hide a post or reply until you review it here. Members only ever see each other’s @handle.</p></div></div>
+<div class="card" style="margin-bottom:16px;padding:16px">
+  <form method="post" action="<?= e($base . '/access') ?>" class="inline-actions" style="justify-content:space-between;flex-wrap:wrap;gap:12px">
+    <?= csrf_field() ?>
+    <div><strong>Who can use Confessions</strong><p class="muted small" style="margin:4px 0 0"><?= $paidOnly ? 'Members with an active plan only. Free members see a locked preview with “Unlock with a plan”.' : 'Open to every signed-in member (testing mode). No plan is needed.' ?></p></div>
+    <?php if ($paidOnly): ?><button class="btn btn-secondary btn-sm" name="paid_only" value="0">Open to all members</button><?php else: ?><button class="btn btn-primary btn-sm" name="paid_only" value="1">Lock to members with a plan</button><?php endif; ?>
+  </form>
+</div>
 <div class="card">
   <nav class="status-tabs" aria-label="Moderation views">
     <?php foreach ($tabs as $k => $l): ?><a href="<?= e($base . '?tab=' . $k) ?>"<?= $tab === $k ? ' class="is-active"' : '' ?>><?= e($l) ?><?php if (isset($counts[$k])): ?> <b><?= (int) $counts[$k] ?></b><?php endif; ?></a><?php endforeach; ?>

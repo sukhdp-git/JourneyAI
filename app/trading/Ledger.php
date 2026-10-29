@@ -253,18 +253,20 @@ final class Ledger
 
     // ------------------------------------------------------------------ demo data
     /**
-     * Reloads the demo journal when its newest trade is more than 7 days old, but only while every trade in that
-     * account is demo data (a member's own practice trades are never deleted). Checked at most once a day per session.
+     * Reloads the demo journal when it is the old dataset (fewer than 80 demo trades) or its newest demo trade is
+     * more than 7 days old. Only demo trades are replaced: trades a member logged in the demo account are kept.
+     * Checked at most once a day per session.
      */
     public static function refreshDemoIfStale(array $m, array $acc): bool
     {
-        $key = 'demo_fresh_' . (int) $acc['id'];
+        $key = 'demo_fresh2_' . (int) $acc['id'];
         if (($_SESSION[$key] ?? '') === gmdate('Y-m-d')) {
             return false;
         }
         $_SESSION[$key] = gmdate('Y-m-d');
-        $r = Database::one("SELECT MAX(executed_at) AS last, SUM(source <> 'DEMO') AS own FROM trades WHERE user_id = :u AND account_id = :a", ['u' => $m['id'], 'a' => $acc['id']]);
-        if (!$r || !$r['last'] || (int) $r['own'] > 0 || strtotime($r['last'] . ' UTC') > time() - 7 * 86400) {
+        $r = Database::one("SELECT MAX(executed_at) AS last, COUNT(*) AS n FROM trades WHERE user_id = :u AND account_id = :a AND source = 'DEMO'", ['u' => $m['id'], 'a' => $acc['id']]);
+        $fresh = $r && $r['last'] && (int) $r['n'] >= 80 && strtotime($r['last'] . ' UTC') > time() - 7 * 86400;
+        if ($fresh) {
             return false;
         }
         self::loadDemo($m);
@@ -279,7 +281,7 @@ final class Ledger
             self::ensureTemplates($uid);
             $acc = Database::one('SELECT id FROM trading_accounts WHERE user_id = :u AND has_demo_data = 1 LIMIT 1', ['u' => $uid]);
             if ($acc) {
-                Database::delete('trades', 'account_id = :a AND user_id = :u', ['a' => $acc['id'], 'u' => $uid]);
+                Database::delete('trades', "account_id = :a AND user_id = :u AND source = 'DEMO'", ['a' => $acc['id'], 'u' => $uid]);  // the member's own practice trades stay
                 $accId = (int) $acc['id'];
             } else {
                 $accId = Database::insert('trading_accounts', ['user_id' => $uid, 'name' => 'Demo Journal (sample data)', 'broker_name' => 'DEMO DATA', 'currency' => 'USD', 'starting_capital' => number_format(DemoData::START_CAPITAL, 2, '.', ''), 'is_demo' => 1, 'has_demo_data' => 1]);

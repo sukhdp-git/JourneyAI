@@ -15,9 +15,10 @@ use App\Trading\Members;
  */
 final class ConfessionsController extends TerminalController
 {
+    /** Open to every member unless the Control Panel switch "Members with a plan only" is on. */
     private function paid(): bool
     {
-        return Members::entitlements($this->m)['paid'];
+        return !\App\Core\Settings::bool('confessions_paid_only') || Members::entitlements($this->m)['paid'];
     }
 
     /** JSON endpoints: paid members with a handle only. */

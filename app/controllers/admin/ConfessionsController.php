@@ -44,7 +44,7 @@ final class ConfessionsController extends AdminController
             'hidden' => (int) Database::value("SELECT COUNT(*) FROM confessions WHERE status = 'hidden'") + (int) Database::value("SELECT COUNT(*) FROM confession_comments WHERE status = 'hidden'"),
             'blocked' => (int) Database::value('SELECT COUNT(*) FROM confession_blocked WHERE created_at > NOW() - INTERVAL 7 DAY'),
         ];
-        $this->render('confessions/index', ['tab' => $tab, 'tabs' => self::TABS, 'posts' => $posts, 'comments' => $comments, 'blocked' => $blocked, 'members' => $members, 'counts' => $counts],
+        $this->render('confessions/index', ['paidOnly' => \App\Core\Settings::bool('confessions_paid_only'), 'tab' => $tab, 'tabs' => self::TABS, 'posts' => $posts, 'comments' => $comments, 'blocked' => $blocked, 'members' => $members, 'counts' => $counts],
             'Confessions', [['Members', 'members'], ['Confessions', null]]);
     }
 
@@ -91,5 +91,15 @@ final class ConfessionsController extends AdminController
         }
         Activity::log($action, 'confessions', $id, 'Confession ' . $kind . ' #' . $id);
         $this->back($back, 'success', ucfirst($kind) . ' #' . $id . ' ' . ($action === 'restore' ? 'restored' : ($action === 'hide' ? 'hidden' : 'removed')) . '.');
+    }
+
+    /** Switch between "open to every member" (testing) and "members with an active plan only". */
+    public function access(Request $req): never
+    {
+        Auth::authorize('members');
+        $on = $req->post('paid_only') === '1';
+        \App\Core\Settings::save(['confessions_paid_only' => $on ? '1' : '0'], 'confessions');
+        Activity::log('update', 'confessions', 0, 'Confessions access: ' . ($on ? 'plan members only' : 'all members'));
+        $this->back(admin_url('confessions'), 'success', $on ? 'Confessions is now for members with an active plan only.' : 'Confessions is now open to every member.');
     }
 }
