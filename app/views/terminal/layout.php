@@ -99,6 +99,7 @@ $initials = mb_strtoupper(mb_substr($m['name'], 0, 1));
       <button class="tm-icon-btn tm-burger" type="button" data-side-open aria-label="Open menu" aria-controls="tm-side"><?= icon('menu', 'icon') ?></button>
       <h1 class="tm-title"><?= e($pageTitle) ?></h1>
       <div class="tm-top-right">
+        <span class="tm-sess" data-session-chip role="status"><span class="tm-sess-dot" aria-hidden="true"></span><b>Sessions</b><i></i></span>
         <span class="mode <?= $acc['is_demo'] ? 'demo' : 'live' ?> tm-top-mode"><?= e($acc['is_demo'] ? t('hud.demo') : t('hud.live')) ?></span>
         <span class="tm-top-acc"><?= e($acc['name']) ?></span>
         <?php if (!$m['ent']['paid']): ?><a class="tm-btn tm-btn-sm tm-btn-accent" href="<?= e(url('/pricing')) ?>"><?= e(t('common.upgrade')) ?></a><?php endif; ?>
@@ -140,6 +141,7 @@ $initials = mb_strtoupper(mb_substr($m['name'], 0, 1));
 <script src="<?= e(asset('js/voice-parse.js')) ?>" defer></script>
 <script src="<?= e(asset('js/voice-field.js')) ?>" defer></script>
 <script src="<?= e(asset('js/tools.js')) ?>" defer></script>
+<script src="<?= e(asset('js/sessions-live.js')) ?>" defer></script>
 <?php if (in_array($nav, ['mind', 'home'], true)): ?><script src="<?= e(asset('js/mind.js')) ?>" defer></script><?php endif; ?>
 <?php if ($nav === 'backtest'): ?><script src="<?= e(asset('js/backtest.js')) ?>" defer></script><?php endif; ?>
 <?php if ($nav === 'confess'): ?><script src="<?= e(asset('js/confessions.js')) ?>" defer></script><?php endif; ?>

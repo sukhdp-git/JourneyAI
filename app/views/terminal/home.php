@@ -111,6 +111,8 @@ $part = $hour < 5 ? 'Late session' : ($hour < 12 ? 'Good morning' : ($hour < 17 
           <select id="hub-tz" name="timezone" data-autosubmit class="tz-select"><?php $zones = App\Trading\Sessions::ZONES; if (!in_array($tz, $zones, true)) $zones = [$tz => $tz] + $zones; foreach ($zones as $label => $zone): ?><option value="<?= e($zone) ?>"<?= $zone === $tz ? ' selected' : '' ?>><?= e($label) ?></option><?php endforeach; ?></select></form></div>
       <strong class="clock-time num" data-clock-time><?= e((new DateTimeImmutable('now', new DateTimeZone($tz)))->format('H:i:s')) ?></strong>
       <span class="muted small" data-clock-date><?= e((new DateTimeImmutable('now', new DateTimeZone($tz)))->format('l j F')) ?></span>
+      <div class="sg" data-session-globe><canvas role="img" aria-label="Globe showing which trading sessions are open now"></canvas><div class="sg-labels" aria-hidden="true"></div></div>
+      <p class="sg-status" data-sg-status aria-live="polite"></p>
       <div class="sessions" aria-label="Trading sessions">
         <?php foreach ($sessions as $key => $sx): ?><div class="session<?= $sx['active'] ? ' on' : '' ?>" data-session data-zone="<?= e($sx['zone']) ?>" data-open="<?= $sx['open'] ?>" data-close="<?= $sx['close'] ?>"><strong><?= e($sx['label']) ?></strong><small data-session-state><?= $sx['active'] ? 'ACTIVE' : 'closed' ?></small><em><?= e($sx['local_hours']) ?> your time</em></div><?php endforeach; ?>
       </div>
