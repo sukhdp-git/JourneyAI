@@ -10,7 +10,14 @@ use App\Models\Content;
 final class PageController extends Controller
 {
     /** Slugs that can never be used for CMS pages because a system route owns them. */
-    public const RESERVED = ['services', 'learn', 'verify', 'p', 'affiliates', 'r', 'blog', 'contact', 'pricing', 'signup', 'logout', 'onboarding', 'forgot-password', 'reset-password', 'checkout', 'webhooks', 'auth', 'terminal', 'control-panel', 'setup', 'sitemap.xml', 'robots.txt', 'uploads', 'public', 'app', 'config', 'storage', 'vendor', 'routes', 'index', 'index.php', 'admin', 'api', 'pages', 'search', 'login', 'assets'];
+    public const RESERVED = ['services', 'learn', 'verify', 'p', 'affiliates', 'r', 'blog', 'contact', 'pricing', 'signup', 'logout', 'onboarding', 'forgot-password', 'reset-password', 'checkout', 'webhooks', 'auth', 'terminal', 'control-panel', 'setup', 'sitemap.xml', 'robots.txt', 'uploads', 'public', 'app', 'config', 'storage', 'vendor', 'routes', 'index', 'index.php', 'admin', 'api', 'pages', 'search', 'login', 'assets', 'grievance-officer'];
+
+    /** Grievance Officer (IT Rules 2021 r.3(2), Consumer Protection (E-Commerce) Rules 2020 r.4, DPDP Act 2023 s.8(10)). */
+    public function grievance(Request $req): never
+    {
+        Seo::breadcrumbs([['Home', '/'], ['Grievance Officer', '/grievance-officer']]);
+        $this->render('grievance', [], ['title' => 'Grievance Officer', 'description' => 'How to raise a complaint about the service, your personal data or content on the platform.', 'path' => '/grievance-officer']);
+    }
 
     public function show(Request $req): never
     {

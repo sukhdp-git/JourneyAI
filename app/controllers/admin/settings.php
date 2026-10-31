@@ -118,6 +118,21 @@ return [
         ['name' => 'tv_ticker_symbols', 'label' => 'Ticker tape instruments', 'type' => 'textarea', 'rules' => 'max:2000', 'rows' => 10, 'help' => 'One per line as EXCHANGE:SYMBOL | Name, e.g. OANDA:XAUUSD | Gold. Find the code by searching the symbol on tradingview.com. Up to 30.'],
         ['name' => 'tv_calendar_countries', 'label' => 'Economic calendar countries', 'type' => 'text', 'rules' => 'max:120', 'help' => 'Two-letter codes separated by commas, e.g. us,eu,gb,jp,cn,in.'],
     ]],
+    'legal' => ['Legal & compliance', 'settings.general', 'shield', 'Details Indian law asks you to publish (IT Rules 2021, Consumer Protection (E-Commerce) Rules 2020, DPDP Act 2023), plus the cookie banner.', [
+        ['name' => 'legal_entity', 'label' => 'Legal business name', 'type' => 'text', 'rules' => 'max:160', 'width' => 'half', 'help' => 'The registered name of the business or proprietor that runs the site.'],
+        ['name' => 'legal_gstin', 'label' => 'GSTIN (optional)', 'type' => 'text', 'rules' => 'max:20', 'width' => 'half', 'help' => 'Shown on the Grievance Officer page once you are registered.'],
+        ['name' => 'grievance_name', 'label' => 'Grievance Officer name', 'type' => 'text', 'rules' => 'max:120', 'width' => 'half', 'help' => 'A real person resident in India. Shown on /grievance-officer and in the privacy policy.'],
+        ['name' => 'grievance_email', 'label' => 'Grievance Officer email', 'type' => 'email', 'rules' => 'email|max:190', 'width' => 'half', 'help' => 'Complaints must be acknowledged within 24 hours and resolved within 15 days.'],
+        ['name' => 'grievance_phone', 'label' => 'Grievance Officer phone (optional)', 'type' => 'text', 'rules' => 'phone|max:40', 'width' => 'half'],
+        ['name' => 'grievance_hours', 'label' => 'Grievance Officer hours (optional)', 'type' => 'text', 'rules' => 'max:120', 'width' => 'half', 'help' => 'e.g. Mon–Fri, 10:00–18:00 IST'],
+        ['name' => 'cookie_banner_enabled', 'label' => 'Ask for cookie consent before loading analytics (Google Analytics, Tag Manager, Meta Pixel). Keep this on for GDPR / DPDP.', 'type' => 'checkbox'],
+        ['name' => 'sebi_notice_enabled', 'label' => 'Show the “not a SEBI-registered adviser, education only” notice in the website footer', 'type' => 'checkbox'],
+    ]],
+    'backtester' => ['Backtester', 'settings.general', 'activity', 'The strategy backtester in the member terminal. Keep it off until you have tested it; it appears in the menu only when switched on.', [
+        ['name' => 'backtest_enabled', 'label' => 'Show the Backtester in the member terminal', 'type' => 'checkbox'],
+        ['name' => 'backtest_paid_only', 'label' => 'Members with an active plan only', 'type' => 'checkbox'],
+        ['name' => 'backtest_monthly_runs', 'label' => 'Tests each member can run per month', 'type' => 'number', 'rules' => 'required|between:1,10000', 'width' => 'half'],
+    ]],
     'analytics' => ['Analytics & tracking', 'settings.analytics', 'bars', 'Tracking codes are only output when enabled and the ID format is valid.', [
         ['name' => 'ga_enabled', 'label' => 'Enable Google Analytics 4', 'type' => 'checkbox', 'width' => 'half'],
         ['name' => 'ga_id', 'label' => 'Measurement ID', 'type' => 'text', 'rules' => 'max:30', 'width' => 'half', 'help' => 'e.g. G-XXXXXXXXXX'],

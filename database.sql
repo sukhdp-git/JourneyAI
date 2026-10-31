@@ -1774,3 +1774,30 @@ INSERT IGNORE INTO `settings` (`key`, `value`, `group_name`) VALUES ('backtest_p
 
 -- Record the schema version
 INSERT INTO `settings` (`key`, `value`, `group_name`) VALUES ('schema_version', '14', 'system') ON DUPLICATE KEY UPDATE `value` = IF(CAST(`value` AS UNSIGNED) < 14, '14', `value`);
+
+-- ---------------------------------------------------------------------------
+-- Schema version 15: compliance and security (adds columns and settings only).
+-- Rollback: ALTER TABLE admins DROP COLUMN totp_secret, DROP COLUMN totp_last; ALTER TABLE users DROP COLUMN terms_accepted_at, DROP COLUMN age_confirmed;
+--           DELETE FROM settings WHERE `key` IN ('cookie_banner_enabled','sebi_notice_enabled','backtest_enabled'); then set schema_version back to 14.
+-- ---------------------------------------------------------------------------
+SET @s := (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `admins` ADD COLUMN `totp_secret` VARCHAR(255) NULL', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'admins' AND COLUMN_NAME = 'totp_secret');
+PREPARE jz_stmt FROM @s;
+EXECUTE jz_stmt;
+DEALLOCATE PREPARE jz_stmt;
+SET @s := (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `admins` ADD COLUMN `totp_last` INT UNSIGNED NOT NULL DEFAULT 0', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'admins' AND COLUMN_NAME = 'totp_last');
+PREPARE jz_stmt FROM @s;
+EXECUTE jz_stmt;
+DEALLOCATE PREPARE jz_stmt;
+SET @s := (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `users` ADD COLUMN `terms_accepted_at` DATETIME NULL', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'terms_accepted_at');
+PREPARE jz_stmt FROM @s;
+EXECUTE jz_stmt;
+DEALLOCATE PREPARE jz_stmt;
+SET @s := (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `users` ADD COLUMN `age_confirmed` TINYINT(1) NOT NULL DEFAULT 0', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'age_confirmed');
+PREPARE jz_stmt FROM @s;
+EXECUTE jz_stmt;
+DEALLOCATE PREPARE jz_stmt;
+
+INSERT IGNORE INTO `settings` (`key`, `value`, `group_name`) VALUES ('cookie_banner_enabled', '1', 'legal'), ('sebi_notice_enabled', '1', 'legal'), ('backtest_enabled', '0', 'backtest');
+
+-- Record the schema version
+INSERT INTO `settings` (`key`, `value`, `group_name`) VALUES ('schema_version', '15', 'system') ON DUPLICATE KEY UPDATE `value` = IF(CAST(`value` AS UNSIGNED) < 15, '15', `value`);

@@ -41,6 +41,8 @@ $mw = [$auth, $csrf];
 $router->get($P, [AuthController::class, 'root']);
 $router->get("$P/login", [AuthController::class, 'form']);
 $router->post("$P/login", [AuthController::class, 'login']);
+$router->get("$P/login/code", [AuthController::class, 'codeForm']);
+$router->post("$P/login/code", [AuthController::class, 'code']);
 $router->post("$P/logout", [AuthController::class, 'logout'], [$auth]);
 
 $router->get("$P/dashboard", [DashboardController::class, 'index'], $mw);
@@ -102,6 +104,7 @@ $router->get("$P/activity-logs", [SystemController::class, 'logs'], $mw);
 $router->get("$P/system", [SystemController::class, 'info'], $mw);
 $router->get("$P/profile", [SystemController::class, 'profile'], $mw);
 $router->post("$P/profile", [SystemController::class, 'saveProfile'], $mw);
+$router->post("$P/profile/two-step", [SystemController::class, 'twoFactor'], $mw);
 
 // Generic CRUD modules (pages, services, blog, testimonials, FAQs, steps, sections, navigation, homepage, templates, users, roles)
 foreach (ResourceController::keys() as $key) {

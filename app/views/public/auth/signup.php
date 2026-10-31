@@ -21,7 +21,7 @@
       <?= field_error('password') ?>
     </div>
     <div class="field field-check<?= has_error('terms') ? ' has-error' : '' ?>">
-      <label><input type="checkbox" name="terms" value="1" required<?= old('terms') ? ' checked' : '' ?>> <span>I agree to the <a href="<?= e(url('/terms-and-conditions')) ?>">Terms</a>, <a href="<?= e(url('/privacy-policy')) ?>">Privacy Policy</a> and <a href="<?= e(url('/disclaimer')) ?>">Risk Disclaimer</a>.</span></label>
+      <label><input type="checkbox" name="terms" value="1" required<?= old('terms') ? ' checked' : '' ?>> <span>I am 18 or over and agree to the <a href="<?= e(url('/terms-and-conditions')) ?>">Terms</a>, <a href="<?= e(url('/privacy-policy')) ?>">Privacy Policy</a> and <a href="<?= e(url('/disclaimer')) ?>">Risk Disclaimer</a>.</span></label>
       <?= field_error('terms') ?>
     </div>
     <button class="btn btn-primary btn-lg btn-block" type="submit">Create account</button>
@@ -29,5 +29,5 @@
   <?php endif; ?>
   <?php endif; ?>
   <p class="auth-switch">Already have an account? <a href="<?= e(url('/login')) ?>">Sign in</a></p>
-  <p class="auth-legal">By continuing with Google, you agree to the <a href="<?= e(url('/terms-and-conditions')) ?>">Terms of Service</a> and <a href="<?= e(url('/privacy-policy')) ?>">Privacy Policy</a>.</p>
+  <p class="auth-legal">By continuing with Google, you confirm you are 18 or over and agree to the <a href="<?= e(url('/terms-and-conditions')) ?>">Terms of Service</a> and <a href="<?= e(url('/privacy-policy')) ?>">Privacy Policy</a>.</p>
 </div>

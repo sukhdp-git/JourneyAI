@@ -45,5 +45,7 @@ $router->get('/r/{code}', [AffiliateController::class, 'track']);
 $router->get('/sitemap.xml', [SeoController::class, 'sitemap']);
 $router->get('/robots.txt', [SeoController::class, 'robots']);
 
+$router->get('/grievance-officer', [PageController::class, 'grievance']);
+
 // CMS pages: /about, /privacy-policy, /terms-and-conditions and any page created in the Control Panel.
 $router->get('/{slug}', [PageController::class, 'show']);

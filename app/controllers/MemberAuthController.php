@@ -106,7 +106,7 @@ final class MemberAuthController
             $errors['password'] = 'Use at least 10 characters including letters and numbers.';
         }
         if ($req->post('terms') !== '1') {
-            $errors['terms'] = 'Please accept the Terms and Privacy Policy.';
+            $errors['terms'] = 'Please confirm you are 18 or over and accept the Terms and Privacy Policy.';
         }
         if (!$errors && !RateLimiter::hit('member-signup:' . $req->ip(), 10, 3600)) {
             $errors['email'] = 'Too many sign-ups from your connection. Please try again later.';
@@ -117,6 +117,7 @@ final class MemberAuthController
         }
         $tz = (string) $req->post('timezone', 'UTC');
         $user = Members::create(['email' => $email, 'name' => $name, 'password_hash' => password_hash($pass, PASSWORD_DEFAULT), 'method' => 'email', 'timezone' => Sessions::isValidTz($tz) ? $tz : 'UTC'], $req);
+        Database::update('users', ['terms_accepted_at' => gmdate('Y-m-d H:i:s'), 'age_confirmed' => 1], 'id = :id', ['id' => $user['id']]);   // consent record (DPDP Act s.6)
         Members::login($user, 'signup_email', $req);
         Mailer::sendTemplate('welcome', $email, ['name' => $name, 'email' => $email], ['related_type' => 'member', 'related_id' => (int) $user['id']]);
         Response::redirect('/onboarding');
@@ -277,6 +278,10 @@ final class MemberAuthController
         }
         $name = 'Demo account';
         $withDemo = $req->post('load_demo') === '1';
+        $needsConsent = !(int) Database::value('SELECT age_confirmed FROM users WHERE id = :id', ['id' => $m['id']]);
+        if ($needsConsent && $req->post('consent') !== '1') {
+            $errors['consent'] = 'Please confirm you are 18 or over and accept the Terms and Privacy Policy.';
+        }
         if ($errors) {
             Session::withErrors($errors, $_POST);
             Response::redirect('/onboarding');
@@ -284,6 +289,9 @@ final class MemberAuthController
         $dec = fn ($k) => is_numeric($req->post($k)) && (float) $req->post($k) > 0 ? round((float) $req->post($k), 2) : null;
         // One account to start: the demo journal (sample data) or, without it, an empty demo account. Broker and
         // prop-firm accounts are added later from the account menu ("＋ Add account").
+        if ($needsConsent) {
+            Database::update('users', ['terms_accepted_at' => gmdate('Y-m-d H:i:s'), 'age_confirmed' => 1], 'id = :id', ['id' => $m['id']]);
+        }
         Database::transaction(function () use ($m, $markets, $currency, $tz, $capital, $risk, $name, $dec, $withDemo) {
             $uid = (int) $m['id'];
             Ledger::ensureTemplates($uid);

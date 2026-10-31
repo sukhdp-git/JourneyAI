@@ -141,6 +141,24 @@ final class SettingsController extends TerminalController
             'payments' => Database::all('SELECT gateway, amount, currency, status, period_days, access_until, created_at, paid_at FROM payments WHERE user_id = :u', $u),
             'logins' => Database::all('SELECT method, success, ip, user_agent, created_at FROM user_logins WHERE user_id = :u ORDER BY id DESC LIMIT 500', $u),
         ];
+        // Newer features: every table that stores something the member created (DPDP Act s.11 / GDPR art. 15 and 20).
+        foreach ([
+            'confession_profile' => 'SELECT handle, created_at FROM confession_profiles WHERE user_id = :u',
+            'confessions' => 'SELECT id, body, tag, mood, likes, created_at FROM confessions WHERE user_id = :u',
+            'confession_comments' => 'SELECT confession_id, body, created_at FROM confession_comments WHERE user_id = :u',
+            'wall_of_ls' => 'SELECT * FROM wall_posts WHERE user_id = :u',
+            'university_progress' => 'SELECT lesson, quiz_score, completed_at FROM course_completions WHERE user_id = :u',
+            'certificates' => 'SELECT code, course, name_on_cert, issued_at FROM course_certificates WHERE user_id = :u',
+            'backtests' => 'SELECT name, symbol, tf, rules, summary, created_at FROM bt_runs WHERE user_id = :u',
+            'backtest_uploads' => 'SELECT name, symbol, tf, rows_count, created_at FROM bt_datasets WHERE user_id = :u',
+        ] as $k => $sql) {
+            try {
+                $data[$k] = Database::all($sql, $u);
+            } catch (\Throwable) {
+                $data[$k] = [];
+            }
+        }
+        $data['profile']['terms_accepted_at'] = Database::value('SELECT terms_accepted_at FROM users WHERE id = :u', $u);
         Members::audit($this->uid, 'data_exported', 'JSON export');
         header('Content-Type: application/json; charset=utf-8');
         header('Content-Disposition: attachment; filename="JournzeyAI_MyData_' . gmdate('Y-m-d') . '.json"');

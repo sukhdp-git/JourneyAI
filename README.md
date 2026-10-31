@@ -582,6 +582,30 @@ Recommended extras:
 
 ---
 
+### Legal & compliance (India + global)
+What the code now does, and what only you can do. This is a technical checklist, not legal advice.
+
+| Built in | Where |
+|---|---|
+| **Consent record (DPDP Act 2023):** sign-up asks "I am 18 or over and agree to the Terms, Privacy Policy and Risk Disclaimer". The time is stored in `users.terms_accepted_at`. Google sign-ups confirm it once during onboarding. | Sign-up, onboarding |
+| **Cookie consent (GDPR / DPDP):** Google Analytics, Tag Manager and Meta Pixel load only after **Accept all**. "Cookie settings" in the footer resets the choice. | Control Panel → Legal & compliance |
+| **Grievance Officer page** at `/grievance-officer`: 24-hour acknowledgement and 15-day resolution (IT Rules 2021, E-Commerce Rules 2020). Fill in the name, email and phone. | Control Panel → Legal & compliance |
+| **Your rights section** appended to the privacy policy: access, correction, deletion, withdrawal of consent, nominee, complaint to the Data Protection Board, cookies, 18+ only, breach notice. | `/privacy-policy` |
+| **SEBI notice** in the footer: education and journaling only, not a SEBI-registered adviser, no tips or signals. | Footer (can be switched off) |
+| **Data export** now covers Confessions, Wall of L's, University progress and backtests too. **Account deletion** (already built) keeps only anonymised payment records for tax law. | Terminal → Settings |
+| **Two-step sign-in for admins:** codes from Google/Microsoft Authenticator or Authy. Codes are single-use, limited to 5 tries per 15 minutes, and the secret is stored encrypted. | Control Panel → My profile |
+| **Security headers:** CSP `frame-ancestors`/`base-uri`/`object-src`, Cross-Origin-Opener-Policy (plus the existing nosniff, frame, referrer, permissions and HSTS headers). `docs/` is blocked from the web. | `.htaccess`, `index.php` |
+| **Backtester stays hidden** until you switch it on. | Control Panel → Backtester |
+
+**Only you can do these:**
+1. Turn on two-step sign-in for every admin, plus cPanel, the domain registrar, Razorpay, Stripe and email.
+2. Fill in **Legal & compliance**: business name, Grievance Officer, and GSTIN once you have one. Review the privacy policy, terms and refund policy text with a lawyer or CA.
+3. On cPanel: keep PHP at 8.2 or newer, use AutoSSL, set up daily off-server backups (test a restore), and run the weekly malware scan. Keep server access logs for **180 days**, and keep the server clock synced (CERT-In).
+4. Put the site behind Cloudflare (free plan) for DDoS and bot protection.
+5. If a breach happens: report it to **CERT-In within 6 hours** and tell the Data Protection Board and affected users.
+6. Never post buy/sell calls, signals or "guaranteed" returns on the site, in reels or in Confessions (SEBI).
+7. Get a VAPT (penetration test) before the public launch, and rotate any API key that was ever shared in a chat or screenshot.
+
 ## 11. Troubleshooting
 
 ### General

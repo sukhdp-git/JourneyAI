@@ -22,6 +22,9 @@ final class BacktestController extends TerminalController
 
     private function allowed(): bool
     {
+        if (!Settings::bool('backtest_enabled')) {
+            Response::abort(404);        // hidden until switched on in Control Panel → Backtester
+        }
         return !Settings::bool('backtest_paid_only', true) || Members::entitlements($this->m)['paid'];
     }
 

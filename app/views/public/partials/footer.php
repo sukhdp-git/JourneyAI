@@ -62,5 +62,10 @@ $copyright = str_replace('{year}', gmdate('Y'), setting('copyright_text', '© {y
   <div class="container footer-bottom">
     <p><?= e($copyright) ?></p>
     <?php if (setting('footer_disclaimer')): ?><p class="disclaimer"><?= e(setting('footer_disclaimer')) ?></p><?php endif; ?>
+    <?php if (setting_on('sebi_notice_enabled', true)): ?><p class="disclaimer"><?= e(setting('legal_entity') ?: setting('site_name', 'journzey.ai')) ?> is a trading journal and education platform. We are not registered with SEBI as an investment adviser or research analyst and do not give buy/sell recommendations, tips or signals. Trading involves substantial risk of loss.</p><?php endif; ?>
+    <ul class="footer-legal-links">
+      <li><a href="<?= e(url('/grievance-officer')) ?>">Grievance Officer</a></li>
+      <?php if (setting_on('cookie_banner_enabled', true) && (setting_on('ga_enabled') || setting_on('gtm_enabled') || setting_on('pixel_enabled'))): ?><li><button type="button" onclick="document.cookie='jz_consent=; Max-Age=0; Path=/';location.reload()">Cookie settings</button></li><?php endif; ?>
+    </ul>
   </div>
 </footer>

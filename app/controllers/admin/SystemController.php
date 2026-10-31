@@ -79,7 +79,43 @@ final class SystemController extends AdminController
 
     public function profile(Request $req): never
     {
-        $this->render('system/profile', ['user' => Auth::user()], 'My profile', [['My profile', null]]);
+        $u = Auth::user();
+        $on = (bool) Database::value('SELECT totp_secret IS NOT NULL FROM admins WHERE id = :id', ['id' => $u['id']]);
+        if (!$on && empty($_SESSION['_2fa_setup'])) {
+            $_SESSION['_2fa_setup'] = \App\Core\Totp::secret();
+        }
+        $secret = $on ? null : $_SESSION['_2fa_setup'];
+        $this->render('system/profile', ['user' => $u, 'twoFa' => $on, 'secret' => $secret,
+            'otpUri' => $secret ? \App\Core\Totp::uri($secret, $u['email'], setting('site_name', 'journzey.ai') . ' Control Panel') : null], 'My profile', [['My profile', null]]);
+    }
+
+    /** Turn 2-step sign-in on (after proving the app shows the right code) or off (needs a current code). */
+    public function twoFactor(Request $req): never
+    {
+        $u = Auth::user();
+        $row = Database::one('SELECT id, totp_secret, totp_last FROM admins WHERE id = :id', ['id' => $u['id']]);
+        if (!\App\Core\RateLimiter::hit('2fa-setup:' . $u['id'], 10, 900)) {
+            $this->back(admin_url('profile') . '#two-step', 'error', 'Too many attempts. Wait 15 minutes.');
+        }
+        $code = (string) $req->post('code', '');
+        if ($req->post('action') === 'disable') {
+            $secret = $row['totp_secret'] ? \App\Core\Crypto::decrypt((string) $row['totp_secret']) : null;
+            if (!$secret || \App\Core\Totp::verify($secret, $code, (int) $row['totp_last']) === null) {
+                $this->back(admin_url('profile') . '#two-step', 'error', 'That code is not correct.');
+            }
+            Database::update('admins', ['totp_secret' => null, 'totp_last' => 0], 'id = :id', ['id' => $u['id']]);
+            \App\Core\Activity::log('update', 'auth', (int) $u['id'], 'Two-step sign-in turned off');
+            $this->back(admin_url('profile') . '#two-step', 'success', 'Two-step sign-in is off.');
+        }
+        $secret = (string) ($_SESSION['_2fa_setup'] ?? '');
+        $step = $secret !== '' ? \App\Core\Totp::verify($secret, $code) : null;
+        if ($step === null) {
+            $this->back(admin_url('profile') . '#two-step', 'error', 'That code is not correct. Check the time on your phone is set automatically, then try the newest code.');
+        }
+        Database::update('admins', ['totp_secret' => \App\Core\Crypto::encrypt($secret), 'totp_last' => $step], 'id = :id', ['id' => $u['id']]);
+        unset($_SESSION['_2fa_setup']);
+        \App\Core\Activity::log('update', 'auth', (int) $u['id'], 'Two-step sign-in turned on');
+        $this->back(admin_url('profile') . '#two-step', 'success', 'Two-step sign-in is on. You will need a code from your app every time you sign in.');
     }
 
     public function saveProfile(Request $req): never

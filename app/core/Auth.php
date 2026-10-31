@@ -73,7 +73,7 @@ final class Auth
         RateLimiter::hit($ipKey, self::MAX_PER_IP, self::WINDOW);
         RateLimiter::hit($emailKey, self::MAX_PER_EMAIL, self::WINDOW);
 
-        $admin = Database::one('SELECT id, password_hash, status FROM admins WHERE email = :e', ['e' => $email]);
+        $admin = Database::one('SELECT id, password_hash, status, totp_secret FROM admins WHERE email = :e', ['e' => $email]);
         // Verify against a dummy hash when the account does not exist so timing does not reveal it.
         $hash = $admin['password_hash'] ?? '$2y$10$vZeD4ddpLR3u5KKX/E0EpeKNhhlYcCsLZPFAd8YtxhCH/nlJRYN9e';
         $ok = password_verify($password, $hash) && $admin !== null;
@@ -85,6 +85,45 @@ final class Auth
             Database::update('admins', ['password_hash' => password_hash($password, PASSWORD_DEFAULT)], 'id = :id', ['id' => $admin['id']]);
         }
         RateLimiter::clear($emailKey);
+        if (!empty($admin['totp_secret'])) {
+            // Password is right, but the second step is still needed: nothing is unlocked yet.
+            Session::regenerate();
+            $_SESSION['_2fa'] = ['id' => (int) $admin['id'], 'email' => $email, 'at' => time()];
+            self::record($email, false, $req, 'password_ok_2fa_pending');
+            return '2fa';
+        }
+        return self::establish((int) $admin['id'], $email, $req);
+    }
+
+    /** Second sign-in step: a 6-digit code from the authenticator app (5 tries per 15 minutes, codes are single-use). */
+    public static function verifySecondFactor(string $code, Request $req): string|true
+    {
+        $p = $_SESSION['_2fa'] ?? null;
+        if (!$p || time() - (int) $p['at'] > 300) {
+            unset($_SESSION['_2fa']);
+            return 'The sign-in took too long. Enter your email and password again.';
+        }
+        $key = 'login-2fa:' . $p['id'];
+        if (!RateLimiter::hit($key, 5, self::WINDOW)) {
+            self::record($p['email'], false, $req, '2fa_rate_limited');
+            return 'Too many wrong codes. Please wait 15 minutes and try again.';
+        }
+        $a = Database::one("SELECT id, status, totp_secret, totp_last FROM admins WHERE id = :id", ['id' => $p['id']]);
+        $secret = $a && $a['totp_secret'] ? Crypto::decrypt((string) $a['totp_secret']) : null;
+        $step = $secret ? Totp::verify($secret, $code, (int) $a['totp_last']) : null;
+        if (!$a || $a['status'] !== 'active' || $step === null) {
+            self::record($p['email'], false, $req, '2fa_invalid');
+            return 'That code is not correct. Use the current 6-digit code from your authenticator app.';
+        }
+        Database::update('admins', ['totp_last' => $step], 'id = :id', ['id' => $a['id']]);
+        RateLimiter::clear($key);
+        unset($_SESSION['_2fa']);
+        return self::establish((int) $a['id'], $p['email'], $req);
+    }
+
+    private static function establish(int $adminId, string $email, Request $req): true
+    {
+        $admin = ['id' => $adminId];
         Session::regenerate();
         $_SESSION['admin_id'] = (int) $admin['id'];
         $_SESSION['login_at'] = time();

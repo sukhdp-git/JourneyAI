@@ -51,20 +51,21 @@ $pixel = setting_on('pixel_enabled') && ctype_digit(setting('pixel_id')) ? setti
 <?php foreach (Seo::globals() as $schema): ?>
 <script type="application/ld+json"><?= Seo::json($schema) ?></script>
 <?php endforeach; ?>
-<?php if ($gtm): ?>
+<?php $askConsent = setting_on('cookie_banner_enabled', true) && ($gtm || $ga || $pixel); $track = !$askConsent || ($_COOKIE['jz_consent'] ?? '') === 'all'; ?>
+<?php if ($gtm && $track): ?>
 <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer',<?= json_encode($gtm) ?>);</script>
 <?php endif; ?>
-<?php if ($ga): ?>
+<?php if ($ga && $track): ?>
 <script async src="https://www.googletagmanager.com/gtag/js?id=<?= e($ga) ?>"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config',<?= json_encode($ga) ?>);</script>
 <?php endif; ?>
-<?php if ($pixel): ?>
+<?php if ($pixel && $track): ?>
 <script>!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init',<?= json_encode($pixel) ?>);fbq('track','PageView');</script>
 <?php endif; ?>
 <script>document.documentElement.classList.replace('no-js','js');</script>
 </head>
 <body class="<?= $isHome ? 'is-home' : 'is-inner' ?><?= setting_on('animations_enabled', true) ? ' has-motion' : '' ?>">
-<?php if ($gtm): ?><noscript><iframe src="https://www.googletagmanager.com/ns.html?id=<?= e($gtm) ?>" height="0" width="0" style="display:none;visibility:hidden" title="Google Tag Manager"></iframe></noscript><?php endif; ?>
+<?php if ($gtm && $track): ?><noscript><iframe src="https://www.googletagmanager.com/ns.html?id=<?= e($gtm) ?>" height="0" width="0" style="display:none;visibility:hidden" title="Google Tag Manager"></iframe></noscript><?php endif; ?>
 <a class="skip-link" href="#main">Skip to content</a>
 <?= App\Core\View::partial('public/partials/header', ['current' => $current, 'isHome' => $isHome, 'nav' => Navigation::tree('header')]) ?>
 <main id="main" tabindex="-1">
@@ -73,5 +74,6 @@ $pixel = setting_on('pixel_enabled') && ctype_digit(setting('pixel_id')) ? setti
 <?= App\Core\View::partial('public/partials/footer', []) ?>
 <?= App\Core\View::partial('public/partials/whatsapp', []) ?>
 <script src="<?= e(asset('js/site.js')) ?>" defer></script>
+<?php if ($askConsent && !isset($_COOKIE['jz_consent'])): ?><?= App\Core\View::partial('public/partials/cookie-consent') ?><?php endif; ?>
 </body>
 </html>

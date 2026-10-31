@@ -6,8 +6,9 @@ use App\Trading\Domain;
 $theme = isset(Domain::THEMES[$m['theme']]) ? $m['theme'] : Domain::DEFAULT_THEME;
 $links = [
     ['home', '/terminal', 'nav.home', 'home'], ['dashboard', '/terminal/dashboard', 'nav.dashboard', 'dashboard'], ['calendar', '/terminal/calendar', 'nav.calendar', 'calendar'],
-    ['trades', '/terminal/trades', 'nav.trades', 'list'], ['calculator', '/terminal/calculator', 'nav.calculator', 'scale'], ['strategies', '/terminal/strategies', 'nav.strategies', 'target'], ['backtest', '/terminal/backtest', 'nav.backtest', 'activity'], ['edge', '/terminal/edge', 'nav.edge', 'radar'], ['mind', '/terminal/mind', 'nav.mind', 'brain'],
-    ['notepad', '/terminal/notepad', 'nav.notepad', 'journal'], ['confess', '/terminal/confessions', 'nav.confess', 'message'], ['university', '/terminal/university', 'nav.university', 'book'], ['markets', '/terminal/markets', 'nav.markets', 'globe'],
+    ['trades', '/terminal/trades', 'nav.trades', 'list'], ['calculator', '/terminal/calculator', 'nav.calculator', 'scale'], ['strategies', '/terminal/strategies', 'nav.strategies', 'target'], ['edge', '/terminal/edge', 'nav.edge', 'radar'], ['mind', '/terminal/mind', 'nav.mind', 'brain'],
+    ['notepad', '/terminal/notepad', 'nav.notepad', 'journal'], ['confess', '/terminal/confessions', 'nav.confess', 'message'],
+    ...(App\Core\Settings::bool('backtest_enabled') ? [['backtest', '/terminal/backtest', 'nav.backtest', 'activity']] : []), ['university', '/terminal/university', 'nav.university', 'book'], ['markets', '/terminal/markets', 'nav.markets', 'globe'],
 ];
 if (!App\Trading\MarketWidgets::enabled()) {
     $links = array_values(array_filter($links, fn ($l) => $l[0] !== 'markets'));

@@ -44,6 +44,9 @@ $GLOBALS['__old'] += ['starting_capital' => '10000', 'currency' => $m['base_curr
     <section class="ob-step" data-step="5">
       <h2>Finish setup</h2>
       <label class="ob-demo"><input type="checkbox" name="load_demo" value="1" checked> <span><strong>Load the demo journal</strong> — 42 sample trades and 13 journal entries (Aug–Oct 2026), clearly marked <em>DEMO DATA</em>, as your demo account. Great for exploring the analytics.</span></label>
+      <?php if (!(int) App\Core\Database::value('SELECT age_confirmed FROM users WHERE id = :id', ['id' => $m['id']])): ?>
+      <div class="field field-check<?= has_error('consent') ? ' has-error' : '' ?>"><label><input type="checkbox" name="consent" value="1" required> <span>I am 18 or over and agree to the <a href="<?= e(url('/terms-and-conditions')) ?>" target="_blank">Terms</a>, <a href="<?= e(url('/privacy-policy')) ?>" target="_blank">Privacy Policy</a> and <a href="<?= e(url('/disclaimer')) ?>" target="_blank">Risk Disclaimer</a>.</span></label><?= field_error('consent') ?></div>
+      <?php endif; ?>
       <p class="muted small">Untick to start with an empty account.</p>
     </section>
     <div class="ob-nav">

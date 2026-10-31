@@ -38,10 +38,34 @@ final class AuthController
             Response::redirect('/' . ADMIN_PREFIX . '/login');
         }
         $result = Auth::attempt($email, $password, $req);
+        if ($result === '2fa') {
+            Response::redirect('/' . ADMIN_PREFIX . '/login/code');
+        }
         if ($result !== true) {
             Session::flash('error', $result);
             Session::withErrors([], ['email' => $email]);
             Response::redirect('/' . ADMIN_PREFIX . '/login');
+        }
+        $to = (string) ($_SESSION['_intended'] ?? '');
+        unset($_SESSION['_intended']);
+        Response::redirect(preg_match('#^/' . ADMIN_PREFIX . '/[a-z0-9/\-]*$#', $to) ? $to : '/' . ADMIN_PREFIX . '/dashboard');
+    }
+
+    public function codeForm(Request $req): never
+    {
+        if (empty($_SESSION['_2fa'])) {
+            Response::redirect('/' . ADMIN_PREFIX . '/login');
+        }
+        View::show('admin/auth/code', ['flash' => Session::takeFlash()]);
+    }
+
+    public function code(Request $req): never
+    {
+        Csrf::verify($req);
+        $result = Auth::verifySecondFactor((string) $req->post('code', ''), $req);
+        if ($result !== true) {
+            Session::flash('error', $result);
+            Response::redirect('/' . ADMIN_PREFIX . (empty($_SESSION['_2fa']) ? '/login' : '/login/code'));
         }
         $to = (string) ($_SESSION['_intended'] ?? '');
         unset($_SESSION['_intended']);
