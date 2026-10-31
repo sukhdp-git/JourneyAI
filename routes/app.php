@@ -99,6 +99,15 @@ $router->get('/terminal/university/{slug}', [UniversityController::class, 'show'
 // Confessions replaced the Coach tab; old Coach links land on the feed
 $router->get('/terminal/coach', [\App\Controllers\Terminal\ConfessionsController::class, 'legacy']);
 $router->get('/terminal/coach/{id}', [\App\Controllers\Terminal\ConfessionsController::class, 'legacy']);
+$router->get('/terminal/backtest', [\App\Controllers\Terminal\BacktestController::class, 'index']);
+$router->post('/terminal/backtest/run', [\App\Controllers\Terminal\BacktestController::class, 'run']);
+$router->post('/terminal/backtest/fetch', [\App\Controllers\Terminal\BacktestController::class, 'fetch']);
+$router->post('/terminal/backtest/upload', [\App\Controllers\Terminal\BacktestController::class, 'upload']);
+$router->post('/terminal/backtest/datasets/{id}/delete', [\App\Controllers\Terminal\BacktestController::class, 'deleteDataset']);
+$router->get('/terminal/backtest/runs/{id}', [\App\Controllers\Terminal\BacktestController::class, 'show']);
+$router->get('/terminal/backtest/runs/{id}/csv', [\App\Controllers\Terminal\BacktestController::class, 'csv']);
+$router->post('/terminal/backtest/runs/{id}/save', [\App\Controllers\Terminal\BacktestController::class, 'save']);
+$router->post('/terminal/backtest/runs/{id}/delete', [\App\Controllers\Terminal\BacktestController::class, 'delete']);
 $router->get('/terminal/confessions', [\App\Controllers\Terminal\ConfessionsController::class, 'index']);
 $router->get('/terminal/confessions/more', [\App\Controllers\Terminal\ConfessionsController::class, 'more']);
 $router->post('/terminal/confessions', [\App\Controllers\Terminal\ConfessionsController::class, 'store']);

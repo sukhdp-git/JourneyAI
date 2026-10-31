@@ -730,3 +730,62 @@ CREATE TABLE IF NOT EXISTS `course_certificates` (
 
 -- Record the schema version
 INSERT INTO `settings` (`key`, `value`, `group_name`) VALUES ('schema_version', '13', 'system') ON DUPLICATE KEY UPDATE `value` = IF(CAST(`value` AS UNSIGNED) < 13, '13', `value`);
+
+-- ---------------------------------------------------------------------------
+-- Schema version 14: Backtester (price history + saved runs). New tables only.
+-- Rollback: DROP TABLE bt_runs; DROP TABLE bt_bars; DROP TABLE bt_datasets;
+--           DELETE FROM settings WHERE `key` IN ('backtest_paid_only','backtest_monthly_runs'); then set schema_version back to 13.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `bt_datasets` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id` INT UNSIGNED NULL,
+  `shared_key` VARCHAR(40) NULL,
+  `source` VARCHAR(20) NOT NULL,
+  `symbol` VARCHAR(30) NOT NULL,
+  `name` VARCHAR(80) NOT NULL,
+  `tf` INT UNSIGNED NOT NULL DEFAULT 900,
+  `status` VARCHAR(12) NOT NULL DEFAULT 'ready',
+  `rows_count` INT UNSIGNED NOT NULL DEFAULT 0,
+  `first_ts` INT UNSIGNED NULL,
+  `last_ts` INT UNSIGNED NULL,
+  `cursor_ts` INT UNSIGNED NULL,
+  `fetched_at` DATETIME NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_bt_shared` (`shared_key`),
+  KEY `idx_bt_user` (`user_id`),
+  CONSTRAINT `fk_bt_ds_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `bt_bars` (
+  `dataset_id` INT UNSIGNED NOT NULL,
+  `ts` INT UNSIGNED NOT NULL,
+  `o` DOUBLE NOT NULL,
+  `h` DOUBLE NOT NULL,
+  `l` DOUBLE NOT NULL,
+  `c` DOUBLE NOT NULL,
+  PRIMARY KEY (`dataset_id`, `ts`),
+  CONSTRAINT `fk_bt_bars_ds` FOREIGN KEY (`dataset_id`) REFERENCES `bt_datasets` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `bt_runs` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id` INT UNSIGNED NOT NULL,
+  `name` VARCHAR(80) NOT NULL,
+  `symbol` VARCHAR(30) NOT NULL,
+  `tf` VARCHAR(8) NOT NULL,
+  `dataset_id` INT UNSIGNED NULL,
+  `rules` TEXT NOT NULL,
+  `summary` TEXT NOT NULL,
+  `result` MEDIUMTEXT NULL,
+  `saved` TINYINT(1) NOT NULL DEFAULT 0,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_btr_user` (`user_id`, `created_at`),
+  CONSTRAINT `fk_btr_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT IGNORE INTO `settings` (`key`, `value`, `group_name`) VALUES ('backtest_paid_only', '1', 'backtest'), ('backtest_monthly_runs', '100', 'backtest');
+
+-- Record the schema version
+INSERT INTO `settings` (`key`, `value`, `group_name`) VALUES ('schema_version', '14', 'system') ON DUPLICATE KEY UPDATE `value` = IF(CAST(`value` AS UNSIGNED) < 14, '14', `value`);
