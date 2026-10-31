@@ -9,7 +9,7 @@ $tour = [
     ['strat', 'target', 'Strategy analysis', 'Know which setup actually pays.', 'Rank every strategy by profit, win rate, average R and rule compliance, with win rate by Asian, London and New York session.', 'strategies', 'Strategy scoreboard and win rate by session'],
     ['cal', 'calendar', 'Calendar & flex cards', 'Green days you can prove.', 'A P&L calendar with weekly totals — and a shareable flex card for any day or trade, with a QR code that opens “Verified by journzey.ai”.', 'calendar', 'P&L calendar with green and red days'],
 ];
-$chips = ['Quick Log in 10 seconds', 'Prop firm rule tracker', 'Unlimited broker accounts', 'Tilt breaker with alert beep', 'Blow-up probability radar', 'Verified flex cards', 'Free Smart Coach', 'TradingView live charts', 'Position-size calculator', 'Daily psychology notepad', '10-strategy University', 'Dark & light premium themes'];
+$chips = ['Quick Log in 10 seconds', 'Prop firm rule tracker', 'Unlimited broker accounts', 'Tilt breaker with alert beep', 'Blow-up probability radar', 'Verified flex cards', 'Anonymous Confessions', 'TradingView live charts', 'Position-size calculator', 'Daily psychology notepad', '10-strategy University', 'Dark & light premium themes'];
 ?>
 <section class="section showcase" aria-labelledby="sc-title">
   <div class="container">
