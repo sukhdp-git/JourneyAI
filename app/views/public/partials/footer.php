@@ -13,7 +13,7 @@ $hasContact = setting_on('footer_show_contact', true) && ($phone || $email || $s
 $copyright = str_replace('{year}', gmdate('Y'), setting('copyright_text', '© {year} ' . setting('site_name')));
 ?>
 <footer class="site-footer">
-  <?php if (setting_on('footer_cta_enabled', true) && setting('footer_cta_heading') !== ''): ?>
+  <?php if (setting_on('footer_cta_enabled', true) && setting('footer_cta_heading') !== '' && empty($isHome)): // the homepage ends with its own call to action ?>
   <div class="container">
     <div class="footer-cta reveal">
       <div>

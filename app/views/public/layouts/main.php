@@ -71,7 +71,7 @@ $pixel = setting_on('pixel_enabled') && ctype_digit(setting('pixel_id')) ? setti
 <main id="main" tabindex="-1">
 <?= $content ?>
 </main>
-<?= App\Core\View::partial('public/partials/footer', []) ?>
+<?= App\Core\View::partial('public/partials/footer', ['isHome' => $isHome]) ?>
 <?= App\Core\View::partial('public/partials/whatsapp', []) ?>
 <script src="<?= e(asset('js/site.js')) ?>" defer></script>
 <?php if ($askConsent && !isset($_COOKIE['jz_consent'])): ?><?= App\Core\View::partial('public/partials/cookie-consent') ?><?php endif; ?>

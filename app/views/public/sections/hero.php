@@ -47,6 +47,7 @@ $split = preg_match('/^(.+?[.!?])\s+(\S.*)$/u', $heading, $hm) ? [$hm[1], $hm[2]
         <?= cms_button($s['cta_label'], $s['cta_url'], 'btn btn-primary btn-lg', true) ?>
         <?= cms_button($s['cta2_label'], $s['cta2_url'], 'btn btn-ghost btn-lg') ?>
       </div>
+      <?php if (str_contains((string) $s['cta_url'], 'signup')): ?><p class="hero-note">Free plan with a demo journal · No card needed</p><?php endif; ?>
       <?php if ($items): ?>
       <ul class="hero-points">
         <?php foreach ($items as $it): if (trim($it['title'] ?? '') === '') continue; ?>

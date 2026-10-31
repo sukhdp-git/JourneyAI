@@ -1,5 +1,5 @@
 <?php if (empty($process)) return; ?>
-<section <?= section_attrs($s, 'section-process') ?>>
+<section id="how-it-works" <?= section_attrs($s, 'section-process') ?>>
   <div class="container">
     <?= App\Core\View::partial('public/partials/section-head', ['s' => $s]) ?>
     <?= App\Core\View::partial('public/partials/process-steps', ['process' => $process]) ?>

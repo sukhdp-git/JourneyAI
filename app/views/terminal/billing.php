@@ -7,7 +7,6 @@
       <dt>Plan</dt><dd><?= e($ent['plan_name']) ?></dd>
       <?php if ($ent['paid']): ?><dt>Access until</dt><dd><?= e(fmt_date($ent['expires_at'], 'M j, Y H:i')) ?></dd><?php endif; ?>
       <dt>Live accounts</dt><dd><?= $ent['live'] ? (int) $ent['max_live'] . ' allowed' : 'Not included — demo accounts only' ?></dd>
-      <dt>AI Coach</dt><dd><?= (int) $ent['ai_daily'] ?> messages per day</dd>
     </dl>
     <?php if (!$ent['paid'] && $m['plan_expires_at']): ?><p class="muted small">Your previous plan ended on <?= e(fmt_date($m['plan_expires_at'], 'M j, Y')) ?>. Live accounts are read-only until you renew; nothing has been deleted.</p><?php endif; ?>
     <?php if ($gateway === 'none'): ?><p class="muted small">Online payments are not switched on yet. Contact the site team to upgrade — an administrator can activate a plan for you.</p><?php endif; ?>

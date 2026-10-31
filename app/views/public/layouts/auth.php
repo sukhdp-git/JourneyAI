@@ -40,7 +40,7 @@ $siteName = setting('site_name', 'journzey.ai');
         <li><?= icon('bars', 'icon icon-sm') ?><span><strong>Execution analytics</strong> — expectancy, R, drawdown and sessions from your own trades.</span></li>
         <li><?= icon('brain', 'icon icon-sm') ?><span><strong>Psychology</strong> — emotions, mistakes and a voice-dictated daily notepad.</span></li>
         <li><?= icon('shield', 'icon icon-sm') ?><span><strong>Risk</strong> — drawdown odds, tilt detection and your rules, measured.</span></li>
-        <li><?= icon('sparkles', 'icon icon-sm') ?><span><strong>AI coaching</strong> — grounded in your journal, never signals or promises.</span></li>
+        <li><?= icon('sparkles', 'icon icon-sm') ?><span><strong>Mind tab</strong> — next-day roasts, a Death Clock and revenge-trade alerts. Never signals or promises.</span></li>
       </ul>
     </div>
     <p class="auth-small">Trading involves risk. <?= e($siteName) ?> is journal and analytics software, not investment advice.</p>

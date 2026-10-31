@@ -816,3 +816,24 @@ INSERT IGNORE INTO `settings` (`key`, `value`, `group_name`) VALUES ('cookie_ban
 
 -- Record the schema version
 INSERT INTO `settings` (`key`, `value`, `group_name`) VALUES ('schema_version', '15', 'system') ON DUPLICATE KEY UPDATE `value` = IF(CAST(`value` AS UNSIGNED) < 15, '15', `value`);
+
+-- ---------------------------------------------------------------------------
+-- Schema version 16: homepage hierarchy (content only, every change is reversible in the Control Panel).
+--  * Hero says what journzey is, who it is for and why it matters (only if the original text is unchanged).
+--  * Sections that repeated the same message are switched off: Control Panel → Homepage → enable them again any time.
+--  * Plan feature lines that described removed features (AI Coach messages, AI reviews, CSV import) are removed.
+-- ---------------------------------------------------------------------------
+UPDATE `homepage_sections` SET `eyebrow` = 'Trading journal for forex, gold, index & crypto traders' WHERE `section_key` = 'hero' AND `eyebrow` LIKE 'Trading journal % AI discipline terminal' AND COALESCE((SELECT `value` FROM `settings` WHERE `key` = 'schema_version'), 0) < 16;
+UPDATE `homepage_sections` SET `subheading` = 'Log every trade in seconds. journzey shows which habits make you money and which ones quietly cost you, so you repeat the first and stop the second.' WHERE `section_key` = 'hero' AND `subheading` = 'journzey.ai brings every broker account into one institutional-grade journal, measures your execution against your own rules and turns your history into clear, unemotional feedback.';
+UPDATE `homepage_sections` SET `cta2_label` = 'See how it works', `cta2_url` = '#how-it-works' WHERE `section_key` = 'hero' AND `cta2_label` = 'See pricing' AND `cta2_url` = '/pricing';
+UPDATE `homepage_sections` SET `items` = '[{"title": "Forex, gold, indices & crypto", "text": "", "icon": "globe"}, {"title": "Prop-firm rule tracking", "text": "", "icon": "shield"}, {"title": "Tilt & revenge-trade alerts", "text": "", "icon": "brain"}]' WHERE `section_key` = 'hero' AND `items` = '[{"title":"Multi-broker journal","text":"","icon":"layers"},{"title":"Rules & risk tracking","text":"","icon":"shield"},{"title":"AI discipline feedback","text":"","icon":"brain"}]';
+UPDATE `homepage_sections` SET `is_enabled` = 0 WHERE `section_key` IN ('intro', 'about', 'services', 'benefits', 'featured', 'contact') AND COALESCE((SELECT `value` FROM `settings` WHERE `key` = 'schema_version'), 0) < 16;
+UPDATE `plans` SET `features` = REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(`features`, '\nAI Coach: 3 messages per day', ''), '\nAI Coach: 50 messages per day', ''), '\nAI Coach: 200 messages per day', ''), '\nWeekly and monthly AI reviews', ''), '\nCSV statement import', ''), 'AI Coach: 3 messages per day\n', '');
+
+UPDATE `settings` SET `value` = REPLACE(`value`, '\nAI Coach: 3 messages per day', '') WHERE `key` = 'free_plan_features';
+
+UPDATE `process_steps` SET `description` = 'Add each broker or prop-firm account and log trades in seconds with Quick Log.' WHERE `description` = 'Add each broker account and import your trade history into one journal.';
+UPDATE `process_steps` SET `description` = 'Weekly reviews, next-day roasts and tilt alerts show your patterns so you can refine your rules.' WHERE `description` = 'Use AI-assisted reviews to spot behavioural patterns and refine your rules.';
+
+-- Record the schema version
+INSERT INTO `settings` (`key`, `value`, `group_name`) VALUES ('schema_version', '16', 'system') ON DUPLICATE KEY UPDATE `value` = IF(CAST(`value` AS UNSIGNED) < 16, '16', `value`);
