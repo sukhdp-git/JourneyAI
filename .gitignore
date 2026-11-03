@@ -16,3 +16,4 @@ Thumbs.db
 /storage/private/*
 !/storage/private/.htaccess
 !/storage/private/.gitkeep
+*.bundle
