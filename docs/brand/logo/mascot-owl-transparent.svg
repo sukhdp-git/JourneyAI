@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400"><defs>
+<linearGradient id="vio" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8a5ddc"/><stop offset="1" stop-color="#5232d4"/></linearGradient>
+<linearGradient id="brand" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6541e9"/><stop offset=".55" stop-color="#b17ace"/><stop offset="1" stop-color="#feb2b4"/></linearGradient>
+<linearGradient id="pink" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#feb2b4"/><stop offset="1" stop-color="#d996c1"/></linearGradient>
+<linearGradient id="grn" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#34d399"/><stop offset="1" stop-color="#059669"/></linearGradient>
+<radialGradient id="bgc" cx=".5" cy=".35" r=".8"><stop offset="0" stop-color="#2a2160"/><stop offset="1" stop-color="#100c2b"/></radialGradient>
+<filter id="sh" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#000" flood-opacity=".35"/></filter>
+</defs><g filter="url(#sh)">
+<path d="M112 132 L128 66 L172 108 Z" fill="url(#vio)"/><path d="M288 132 L272 66 L228 108 Z" fill="url(#vio)"/>
+<path d="M120 112 L130 82 L152 104 Z" fill="url(#pink)"/><path d="M280 112 L270 82 L248 104 Z" fill="url(#pink)"/>
+<path d="M200 96 C132 96 96 150 96 214 C96 292 142 332 200 332 C258 332 304 292 304 214 C304 150 268 96 200 96 Z" fill="url(#vio)"/>
+<path d="M96 214 C70 232 66 282 96 304 C112 276 112 246 108 220 Z" fill="#5232d4"/><path d="M304 214 C330 232 334 282 304 304 C288 276 288 246 292 220 Z" fill="#5232d4"/>
+<ellipse cx="200" cy="268" rx="66" ry="58" fill="#efe9ff"/>
+<polyline points="162,292 180,274 194,284 214,252 238,258" fill="none" stroke="#6541e9" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M226 244 L242 256 L224 264 Z" fill="#6541e9"/>
+<circle cx="160" cy="178" r="46" fill="#efe9ff"/><circle cx="240" cy="178" r="46" fill="#efe9ff"/>
+<circle cx="160" cy="178" r="36" fill="#fff"/><circle cx="164" cy="181" r="18.7" fill="#15132a"/><circle cx="171.2" cy="173.8" r="6.1" fill="#fff"/><circle cx="240" cy="178" r="36" fill="#fff"/><circle cx="236" cy="181" r="18.7" fill="#15132a"/><circle cx="243.2" cy="173.8" r="6.1" fill="#fff"/>
+<path d="M120 138 Q150 122 186 140" fill="none" stroke="#15132a" stroke-width="7" stroke-linecap="round"/><path d="M280 138 Q250 122 214 140" fill="none" stroke="#15132a" stroke-width="7" stroke-linecap="round"/>
+<path d="M186 206 L214 206 L200 232 Z" fill="url(#pink)"/>
+<path d="M170 332 q-2 14 8 16 q10 0 10 -16 Z M230 332 q2 14 -8 16 q-10 0 -10 -16 Z" fill="#feb2b4"/>
+</g></svg>
