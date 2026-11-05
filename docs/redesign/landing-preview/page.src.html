@@ -68,7 +68,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;paddin
 .hero-in{text-align:center;display:flex;flex-direction:column;align-items:center}
 .badge{display:inline-flex;align-items:center;gap:10px;height:34px;padding:0 14px 0 10px;border-radius:999px;border:1px solid var(--line-2);background:color-mix(in srgb,var(--fg) 5%,transparent);font-size:.84rem;color:var(--fg-2);transition:border-color .3s,color .3s;animation:up .9s var(--ease) both}
 .badge:hover{border-color:var(--accent);color:var(--fg)}
-.badge i{width:7px;height:7px;border-radius:50%;background:#4ade80;box-shadow:0 0 0 0 rgba(74,222,128,.6);animation:ping 2s infinite}
+.badge i{width:7px;height:7px;border-radius:50%;background:var(--accent-2);box-shadow:0 0 10px var(--accent)}
 .badge b{color:var(--fg);font-weight:600}
 .badge svg{width:14px;height:14px}
 .h1{font:700 clamp(2.7rem,7.6vw,7rem)/.96 var(--display);letter-spacing:-.05em;margin:28px 0 0;text-wrap:balance}
@@ -132,19 +132,24 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;paddin
 .fr-img img{width:100%}
 
 /* gallery (pinned) */
-.gal{height:420vh;position:relative}
+.gal{height:340vh;position:relative}
 .gal-pin{position:sticky;top:0;height:100vh;height:100svh;overflow:hidden;display:flex;flex-direction:column;justify-content:center}
 .gal-head{position:absolute;top:clamp(86px,12vh,130px);left:0;right:0}
 .gal-track{display:flex;align-items:center;gap:18px;will-change:transform;margin-top:clamp(40px,8vh,90px)}
 .gc{flex:none;border-radius:14px;overflow:hidden;border:1px solid var(--line-2);background:var(--bg-2);position:relative;box-shadow:0 30px 80px -30px rgba(0,0,0,.7)}
 .gc img{width:100%;height:100%;object-fit:cover;object-position:left top}
 .gc::after{content:"";position:absolute;inset:0;background:var(--bg);opacity:var(--dim,.5);pointer-events:none}
-.gal-cap{position:absolute;left:0;right:0;bottom:clamp(36px,8vh,80px);text-align:center;pointer-events:none}
+.gal-cap{position:absolute;left:0;right:0;bottom:clamp(92px,15vh,128px);text-align:center;pointer-events:none}
 .gal-cap h3{margin:0;font:600 clamp(1.3rem,2.6vw,2rem)/1.1 var(--display);letter-spacing:-.03em;transition:opacity .4s}
 .gal-cap p{margin:8px auto 0;color:var(--fg-2);max-width:30em;font-size:1rem;transition:opacity .4s}
 .gal-prog{position:absolute;left:50%;bottom:clamp(14px,3vh,28px);width:120px;height:2px;background:var(--line);transform:translateX(-50%);border-radius:2px;overflow:hidden}
 .gal-prog i{display:block;height:100%;width:100%;background:var(--accent-2);transform-origin:0 50%;transform:scaleX(0)}
 
+/* teasers: images are blurred in the file itself, the lock is only a label */
+.lk{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:inline-flex;align-items:center;gap:9px;height:38px;padding:0 16px;border-radius:999px;background:color-mix(in srgb,#07060c 72%,transparent);border:1px solid rgba(255,255,255,.22);color:#f4f2fb;font:500 .7rem var(--mono);letter-spacing:.14em;text-transform:uppercase;backdrop-filter:blur(8px);white-space:nowrap}
+.lk svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.fr-img.tease{position:relative}
+.gc .lk{opacity:calc(1 - var(--open,0))}
 /* process (sticky) */
 .proc{height:340vh;position:relative}
 .proc-pin{position:sticky;top:0;height:100vh;height:100svh;display:flex;align-items:center}
@@ -161,7 +166,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;paddin
 .pr-s p{margin:20px 0 0;color:var(--fg-2);font-size:clamp(1.05rem,1.6vw,1.3rem);max-width:28em}
 
 /* facts */
-.facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
 .fact{padding:clamp(26px,4vw,52px) clamp(14px,2vw,28px);border-left:1px solid var(--line)}
 .fact:first-child{border-left:0;padding-left:0}
 .fact b{display:block;font:700 clamp(2.6rem,6.4vw,5.6rem)/1 var(--display);letter-spacing:-.05em;font-variant-numeric:tabular-nums}
@@ -241,7 +246,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;paddin
   .fr-grid{grid-template-columns:1fr}
   .fr-head{grid-template-columns:1fr auto}.fr-tag{display:none}
   .plans{grid-template-columns:1fr}
-  .facts{grid-template-columns:repeat(2,minmax(0,1fr))}.fact:nth-child(3){border-left:0;padding-left:0}.fact:nth-child(n+3){border-top:1px solid var(--line)}
+  .facts{grid-template-columns:1fr}.fact{border-left:0;padding-left:0}.fact+.fact{border-top:1px solid var(--line)}
   .proc-grid{grid-template-columns:1fr;gap:18px}.pl{grid-auto-flow:column;border-left:0;border-bottom:1px solid var(--line);gap:0;overflow:hidden}
   .pl li{padding:10px 14px 12px 0;border-left:0;border-bottom:2px solid transparent;margin:0 14px -1px 0;font-size:1rem}.pl li small{display:none}
   .pl li.on{border-color:var(--accent-2);transform:none}
@@ -278,7 +283,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;paddin
 <section class="hero">
   <canvas class="stars" id="stars" aria-hidden="true"></canvas><div class="hero-glow" aria-hidden="true"></div>
   <div class="wrap hero-in">
-    <a class="badge" href="#features"><i></i>Prop-firm rule tracker <b>is live</b><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    <a class="badge" href="#features"><i></i>Made for forex, gold, index <b>and crypto traders</b><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
     <h1 class="h1" aria-label="Trade your plan. Prove it with data.">
       <span class="line" aria-hidden="true"><span class="w" style="--i:0">Trade</span> <span class="w" style="--i:1">your</span> <span class="w" style="--i:2">plan.</span></span>
       <span class="line fade" aria-hidden="true"><span class="w" style="--i:3;--m:100%">Prove</span> <span class="w" style="--i:4;--m:82%">it</span> <span class="w" style="--i:5;--m:60%">with</span> <span class="w" style="--i:6;--m:38%">data.</span></span>
@@ -313,22 +318,15 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;paddin
 
 <section class="sec paper" id="features" data-dock="Features">
   <div class="wrap">
-    <span class="label rv">What's inside</span>
+    <span class="label rv">A taste of what's inside</span>
     <h2 class="h2 rv" style="--d:1;max-width:14em">One terminal for the whole trading routine.</h2>
-    <div style="margin-top:clamp(40px,6vw,80px)" id="acc">
-      <article class="fr" data-open="1"><button class="fr-head" aria-expanded="true"><span class="fr-title">Log a trade in ten seconds.</span><span class="fr-tag">Log</span><span class="fr-plus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></button><div class="fr-body"><div><div class="fr-grid"><p>Type it, say it in six languages, or send a screenshot. Entry, risk, R and P&amp;L calculate themselves.</p><div class="fr-img"><img src="img/logtrade.webp" width="2000" height="1250" loading="lazy" alt="Log new trade form with voice input"></div></div></div></div></article>
-      <article class="fr" data-open="0"><button class="fr-head" aria-expanded="false"><span class="fr-title">Rules that watch your back.</span><span class="fr-tag">Rules</span><span class="fr-plus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></button><div class="fr-body"><div><div class="fr-grid"><p>Prop-firm templates track profit target, daily loss and drawdown as you trade. A tilt breaker locks new entries after a losing streak.</p><div class="fr-img"><img src="img/dashboard.webp" width="2000" height="1250" loading="lazy" alt="Dashboard with risk limits and drawdown"></div></div></div></div></article>
-      <article class="fr" data-open="0"><button class="fr-head" aria-expanded="false"><span class="fr-title">Find your danger hour.</span><span class="fr-tag">Edge</span><span class="fr-plus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></button><div class="fr-body"><div><div class="fr-grid"><p>Edge Matrix shows your best session, your worst hour of the day and the odds of blowing up in the next 14 days.</p><div class="fr-img"><img src="img/edge.webp" width="2000" height="1250" loading="lazy" alt="Edge Matrix with best trading window and anti-window"></div></div></div></div></article>
-      <article class="fr" data-open="0"><button class="fr-head" aria-expanded="false"><span class="fr-title">A mirror with a sense of humour.</span><span class="fr-tag">Mind</span><span class="fr-plus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></button><div class="fr-body"><div><div class="fr-grid"><p>Break a rule and get roasted tomorrow. A Death Clock shows how many days your account has left at your current pace.</p><div class="fr-img"><img src="img/mind.webp" width="2000" height="1250" loading="lazy" alt="Mind tab with roast card, Death Clock and boss fight"></div></div></div></div></article>
-      <article class="fr" data-open="0"><button class="fr-head" aria-expanded="false"><span class="fr-title">Learn the playbook.</span><span class="fr-tag">Learn</span><span class="fr-plus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></button><div class="fr-body"><div><div class="fr-grid"><p>A 13-lesson course with quizzes and a certificate anyone can verify.</p><div class="fr-img"><img src="img/university.webp" width="2000" height="1250" loading="lazy" alt="University course page"></div></div></div></div></article>
-      <article class="fr" data-open="0"><button class="fr-head" aria-expanded="false"><span class="fr-title">Say what you can't say on Instagram.</span><span class="fr-tag">Community</span><span class="fr-plus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></button><div class="fr-body"><div><div class="fr-grid"><p>Confessions is an anonymous trading floor. No links, no signals, no DMs.</p><div class="fr-img"><img src="img/confessions.webp" width="2000" height="1250" loading="lazy" alt="Confessions anonymous feed"></div></div></div></div></article>
-    </div>
+    <div style="margin-top:clamp(40px,6vw,80px)" id="acc"><article class="fr" data-open="1"><button class="fr-head" aria-expanded="true"><span class="fr-title">Log a trade in ten seconds.</span><span class="fr-tag">Log</span><span class="fr-plus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></button><div class="fr-body"><div><div class="fr-grid"><p>Type it, say it in six languages, or send a screenshot. Entry, risk, R and P&amp;L calculate themselves.</p><div class="fr-img"><img src="img/logtrade.webp" width="2000" height="1250" loading="lazy" alt="Log new trade form"></div></div></div></div></article><article class="fr" data-open="0"><button class="fr-head" aria-expanded="false"><span class="fr-title">Rules that watch your back.</span><span class="fr-tag">Rules</span><span class="fr-plus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></button><div class="fr-body"><div><div class="fr-grid"><p>Prop-firm templates track profit target, daily loss and drawdown from the trades you log, so one bad day cannot quietly end your challenge.</p><div class="fr-img"><img src="img/dashboard.webp" width="2000" height="1250" loading="lazy" alt="Dashboard with equity curve and risk numbers"></div></div></div></div></article><article class="fr" data-open="0"><button class="fr-head" aria-expanded="false"><span class="fr-title">Find out what is really costing you.</span><span class="fr-tag">Insight</span><span class="fr-plus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></button><div class="fr-body"><div><div class="fr-grid"><p>Your journal works out which hours, habits and setups lose you money. Most traders are surprised by the answer.</p><div class="fr-img tease"><img src="img/tease-1.webp" width="900" height="562" loading="lazy" alt="Blurred preview, available to members"><span class="lk"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>Members only</span></div></div></div></div></article><article class="fr" data-open="0"><button class="fr-head" aria-expanded="false"><span class="fr-title">A journal that talks back.</span><span class="fr-tag">Feedback</span><span class="fr-plus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></button><div class="fr-body"><div><div class="fr-grid"><p>It does more than store your trades. It reacts to how you trade. Sign up and see what it says about you.</p><div class="fr-img tease"><img src="img/tease-2.webp" width="900" height="562" loading="lazy" alt="Blurred preview, available to members"><span class="lk"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>Members only</span></div></div></div></div></article><article class="fr" data-open="0"><button class="fr-head" aria-expanded="false"><span class="fr-title">More, kept for members.</span><span class="fr-tag">Inside</span><span class="fr-plus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></button><div class="fr-body"><div><div class="fr-grid"><p>A few things we would rather show you than tell you. You will find them in your first week.</p><div class="fr-img tease"><img src="img/tease-3.webp" width="900" height="562" loading="lazy" alt="Blurred preview, available to members"><span class="lk"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>Members only</span></div></div></div></div></article></div>
   </div>
 </section>
 
-<section class="gal" id="screens" data-dock="Screens">
+<section class="gal" id="screens" data-dock="Peek">
   <div class="gal-pin" id="galPin">
-    <div class="gal-head wrap"><span class="label">Inside the terminal</span><h2 class="h2" style="font-size:clamp(1.8rem,4vw,3.4rem);margin-top:14px">Real screens. Demo data.</h2></div>
+    <div class="gal-head wrap"><span class="label">Real screens, demo data</span><h2 class="h2" style="font-size:clamp(1.8rem,4vw,3.4rem);margin-top:14px">A peek inside. The rest unlocks when you join.</h2></div>
     <div class="gal-track" id="galTrack"></div>
     <div class="gal-cap"><h3 id="galH"></h3><p id="galP"></p></div>
     <div class="gal-prog"><i id="galBar"></i></div>
@@ -343,8 +341,8 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;paddin
       <div class="pr-n" id="prN">01</div>
       <div class="pr-s on"><h3>Log.</h3><p>Ten seconds a trade. Type it, say it, or snap the chart. Risk, R and P&amp;L work themselves out.</p></div>
       <div class="pr-s"><h3>Measure.</h3><p>Win rate, expectancy, drawdown and your danger hour, from your own trades. No spreadsheets.</p></div>
-      <div class="pr-s"><h3>Fix.</h3><p>Daily loss limits, the tilt breaker and prop-firm rules stop the next mistake before you make it.</p></div>
-      <div class="pr-s"><h3>Repeat.</h3><p>Weekly reviews, streaks and a free 13-lesson course turn one good week into a habit.</p></div>
+      <div class="pr-s"><h3>Fix.</h3><p>Daily loss limits and prop-firm rules stop the next mistake before you make it.</p></div>
+      <div class="pr-s"><h3>Repeat.</h3><p>Weekly reviews and streaks turn one good week into a habit.</p></div>
     </div>
   </div></div>
 </section>
@@ -352,9 +350,8 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;paddin
 <section class="sec" style="padding-top:0">
   <div class="wrap"><div class="facts">
     <div class="fact rv"><b data-count="10">0</b><span>seconds to log a trade</span></div>
-    <div class="fact rv" style="--d:1"><b data-count="13">0</b><span>free course lessons</span></div>
-    <div class="fact rv" style="--d:2"><b data-count="6">0</b><span>voice languages</span></div>
-    <div class="fact rv" style="--d:3"><b data-count="8">0</b><span>prop-firm rule templates</span></div>
+        <div class="fact rv" style="--d:1"><b data-count="6">0</b><span>voice languages</span></div>
+    <div class="fact rv" style="--d:2"><b data-count="8">0</b><span>prop-firm rule templates</span></div>
   </div></div>
 </section>
 
@@ -366,10 +363,10 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;paddin
     </div>
     <div class="plans">
       <article class="plan rv"><h3>Free</h3><p class="for">Explore every tool with demo accounts and test trades.</p><div class="price">$0<small>forever</small></div>
-        <ul><li><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Unlimited demo accounts and test trades</li><li><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Demo journal with sample trades</li><li><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Dashboard, calendar and Edge Matrix on demo data</li></ul>
+        <ul><li><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Unlimited demo accounts and test trades</li><li><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Sample trades to play with</li><li><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>A demo journal to explore the app</li></ul>
         <a class="btn btn-line" href="/signup">Start free</a></article>
       <article class="plan pro rv" style="--d:1"><h3>Pro <span class="pill">Most popular</span></h3><p class="for">For active traders journaling live accounts.</p><div class="price"><span class="swap" id="proPrice">$19</span><small id="proPer">/ month</small></div>
-        <ul><li><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Everything in Free</li><li><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Up to 3 live trading accounts</li><li><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Full analytics on live data</li><li><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Prop-firm rule tracking and tilt breaker</li></ul>
+        <ul><li><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Everything in Free</li><li><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Up to 3 live trading accounts</li><li><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Full analytics on live data</li><li><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Prop-firm rule tracking</li></ul>
         <a class="btn btn-solid" href="/signup">Get Pro</a></article>
       <article class="plan rv" style="--d:2"><h3>Desk</h3><p class="for">For prop traders running many accounts.</p><div class="price">$49<small>/ month</small></div>
         <ul><li><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Everything in Pro</li><li><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Up to 15 live trading accounts</li><li><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Priority support</li></ul>
@@ -403,7 +400,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;paddin
 <nav class="dock" id="dock" aria-label="Quick navigation">
   <a class="dk" href="#top" data-t="Home"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg><span class="tip">Home</span></a>
   <a class="dk" href="#features" data-t="Features"><svg viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/></svg><span class="tip">Features</span></a>
-  <a class="dk" href="#screens" data-t="Screens"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M21 16l-5-5-8 8"/></svg><span class="tip">Screens</span></a>
+  <a class="dk" href="#screens" data-t="Peek"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M21 16l-5-5-8 8"/></svg><span class="tip">A peek</span></a>
   <a class="dk" href="#process" data-t="How it works"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.2"/><circle cx="18" cy="18" r="2.2"/><path d="M8 6h5a3 3 0 010 6h-2a3 3 0 000 6h5"/></svg><span class="tip">How it works</span></a>
   <a class="dk" href="#pricing" data-t="Pricing"><svg viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8L3 12z"/><circle cx="7.5" cy="8.5" r="1.3"/></svg><span class="tip">Pricing</span></a>
   <span class="dk-sep"></span>
@@ -458,8 +455,8 @@ var rows=$$('.fr');
 rows.forEach(function(r){$('.fr-head',r).addEventListener('click',function(){var open=r.getAttribute('data-open')==='1';rows.forEach(function(o){o.setAttribute('data-open','0');$('.fr-head',o).setAttribute('aria-expanded','false')});if(!open){r.setAttribute('data-open','1');$('.fr-head',r).setAttribute('aria-expanded','true')}})});
 
 /* gallery */
-var G=[['dashboard','Dashboard','Equity curve, win rate, profit factor and drawdown at a glance.'],['edge','Edge Matrix','Your best window, your danger hour and the odds of blowing up.'],['strategies','Strategy analysis','Which setup actually pays, ranked by net P&L.'],['mind','Mind','Roasts, a Death Clock and a boss fight for your worst habit.'],['logtrade','Log a trade','Voice or typed. Risk, R and P&L calculate themselves.'],['calendar','Calendar','Every trading day in one month view.'],['university','University','A 13-lesson course with quizzes and a certificate.'],['confessions','Confessions','An anonymous trading floor. No links, no signals.']];
-var gt=$('#galTrack'),gc=G.map(function(g){var d=document.createElement('div');d.className='gc';d.innerHTML='<img src="img/'+g[0]+'.webp" alt="'+g[1]+' screen" loading="lazy" width="2000" height="1250">';gt.appendChild(d);return d});
+var G=[['dashboard','Dashboard','Every number that matters, at a glance.',0],['logtrade','Log a trade','Voice or typed. Risk, R and P&L calculate themselves.',0],['tease-1','Where your money leaks.','Sign up to see yours.',1],['tease-2','Something that talks back.','Sign up to meet it.',1],['tease-3','Where traders say the quiet part.','Members only.',1],['tease-4','Built to make you better.','Unlocks with your account.',1]];
+var gt=$('#galTrack'),gc=G.map(function(g){var d=document.createElement('div');d.className='gc';d.innerHTML='<img src="img/'+g[0]+'.webp" alt="'+(g[3]?'Blurred preview, available to members':g[1]+' screen')+'" loading="lazy" width="'+(g[3]?900:2000)+'" height="'+(g[3]?562:1250)+'">'+(g[3]?'<span class="lk"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>Members only</span>':'');gt.appendChild(d);return d});
 var gal=$('.gal'),galH=$('#galH'),galP=$('#galP'),galBar=$('#galBar'),lastCap=-1;
 function layoutGal(){
   var r=gal.getBoundingClientRect(),total=gal.offsetHeight-vh(),p=clamp(-r.top/total),t=damp('gal',p*(G.length-1),.14),W=vw(),mobile=W<760;
