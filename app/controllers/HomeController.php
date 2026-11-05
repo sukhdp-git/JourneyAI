@@ -5,6 +5,7 @@ namespace App\Controllers;
 
 use App\Core\Request;
 use App\Core\Seo;
+use App\Core\Settings;
 use App\Models\Blog;
 use App\Models\Content;
 
@@ -12,6 +13,16 @@ final class HomeController extends Controller
 {
     public function index(Request $req): never
     {
+        $seo = [
+            'title' => setting('seo_home_title') ?: (setting('seo_default_title') ?: setting('site_name')),
+            'raw_title' => true,
+            'description' => setting('seo_home_description') ?: setting('seo_default_description'),
+            'path' => '/',
+        ];
+        // The new landing page is the default; Control Panel -> General can switch back to the section-based homepage.
+        if (Settings::bool('landing_v2', true)) {
+            $this->render('landing', ['layout' => 'public/layouts/landing'], $seo);
+        }
         $sections = Content::homeSections();
         $data = ['sections' => $sections];
         foreach ($sections as $s) {
@@ -30,11 +41,6 @@ final class HomeController extends Controller
         if (!empty($data['faqs'])) {
             Seo::faq($data['faqs']);
         }
-        $this->render('home', $data, [
-            'title' => setting('seo_home_title') ?: (setting('seo_default_title') ?: setting('site_name')),
-            'raw_title' => true,
-            'description' => setting('seo_home_description') ?: setting('seo_default_description'),
-            'path' => '/',
-        ]);
+        $this->render('home', $data, $seo);
     }
 }

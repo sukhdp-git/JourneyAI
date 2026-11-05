@@ -21,7 +21,7 @@ abstract class Controller
         $GLOBALS['__old'] = session_status() === PHP_SESSION_ACTIVE ? Session::takeOld() : [];
         $data['flash'] = session_status() === PHP_SESSION_ACTIVE ? Session::takeFlash() : [];
         $data['seo'] = Seo::meta($seo);
-        View::show('public/' . $view, $data, 'public/layouts/main', $status);
+        View::show('public/' . $view, $data, $data['layout'] ?? 'public/layouts/main', $status);
     }
 
     protected function notFound(): never

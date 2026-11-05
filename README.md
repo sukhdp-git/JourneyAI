@@ -606,6 +606,19 @@ What the code now does, and what only you can do. This is a technical checklist,
 6. Never post buy/sell calls, signals or "guaranteed" returns on the site, in reels or in Confessions (SEBI).
 7. Get a VAPT (penetration test) before the public launch, and rotate any API key that was ever shared in a chat or screenshot.
 
+### New landing page (homepage)
+The homepage is a new, scroll-animated page built from `app/views/public/landing.php` with its own layout (`layouts/landing.php`), styles (`public/assets/css/landing.css`) and script (`public/assets/js/landing.js`). It shows only generic product screens (dashboard, log a trade) and teases the rest with blurred "Members only" previews, so competitors cannot copy the members-only features.
+
+| What | Where |
+|---|---|
+| **Switch back to the old homepage** (the one built from Homepage sections): untick *Use the new landing page* | Control Panel → General settings |
+| Prices, plan names and features on the page come from your plans | Control Panel → Plans & pricing (a plan named "X Annual" is joined to "X" with a Monthly / Yearly toggle) |
+| Page title and description | Control Panel → SEO (set once by the update only if they were empty) |
+| Cookie banner, SEBI notice and Cookie settings link follow | Control Panel → Legal & compliance |
+| Rebuild after editing the design source | `python3 docs/redesign/landing-preview/build_site.py` (source: `docs/redesign/landing-preview/page.src.html`, which is also a standalone preview) |
+
+Rules to keep: do not put the names or screenshots of Edge Matrix, Mind, Confessions or University on this page. `php tests/landing.php` fails if they appear or if a teaser image is not blurred.
+
 ## 11. Troubleshooting
 
 ### General

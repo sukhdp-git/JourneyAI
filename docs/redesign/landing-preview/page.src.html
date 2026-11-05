@@ -41,6 +41,8 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;paddin
 .btn-ghost{color:var(--fg-2);padding:0 8px}.btn-ghost:hover{color:var(--fg)}
 .ico{width:1em;height:1em;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 
+/* skip link */
+.skip{position:absolute;left:-999px;top:8px;z-index:100;background:var(--btn-bg);color:var(--btn-fg);padding:10px 16px;border-radius:999px;font-weight:600}.skip:focus{left:12px}
 /* reveal */
 .rv{opacity:0;transform:translateY(26px);filter:blur(10px);transition:opacity 1s var(--ease),transform 1s var(--ease),filter 1s var(--ease);transition-delay:calc(var(--d,0) * 90ms)}
 .rv.in{opacity:1;transform:none;filter:none}
@@ -175,8 +177,8 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;paddin
 
 /* pricing */
 .pr-top{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap}
-.seg{display:inline-flex;padding:4px;border-radius:999px;border:1px solid var(--line-2);position:relative}
-.seg button{position:relative;z-index:1;height:38px;padding:0 20px;border-radius:999px;font-size:.92rem;color:var(--fg-2);transition:color .3s}
+.seg{display:inline-grid;grid-template-columns:1fr 1fr;padding:4px;border-radius:999px;border:1px solid var(--line-2);position:relative}
+.seg button{position:relative;z-index:1;height:38px;padding:0 20px;white-space:nowrap;border-radius:999px;font-size:.92rem;color:var(--fg-2);transition:color .3s}
 .seg button[aria-pressed="true"]{color:var(--btn-fg)}
 .seg i{position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);border-radius:999px;background:var(--btn-bg);transition:transform .6s var(--ease)}
 .seg[data-y="1"] i{transform:translateX(100%)}
@@ -221,6 +223,12 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;paddin
 .foot p{color:var(--fg-3);font-size:.85rem;max-width:44em;margin:0}
 .foot-b{margin-top:56px;padding-top:28px;border-top:1px solid var(--line);display:grid;gap:12px}
 
+/* cookie consent */
+.cookie-bar{position:fixed;z-index:90;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));max-width:760px;margin:0 auto;display:flex;gap:14px 18px;align-items:center;flex-wrap:wrap;padding:16px 18px;border-radius:18px;background:color-mix(in srgb,var(--bg-2) 92%,transparent);backdrop-filter:blur(16px);border:1px solid var(--line-2);box-shadow:var(--shadow);font-size:.9rem;color:var(--fg-2)}
+.cookie-bar p{margin:0;flex:1 1 340px}.cookie-bar a{color:var(--fg);text-decoration:underline}
+.cookie-actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn-sm{height:40px;padding:0 18px;font-size:.9rem}.btn-primary{background:var(--btn-bg);color:var(--btn-fg)}
+.foot-legal{display:flex;flex-wrap:wrap;gap:6px 18px;list-style:none;margin:0;padding:0}.foot-legal button{background:none;border:0;padding:0;color:var(--fg-3);font:inherit;font-size:.85rem;text-decoration:underline;cursor:pointer}
 /* dock */
 .dock{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:60;transform:translate(-50%,140%);transition:transform .9s var(--ease);display:flex;align-items:flex-end;gap:6px;padding:8px 10px;border-radius:22px;border:1px solid var(--line-2);background:color-mix(in srgb,var(--bg) 70%,transparent);backdrop-filter:blur(20px) saturate(1.5);box-shadow:0 20px 60px -20px rgba(0,0,0,.6)}
 .dock.show{transform:translate(-50%,0)}
@@ -359,20 +367,20 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;paddin
   <div class="wrap">
     <div class="pr-top">
       <div><span class="label rv">Pricing</span><h2 class="h2 rv" style="--d:1">Start free. Upgrade when it pays for itself.</h2></div>
-      <div class="seg rv" id="seg" data-y="0" role="group" aria-label="Billing period"><i></i><button aria-pressed="true" data-y="0">Monthly</button><button aria-pressed="false" data-y="1">Yearly<em>2 MO FREE</em></button></div>
+      <!--SEG--><div class="seg rv" id="seg" data-y="0" role="group" aria-label="Billing period"><i></i><button aria-pressed="true" data-y="0">Monthly</button><button aria-pressed="false" data-y="1">Yearly<em>2 MO FREE</em></button></div><!--/SEG-->
     </div>
-    <div class="plans">
+    <!--PLANS--><div class="plans">
       <article class="plan rv"><h3>Free</h3><p class="for">Explore every tool with demo accounts and test trades.</p><div class="price">$0<small>forever</small></div>
         <ul><li><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Unlimited demo accounts and test trades</li><li><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Sample trades to play with</li><li><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>A demo journal to explore the app</li></ul>
         <a class="btn btn-line" href="/signup">Start free</a></article>
-      <article class="plan pro rv" style="--d:1"><h3>Pro <span class="pill">Most popular</span></h3><p class="for">For active traders journaling live accounts.</p><div class="price"><span class="swap" id="proPrice">$19</span><small id="proPer">/ month</small></div>
+      <article class="plan pro rv" style="--d:1"><h3>Pro <span class="pill">Most popular</span></h3><p class="for">For active traders journaling live accounts.</p><div class="price"><span class="swap" data-m="$19" data-ay="$190">$19</span><small class="swap" data-m="/ month" data-ay="/ year">/ month</small></div>
         <ul><li><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Everything in Free</li><li><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Up to 3 live trading accounts</li><li><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Full analytics on live data</li><li><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Prop-firm rule tracking</li></ul>
         <a class="btn btn-solid" href="/signup">Get Pro</a></article>
       <article class="plan rv" style="--d:2"><h3>Desk</h3><p class="for">For prop traders running many accounts.</p><div class="price">$49<small>/ month</small></div>
         <ul><li><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Everything in Pro</li><li><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Up to 15 live trading accounts</li><li><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Priority support</li></ul>
         <a class="btn btn-line" href="/signup">Get Desk</a></article>
     </div>
-    <p class="note">Pay once for a period or turn on autopay, and switch it off any time.</p>
+    <!--/PLANS--><p class="note">Pay once for a period or turn on autopay, and switch it off any time.</p>
   </div>
 </section>
 
@@ -394,7 +402,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;paddin
     <div><h4>Company</h4><ul><li><a href="/about">About</a></li><li><a href="/contact">Contact</a></li><li><a href="/grievance-officer">Grievance Officer</a></li></ul></div>
     <div><h4>Legal</h4><ul><li><a href="/privacy-policy">Privacy</a></li><li><a href="/terms-and-conditions">Terms</a></li><li><a href="/disclaimer">Risk disclaimer</a></li></ul></div>
   </div>
-  <div class="foot-b"><p>journzey.ai is a trading journal and education platform. We are not registered with SEBI as an investment adviser or research analyst and do not give buy or sell recommendations, tips or signals. Trading involves substantial risk of loss. Screens shown use demo data.</p><p>&copy; 2026 journzey.ai</p></div>
+  <!--FOOTB--><div class="foot-b"><p>journzey.ai is a trading journal and education platform. We are not registered with SEBI as an investment adviser or research analyst and do not give buy or sell recommendations, tips or signals. Trading involves substantial risk of loss. Screens shown use demo data.</p><p>&copy; 2026 journzey.ai</p></div><!--/FOOTB-->
 </div></footer>
 
 <nav class="dock" id="dock" aria-label="Quick navigation">
@@ -456,7 +464,8 @@ rows.forEach(function(r){$('.fr-head',r).addEventListener('click',function(){var
 
 /* gallery */
 var G=[['dashboard','Dashboard','Every number that matters, at a glance.',0],['logtrade','Log a trade','Voice or typed. Risk, R and P&L calculate themselves.',0],['tease-1','Where your money leaks.','Sign up to see yours.',1],['tease-2','Something that talks back.','Sign up to meet it.',1],['tease-3','Where traders say the quiet part.','Members only.',1],['tease-4','Built to make you better.','Unlocks with your account.',1]];
-var gt=$('#galTrack'),gc=G.map(function(g){var d=document.createElement('div');d.className='gc';d.innerHTML='<img src="img/'+g[0]+'.webp" alt="'+(g[3]?'Blurred preview, available to members':g[1]+' screen')+'" loading="lazy" width="'+(g[3]?900:2000)+'" height="'+(g[3]?562:1250)+'">'+(g[3]?'<span class="lk"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>Members only</span>':'');gt.appendChild(d);return d});
+var IMG=window.JZ_IMG||'img/';
+var gt=$('#galTrack'),gc=G.map(function(g){var d=document.createElement('div');d.className='gc';d.innerHTML='<img src="'+IMG+g[0]+'.webp" alt="'+(g[3]?'Blurred preview, available to members':g[1]+' screen')+'" loading="lazy" width="'+(g[3]?900:2000)+'" height="'+(g[3]?562:1250)+'">'+(g[3]?'<span class="lk"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>Members only</span>':'');gt.appendChild(d);return d});
 var gal=$('.gal'),galH=$('#galH'),galP=$('#galP'),galBar=$('#galBar'),lastCap=-1;
 function layoutGal(){
   var r=gal.getBoundingClientRect(),total=gal.offsetHeight-vh(),p=clamp(-r.top/total),t=damp('gal',p*(G.length-1),.14),W=vw(),mobile=W<760;
@@ -505,9 +514,11 @@ function buildGrid(){var g=$('#gridIco'),W=g.clientWidth,H=g.clientHeight,ts=W<9
   g.innerHTML='';for(var r=0;r<rowsN;r++){var row=document.createElement('div');row.className='gr';for(var c=0;c<cols;c++){var t=document.createElement('div'),on=rnd()<.34;t.className='tile'+(on?' on':'');if(on){t.style.setProperty('--td',(rnd()*5).toFixed(2)+'s');t.style.setProperty('--tc',COL[Math.floor(rnd()*COL.length)])}t.innerHTML='<svg viewBox="0 0 24 24">'+IC[Math.floor(rnd()*IC.length)]+'</svg>';row.appendChild(t)}g.appendChild(row)}}
 buildGrid();
 
-/* pricing toggle */
-var seg=$('#seg'),proPrice=$('#proPrice'),proPer=$('#proPer');
-$$('button',seg).forEach(function(b){b.addEventListener('click',function(){var y=b.getAttribute('data-y');seg.setAttribute('data-y',y);$$('button',seg).forEach(function(o){o.setAttribute('aria-pressed',String(o===b))});proPrice.classList.add('out');setTimeout(function(){proPrice.textContent=y==='1'?'$190':'$19';proPer.textContent=y==='1'?'/ year':'/ month';proPrice.classList.remove('out')},220)})});
+/* pricing toggle (monthly / yearly) */
+var seg=$('#seg');
+if(seg){var swaps=$$('[data-m]'),links=$$('[data-hm]');
+  $$('button',seg).forEach(function(b){b.addEventListener('click',function(){var y=b.getAttribute('data-y');seg.setAttribute('data-y',y);$$('button',seg).forEach(function(o){o.setAttribute('aria-pressed',String(o===b))});swaps.forEach(function(el){el.classList.add('out')});
+    setTimeout(function(){swaps.forEach(function(el){el.textContent=y==='1'?el.getAttribute('data-ay'):el.getAttribute('data-m');el.classList.remove('out')});links.forEach(function(a){a.setAttribute('href',y==='1'?a.getAttribute('data-hy'):a.getAttribute('data-hm'))})},220)})})}
 
 /* main loop */
 var vis=true;document.addEventListener('visibilitychange',function(){vis=!document.hidden});

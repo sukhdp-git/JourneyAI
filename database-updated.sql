@@ -837,3 +837,16 @@ UPDATE `process_steps` SET `description` = 'Weekly reviews, next-day roasts and 
 
 -- Record the schema version
 INSERT INTO `settings` (`key`, `value`, `group_name`) VALUES ('schema_version', '16', 'system') ON DUPLICATE KEY UPDATE `value` = IF(CAST(`value` AS UNSIGNED) < 16, '16', `value`);
+
+-- ---------------------------------------------------------------------------
+-- Schema version 17: new landing page switch (settings row only).
+-- Rollback: UPDATE settings SET value = '0' WHERE `key` = 'landing_v2';  (or untick it in Control Panel -> General)
+-- ---------------------------------------------------------------------------
+INSERT IGNORE INTO `settings` (`key`, `value`, `group_name`) VALUES ('landing_v2', '1', 'general');
+
+INSERT IGNORE INTO `settings` (`key`, `value`, `group_name`) VALUES ('seo_home_title', '', 'seo'), ('seo_home_description', '', 'seo');
+UPDATE `settings` SET `value` = 'journzey.ai | Trading Journal for Forex, Gold, Index and Crypto Traders' WHERE `key` = 'seo_home_title' AND `value` = '';
+UPDATE `settings` SET `value` = 'A trading journal that shows which habits make you money and which ones quietly cost you. Log a trade in ten seconds. Free demo journal, no card needed.' WHERE `key` = 'seo_home_description' AND `value` = '';
+
+-- Record the schema version
+INSERT INTO `settings` (`key`, `value`, `group_name`) VALUES ('schema_version', '17', 'system') ON DUPLICATE KEY UPDATE `value` = IF(CAST(`value` AS UNSIGNED) < 17, '17', `value`);

@@ -14,6 +14,7 @@ return [
         ['name' => 'timezone', 'label' => 'Timezone', 'type' => 'select', 'options' => $tz, 'rules' => 'required', 'width' => 'half', 'help' => 'Used for dates on the website and in the panel.'],
         ['name' => 'copyright_text', 'label' => 'Copyright line', 'type' => 'text', 'rules' => 'max:200', 'width' => 'half', 'help' => '{year} is replaced with the current year.'],
         ['name' => 'media_max_mb', 'label' => 'Maximum upload size (MB)', 'type' => 'number', 'rules' => 'required|between:1,20', 'width' => 'half'],
+        ['name' => 'landing_v2', 'label' => 'Use the new landing page on the homepage (turn off to go back to the previous homepage built from Homepage sections)', 'type' => 'checkbox'],
         ['name' => 'maintenance_mode', 'label' => 'Maintenance mode (public site shows a “back soon” page; the Control Panel keeps working)', 'type' => 'checkbox'],
         ['name' => 'maintenance_message', 'label' => 'Maintenance message', 'type' => 'text', 'rules' => 'max:255'],
     ]],
