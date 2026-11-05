@@ -28,7 +28,7 @@
 <path d="M316 262 Q300 270 294 292 M320 238 Q300 244 290 262" fill="none" stroke="#a581f5" stroke-width="4" stroke-linecap="round" opacity=".7"/>
 <!-- belly + feather scallops -->
 <ellipse cx="200" cy="270" rx="68" ry="60" fill="url(#belly)"/>
-<g clip-path="url(#bellyclip)" fill="none" stroke="#b9a6f0" stroke-width="3.2" stroke-linecap="round" opacity=".75">
+<g clip-path="url(#bellyclip)" fill="none" stroke="#c9b9f5" stroke-width="3" stroke-linecap="round" opacity=".5">
 <path d="M136 300 q15 15 30 0"/><path d="M166 300 q15 15 30 0"/><path d="M196 300 q15 15 30 0"/><path d="M226 300 q15 15 30 0"/><path d="M151 278 q15 15 30 0"/><path d="M181 278 q15 15 30 0"/><path d="M211 278 q15 15 30 0"/><path d="M136 256 q15 15 30 0"/><path d="M166 256 q15 15 30 0"/><path d="M196 256 q15 15 30 0"/><path d="M226 256 q15 15 30 0"/>
 </g>
 

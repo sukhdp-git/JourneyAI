@@ -28,10 +28,10 @@
 <path d="M316 262 Q300 270 294 292 M320 238 Q300 244 290 262" fill="none" stroke="#a581f5" stroke-width="4" stroke-linecap="round" opacity=".7"/>
 <!-- belly + feather scallops -->
 <ellipse cx="200" cy="270" rx="68" ry="60" fill="url(#belly)"/>
-<g clip-path="url(#bellyclip)" fill="none" stroke="#b9a6f0" stroke-width="3.2" stroke-linecap="round" opacity=".75">
+<g clip-path="url(#bellyclip)" fill="none" stroke="#c9b9f5" stroke-width="3" stroke-linecap="round" opacity=".5">
 <path d="M136 300 q15 15 30 0"/><path d="M166 300 q15 15 30 0"/><path d="M196 300 q15 15 30 0"/><path d="M226 300 q15 15 30 0"/><path d="M151 278 q15 15 30 0"/><path d="M181 278 q15 15 30 0"/><path d="M211 278 q15 15 30 0"/><path d="M136 256 q15 15 30 0"/><path d="M166 256 q15 15 30 0"/><path d="M196 256 q15 15 30 0"/><path d="M226 256 q15 15 30 0"/>
 </g>
-<g filter="url(#glow)"><polyline points="160,296 182,274 198,286 224,250 246,256" fill="none" stroke="url(#chart)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/><path d="M230 236 L252 252 L226 262 Z" fill="#e85fa8"/></g>
+<g transform="translate(-9 8) scale(.94)" transform-origin="200 270"><g stroke-linecap="round" stroke-linejoin="round" fill="none"><polyline points="158,298 184,274 202,288 233,255" stroke="#fff" stroke-width="19" opacity=".92"/><polyline points="158,298 184,274 202,288 233,255" stroke="url(#chart)" stroke-width="10"/></g><path d="M254 234 L222 244 L244 266 Z" fill="#fff" stroke="#fff" stroke-width="15" stroke-linejoin="round" opacity=".92"/><path d="M254 234 L222 244 L244 266 Z" fill="#e85fa8" stroke="#e85fa8" stroke-width="5" stroke-linejoin="round"/></g>
 <!-- face mask -->
 <path d="M200 140 C176 126 148 128 130 146 C108 170 116 214 160 224 C180 227 194 218 200 208 C206 218 220 227 240 224 C284 214 292 170 270 146 C252 128 224 126 200 140 Z" fill="url(#mask)"/>
 <circle cx="160" cy="180" r="40" fill="#fff"/>
